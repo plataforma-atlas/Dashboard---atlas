@@ -402,9 +402,18 @@ export default function Home() {
     );
   }
 
-  function renderModuleContent(key: keyof WebinarMetrics, metrics: WebinarMetrics) {
+  function renderModuleContent(key: keyof WebinarMetrics, metrics: WebinarMetrics, real?: { totalIngresos: number; totalCompras: number }) {
     if (KPI_ONLY_MODULES.has(key)) {
-      return <KpiModuleSection key={key} moduleKey={key} data={metrics[key] as Record<string, number | undefined>} />;
+      let data = metrics[key] as Record<string, number | undefined>;
+      // "Ventas" se respalda con datos reales (funnel_events) cuando webinar_metrics
+      // todavía no tiene esta edición sincronizada — mismo fallback que el Resumen ejecutivo.
+      if (key === "ventas" && real) {
+        const ventas = data.ventas ?? (real.totalCompras || undefined);
+        const ingresos = data.ingresos ?? (real.totalIngresos || undefined);
+        const ticket_promedio = data.ticket_promedio ?? (ventas && ingresos ? ingresos / ventas : undefined);
+        data = { ...data, ventas, ingresos, ticket_promedio };
+      }
+      return <KpiModuleSection key={key} moduleKey={key} data={data} />;
     }
     if (key === "landing") {
       const stagesLanding = toFunnelStages([
@@ -543,7 +552,7 @@ export default function Home() {
                       );
                     }
 
-                    return renderModuleContent(navSection, metrics);
+                    return renderModuleContent(navSection, metrics, real);
                   })()}
               </div>
             </div>
