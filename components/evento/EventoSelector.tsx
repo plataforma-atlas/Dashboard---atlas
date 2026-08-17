@@ -1,0 +1,29 @@
+import { Campaign } from "@/lib/types";
+
+export default function EventoSelector({
+  eventoCampaigns,
+  selectedId,
+  onSelect,
+}: {
+  eventoCampaigns: Campaign[];
+  selectedId: number | "all";
+  onSelect: (id: number | "all") => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[11px] uppercase tracking-[0.1em] text-[var(--wos-ink-faint)]">Ángulo</label>
+      <select
+        value={selectedId}
+        onChange={(e) => onSelect(e.target.value === "all" ? "all" : Number(e.target.value))}
+        className="bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2.5 py-1.5 text-sm text-[var(--wos-ink)] focus:border-[var(--wos-primary)] outline-none min-w-[220px]"
+      >
+        <option value="all">Vista consolidada</option>
+        {eventoCampaigns.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}

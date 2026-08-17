@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  color-scheme: dark;
+  /* Tema por defecto (Atlas, la agencia). ThemeSwitch.tsx sobreescribe
+     estas variables en runtime según el cliente seleccionado. */
+  --color-background: #1A1A1A;
+  --color-surface: #221F1A;
+  --color-surface-high: #2A2620;
+  --color-outline: #3A3428;
+  --color-primary: #C9A96E;
+  --color-secondary: #D4C5A0;
+  --color-on-surface: #F5F0E8;
+  --color-on-surface-variant: #B0A48C;
+  --color-on-surface-faint: #7A715E;
+}
+
+body {
+  background-color: var(--color-background);
+  background-image: radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent);
+  transition: background-color 0.3s ease;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
