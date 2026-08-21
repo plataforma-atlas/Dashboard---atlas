@@ -720,16 +720,16 @@ export default function Home() {
                   note={eventoKpis.conversionWp != null ? `${formatPercent(eventoKpis.conversionWp)} de conversión` : "Sin registros"}
                 />
                 <VslKpiCard
-                  label="Check-in"
-                  value={String(eventoKpis.checkins)}
-                  tone="up"
-                  note={eventoKpis.conversionCheckin != null ? `${formatPercent(eventoKpis.conversionCheckin)} de asistencia` : "Sin registros"}
-                />
-                <VslKpiCard
                   label="Confirmados"
                   value={String(eventoKpis.confirmados)}
                   tone="up"
                   note={eventoKpis.conversionConfirmado != null ? `${formatPercent(eventoKpis.conversionConfirmado)} de conversión` : "Gratis + Platino + VIP"}
+                />
+                <VslKpiCard
+                  label="Check-in"
+                  value={String(eventoKpis.checkins)}
+                  tone="up"
+                  note={eventoKpis.conversionCheckin != null ? `${formatPercent(eventoKpis.conversionCheckin)} de asistencia` : "Sin registros"}
                 />
                 <VslKpiCard label="Capital vendido" value={formatMoney(eventoKpis.capitalVendido)} tone="up" note="Suma real" />
               </div>

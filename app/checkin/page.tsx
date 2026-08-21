@@ -9,8 +9,16 @@ type Inscrito = {
   phone: string | null;
   country: string | null;
   campaign_name: string;
+  tier: string;
   checked_in: boolean;
 };
+
+function tierBadgeClass(tier: string) {
+  if (tier === "VIP") return "text-violet-300 bg-violet-500/10 border-violet-500/30";
+  if (tier === "Platino") return "text-slate-200 bg-slate-400/10 border-slate-400/30";
+  if (tier === "Confirmado") return "text-primary bg-primary/10 border-primary/30";
+  return "text-on-surface-faint bg-on-surface-faint/10 border-outline";
+}
 
 export default function CheckinPage() {
   const [query, setQuery] = useState("");
@@ -102,7 +110,12 @@ export default function CheckinPage() {
               className="rounded-lg border border-outline bg-surface p-4 flex items-center justify-between gap-4"
             >
               <div className="min-w-0">
-                <p className="text-on-surface font-medium truncate">{r.name || "(sin nombre)"}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-on-surface font-medium truncate">{r.name || "(sin nombre)"}</p>
+                  <span className={`shrink-0 text-[10px] font-semibold uppercase tracking-[0.06em] rounded-full px-2 py-0.5 border whitespace-nowrap ${tierBadgeClass(r.tier)}`}>
+                    {r.tier}
+                  </span>
+                </div>
                 <p className="text-xs text-on-surface-faint truncate">{r.email}</p>
                 {r.phone && <p className="text-xs text-on-surface-faint truncate">{r.phone}</p>}
                 <p className="text-[11px] uppercase tracking-[0.08em] text-on-surface-variant mt-1">{r.campaign_name}</p>

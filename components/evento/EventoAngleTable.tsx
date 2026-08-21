@@ -17,8 +17,8 @@ export default function EventoAngleTable({ stats }: { stats: EventoAngleStat[] }
             <th className="text-left px-2 pb-1">Ángulo</th>
             <th className="text-left px-2 pb-1">Registros</th>
             <th className="text-right px-2 pb-1">Se unió a WP</th>
-            <th className="text-right px-2 pb-1">Check-in</th>
             <th className="text-right px-2 pb-1">Confirmados</th>
+            <th className="text-right px-2 pb-1">Check-in</th>
             <th className="text-right px-2 pb-1">Conv. registro → confirmado</th>
           </tr>
         </thead>
@@ -43,8 +43,8 @@ export default function EventoAngleTable({ stats }: { stats: EventoAngleStat[] }
                   </div>
                 </td>
                 <td className="px-3 py-2.5 text-right text-[var(--wos-ink)] tabular-nums">{s.llegaronWp}</td>
-                <td className="px-3 py-2.5 text-right text-[var(--wos-ink)] tabular-nums">{s.checkins}</td>
                 <td className="px-3 py-2.5 text-right text-[var(--wos-ink)] tabular-nums font-semibold">{s.confirmados}</td>
+                <td className="px-3 py-2.5 text-right text-[var(--wos-ink)] tabular-nums">{s.checkins}</td>
                 <td className="px-3 py-2.5 rounded-r-lg text-right text-[var(--wos-ink-muted)] tabular-nums">
                   {formatPercent(s.conversionConfirmado ?? undefined)}
                 </td>
