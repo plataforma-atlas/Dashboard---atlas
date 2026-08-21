@@ -11,14 +11,15 @@ export default function EventoAngleTable({ stats }: { stats: EventoAngleStat[] }
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm border-separate border-spacing-y-1.5 min-w-[560px]">
+      <table className="w-full text-sm border-separate border-spacing-y-1.5 min-w-[640px]">
         <thead>
           <tr className="text-[10px] uppercase tracking-[0.06em] text-[var(--wos-ink-faint)]">
             <th className="text-left px-2 pb-1">Ángulo</th>
             <th className="text-left px-2 pb-1">Registros</th>
+            <th className="text-right px-2 pb-1">Se unió a WP</th>
             <th className="text-right px-2 pb-1">Check-in</th>
-            <th className="text-right px-2 pb-1">Ventas</th>
-            <th className="text-right px-2 pb-1">Conv. registro → venta</th>
+            <th className="text-right px-2 pb-1">Confirmados</th>
+            <th className="text-right px-2 pb-1">Conv. registro → confirmado</th>
           </tr>
         </thead>
         <tbody>
@@ -41,10 +42,11 @@ export default function EventoAngleTable({ stats }: { stats: EventoAngleStat[] }
                     </div>
                   </div>
                 </td>
+                <td className="px-3 py-2.5 text-right text-[var(--wos-ink)] tabular-nums">{s.llegaronWp}</td>
                 <td className="px-3 py-2.5 text-right text-[var(--wos-ink)] tabular-nums">{s.checkins}</td>
-                <td className="px-3 py-2.5 text-right text-[var(--wos-ink)] tabular-nums font-semibold">{s.ventas}</td>
+                <td className="px-3 py-2.5 text-right text-[var(--wos-ink)] tabular-nums font-semibold">{s.confirmados}</td>
                 <td className="px-3 py-2.5 rounded-r-lg text-right text-[var(--wos-ink-muted)] tabular-nums">
-                  {formatPercent(s.conversionRegistroVenta ?? undefined)}
+                  {formatPercent(s.conversionConfirmado ?? undefined)}
                 </td>
               </tr>
             );

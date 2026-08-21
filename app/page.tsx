@@ -11,6 +11,7 @@ import { WebinarDetail, WebinarMetrics, WebinarSummary } from "@/lib/webinar-os/
 import { countryFlagEmoji } from "@/lib/webinar-os/countryFlag";
 import { toVslDailyRows, toVslKpis, toVslFunnelStages } from "@/lib/vsl/aggregate";
 import { toEventoKpis, toEventoAngleStats } from "@/lib/evento/aggregate";
+import { EventoTierRow } from "@/lib/evento/types";
 import VslSelector from "@/components/vsl/VslSelector";
 import VslKpiCard from "@/components/vsl/VslKpiCard";
 import VslDailyChart from "@/components/vsl/VslDailyChart";
@@ -114,6 +115,7 @@ export default function Home() {
   const [eventoAngleId, setEventoAngleId] = useState<number | "all">("all");
   const [eventoByAngle, setEventoByAngle] = useState<{ campaign: Campaign; rows: FunnelRow[] }[]>([]);
   const [eventoLoading, setEventoLoading] = useState(false);
+  const [eventoTiers, setEventoTiers] = useState<EventoTierRow[]>([]);
 
   const [visibleClients, setVisibleClients] = useState<ClientConfig[]>([]);
 
@@ -351,6 +353,26 @@ export default function Home() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEventoPresencial, selectedClient?.id, eventoCampaigns.length, fechaInicio, fechaFin]);
+
+  // 8. Desglose de pagos del evento (Confirmado / Platino / VIP) — total real, no por ángulo.
+  useEffect(() => {
+    if (!isEventoPresencial) {
+      setEventoTiers([]);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/evento/resumen-pagos", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data: { tiers?: EventoTierRow[] }) => {
+        if (!cancelled) setEventoTiers(data.tiers ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setEventoTiers([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isEventoPresencial]);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -690,21 +712,45 @@ export default function Home() {
               {eventoLoading && <p className="text-sm text-[var(--wos-ink-muted)]">Cargando…</p>}
 
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                <VslKpiCard label="Registros" value={String(eventoKpis.registros)} tone="up" note="Acceso General" />
+                <VslKpiCard label="Registros" value={String(eventoKpis.registros)} tone="up" note="Preregistro" />
+                <VslKpiCard
+                  label="Se unió a WP"
+                  value={String(eventoKpis.llegaronWp)}
+                  tone="up"
+                  note={eventoKpis.conversionWp != null ? `${formatPercent(eventoKpis.conversionWp)} de conversión` : "Sin registros"}
+                />
                 <VslKpiCard
                   label="Check-in"
                   value={String(eventoKpis.checkins)}
                   tone="up"
                   note={eventoKpis.conversionCheckin != null ? `${formatPercent(eventoKpis.conversionCheckin)} de asistencia` : "Sin registros"}
                 />
-                <VslKpiCard label="Ventas" value={String(eventoKpis.ventas)} tone="up" note="Platino + VIP" />
-                <VslKpiCard label="Capital vendido" value={formatMoney(eventoKpis.capitalVendido)} tone="up" note="Suma real" />
                 <VslKpiCard
-                  label="Conv. registro → venta"
-                  value={eventoKpis.conversionRegistroVenta != null ? formatPercent(eventoKpis.conversionRegistroVenta) : "—"}
-                  note="Real"
+                  label="Confirmados"
+                  value={String(eventoKpis.confirmados)}
+                  tone="up"
+                  note={eventoKpis.conversionConfirmado != null ? `${formatPercent(eventoKpis.conversionConfirmado)} de conversión` : "Gratis + Platino + VIP"}
                 />
+                <VslKpiCard label="Capital vendido" value={formatMoney(eventoKpis.capitalVendido)} tone="up" note="Suma real" />
               </div>
+
+              {eventoTiers.length > 0 && (
+                <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
+                  <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Desglose de confirmados</h3>
+                  <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Cuántos confirmaron gratis vs. compraron Platino/VIP — total real del evento.</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {eventoTiers.map((t) => (
+                      <VslKpiCard
+                        key={t.tier}
+                        label={t.tier}
+                        value={String(t.total)}
+                        tone="up"
+                        note={Number(t.ingresos) > 0 ? formatMoney(Number(t.ingresos)) : "Acceso gratuito"}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
                 <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Comparación por ángulo</h3>
