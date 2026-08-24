@@ -47,3 +47,15 @@ export type EventoAdSpendConsolidatedRow = {
   leads: string | number;
   whatsapp: string | number;
 };
+
+// Fila real del webhook "Ver Rendimiento por Anuncio" — una fila por conjunto de anuncios + anuncio + fecha.
+export type EventoAdPerformanceRow = {
+  adset_name: string;
+  ad_name: string;
+  campaign_name: string;
+  entry_date: string;
+  spend: string | number;
+  clicks: string | number;
+  impressions: string | number;
+  leads: string | number;
+};

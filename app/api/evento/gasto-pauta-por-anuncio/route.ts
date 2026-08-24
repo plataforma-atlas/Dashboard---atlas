@@ -14,8 +14,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Sin acceso al evento" }, { status: 403 });
   }
 
-  const url = process.env.N8N_EVENTO_AD_SPEND_URL;
-  if (!url) return NextResponse.json({ error: "N8N_EVENTO_AD_SPEND_URL no está configurada" }, { status: 500 });
+  const url = process.env.N8N_EVENTO_AD_PERFORMANCE_URL;
+  if (!url) return NextResponse.json({ error: "N8N_EVENTO_AD_PERFORMANCE_URL no está configurada" }, { status: 500 });
 
   try {
     const target = new URL(url);
@@ -23,12 +23,12 @@ export async function GET(req: Request) {
     const res = await fetch(target.toString(), { method: "GET", cache: "no-store" });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      return NextResponse.json({ error: body.error || "No se pudo consultar el gasto de pauta" }, { status: res.status });
+      return NextResponse.json({ error: body.error || "No se pudo consultar el rendimiento por anuncio" }, { status: res.status });
     }
     const data = await res.json();
-    return NextResponse.json({ adSpend: data });
+    return NextResponse.json({ adPerformance: data });
   } catch (err) {
-    console.error("Error consultando gasto de pauta:", err);
+    console.error("Error consultando rendimiento por anuncio:", err);
     return NextResponse.json({ error: "No se pudo conectar al servidor" }, { status: 502 });
   }
 }

@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { COOKIE_NAME, verifySession } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
   if (!session) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
-  if (session.role !== "admin" && !session.clientes.includes("atlas")) {
+  const { searchParams } = new URL(req.url);
+  const cliente_id = searchParams.get("cliente_id") ?? "";
+
+  if (session.role !== "admin" && !session.clientes.includes(cliente_id)) {
     return NextResponse.json({ error: "Sin acceso al evento" }, { status: 403 });
   }
 
@@ -15,7 +18,9 @@ export async function GET() {
   if (!url) return NextResponse.json({ error: "N8N_EVENTO_AD_SPEND_CONSOLIDADO_URL no está configurada" }, { status: 500 });
 
   try {
-    const res = await fetch(url, { method: "GET", cache: "no-store" });
+    const target = new URL(url);
+    target.searchParams.set("cliente_id", cliente_id);
+    const res = await fetch(target.toString(), { method: "GET", cache: "no-store" });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       return NextResponse.json({ error: body.error || "No se pudo consultar el gasto consolidado" }, { status: res.status });

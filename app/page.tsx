@@ -11,7 +11,7 @@ import { WebinarDetail, WebinarMetrics, WebinarSummary } from "@/lib/webinar-os/
 import { countryFlagEmoji } from "@/lib/webinar-os/countryFlag";
 import { toVslDailyRows, toVslKpis, toVslFunnelStages } from "@/lib/vsl/aggregate";
 import { toEventoKpis, toEventoAngleStats } from "@/lib/evento/aggregate";
-import { EventoTierRow, EventoAdSpendRow, EventoAdSpendConsolidatedRow } from "@/lib/evento/types";
+import { EventoTierRow, EventoAdSpendRow, EventoAdSpendConsolidatedRow, EventoAdPerformanceRow } from "@/lib/evento/types";
 import VslSelector from "@/components/vsl/VslSelector";
 import VslKpiCard from "@/components/vsl/VslKpiCard";
 import VslDailyChart from "@/components/vsl/VslDailyChart";
@@ -21,6 +21,7 @@ import EventoSelector from "@/components/evento/EventoSelector";
 import EventoAngleTable from "@/components/evento/EventoAngleTable";
 import EventoAdSpendDailyTable from "@/components/evento/EventoAdSpendDailyTable";
 import EventoAdSpendConsolidatedTable from "@/components/evento/EventoAdSpendConsolidatedTable";
+import EventoAdPerformanceTable from "@/components/evento/EventoAdPerformanceTable";
 import KpiCards from "@/components/KpiCards";
 import LaunchFunnel from "@/components/LaunchFunnel";
 import CountryBarChart from "@/components/CountryBarChart";
@@ -120,6 +121,7 @@ export default function Home() {
   const [eventoTiers, setEventoTiers] = useState<EventoTierRow[]>([]);
   const [eventoAdSpend, setEventoAdSpend] = useState<EventoAdSpendRow[]>([]);
   const [eventoAdSpendConsolidated, setEventoAdSpendConsolidated] = useState<EventoAdSpendConsolidatedRow[]>([]);
+  const [eventoAdPerformance, setEventoAdPerformance] = useState<EventoAdPerformanceRow[]>([]);
 
   const [visibleClients, setVisibleClients] = useState<ClientConfig[]>([]);
 
@@ -380,12 +382,12 @@ export default function Home() {
 
   // 9. Gasto de pauta (Meta Ads) por ángulo — solo aplica a las campañas con anuncios pagos.
   useEffect(() => {
-    if (!isEventoPresencial) {
+    if (!isEventoPresencial || !selectedClient) {
       setEventoAdSpend([]);
       return;
     }
     let cancelled = false;
-    fetch("/api/evento/gasto-pauta", { cache: "no-store" })
+    fetch(`/api/evento/gasto-pauta?cliente_id=${selectedClient.id}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((data: { adSpend?: EventoAdSpendRow[] }) => {
         if (!cancelled) setEventoAdSpend(data.adSpend ?? []);
@@ -396,16 +398,16 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [isEventoPresencial]);
+  }, [isEventoPresencial, selectedClient?.id]);
 
   // 10. Gasto de pauta consolidado (todas las campañas con pauta, combinadas por fecha).
   useEffect(() => {
-    if (!isEventoPresencial) {
+    if (!isEventoPresencial || !selectedClient) {
       setEventoAdSpendConsolidated([]);
       return;
     }
     let cancelled = false;
-    fetch("/api/evento/gasto-pauta-consolidado", { cache: "no-store" })
+    fetch(`/api/evento/gasto-pauta-consolidado?cliente_id=${selectedClient.id}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((data: { adSpendConsolidated?: EventoAdSpendConsolidatedRow[] }) => {
         if (!cancelled) setEventoAdSpendConsolidated(data.adSpendConsolidated ?? []);
@@ -416,7 +418,27 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [isEventoPresencial]);
+  }, [isEventoPresencial, selectedClient?.id]);
+
+  // 11. Rendimiento de pauta por conjunto de anuncios y anuncio individual.
+  useEffect(() => {
+    if (!isEventoPresencial || !selectedClient) {
+      setEventoAdPerformance([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/evento/gasto-pauta-por-anuncio?cliente_id=${selectedClient.id}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data: { adPerformance?: EventoAdPerformanceRow[] }) => {
+        if (!cancelled) setEventoAdPerformance(data.adPerformance ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setEventoAdPerformance([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isEventoPresencial, selectedClient?.id]);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -812,6 +834,12 @@ export default function Home() {
                 <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Gasto de pauta día a día por ángulo</h3>
                 <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Desglose diario por ángulo — solo las campañas con pauta activa.</p>
                 <EventoAdSpendDailyTable rows={eventoAdSpend} />
+              </div>
+
+              <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
+                <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Rendimiento por conjunto de anuncios y anuncio</h3>
+                <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Desglose por conjunto de anuncios y anuncio individual para ver cuál convierte mejor.</p>
+                <EventoAdPerformanceTable rows={eventoAdPerformance} />
               </div>
             </>
           )}
