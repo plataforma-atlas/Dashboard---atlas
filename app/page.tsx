@@ -780,13 +780,11 @@ export default function Home() {
                 <EventoAngleTable stats={eventoAngleStats} adSpend={eventoAdSpend} />
               </div>
 
-              {eventoAdSpend.length > 0 && (
-                <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
-                  <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Gasto de pauta día a día</h3>
-                  <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Desglose diario por ángulo — solo las campañas con pauta activa.</p>
-                  <EventoAdSpendDailyTable rows={eventoAdSpend} />
-                </div>
-              )}
+              <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
+                <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Gasto de pauta día a día</h3>
+                <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Desglose diario por ángulo — solo las campañas con pauta activa.</p>
+                <EventoAdSpendDailyTable rows={eventoAdSpend} />
+              </div>
             </>
           )}
         </div>
