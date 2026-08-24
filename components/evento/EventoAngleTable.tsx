@@ -1,13 +1,25 @@
-import { EventoAngleStat } from "@/lib/evento/types";
-import { formatPercent } from "@/lib/webinar-os/aggregate";
+import { EventoAngleStat, EventoAdSpendRow } from "@/lib/evento/types";
+import { formatPercent, formatMoney } from "@/lib/webinar-os/aggregate";
 
-export default function EventoAngleTable({ stats }: { stats: EventoAngleStat[] }) {
+export default function EventoAngleTable({
+  stats,
+  adSpend = [],
+}: {
+  stats: EventoAngleStat[];
+  adSpend?: EventoAdSpendRow[];
+}) {
   if (stats.length === 0) {
     return <p className="text-sm text-[var(--wos-ink-faint)]">Sin registros todavía.</p>;
   }
 
   const max = Math.max(1, ...stats.map((s) => s.registros));
   const lider = stats[0];
+
+  const spendByCampaign = new Map<number, number>();
+  for (const row of adSpend) {
+    spendByCampaign.set(row.campaign_id, (spendByCampaign.get(row.campaign_id) ?? 0) + Number(row.spend));
+  }
+  const showSpend = adSpend.some((a) => Number(a.spend) > 0);
 
   return (
     <div className="overflow-x-auto">
@@ -20,12 +32,16 @@ export default function EventoAngleTable({ stats }: { stats: EventoAngleStat[] }
             <th className="text-right px-2 pb-1">Confirmados</th>
             <th className="text-right px-2 pb-1">Check-in</th>
             <th className="text-right px-2 pb-1">Conv. registro → confirmado</th>
+            {showSpend && <th className="text-right px-2 pb-1">Gasto en pauta</th>}
+            {showSpend && <th className="text-right px-2 pb-1">CPL</th>}
           </tr>
         </thead>
         <tbody>
           {stats.map((s) => {
             const widthPct = Math.max(4, (s.registros / max) * 100);
             const esLider = lider.registros > 0 && s.campaignId === lider.campaignId;
+            const spend = spendByCampaign.get(s.campaignId) ?? 0;
+            const cpl = spend > 0 && s.registros > 0 ? spend / s.registros : null;
             return (
               <tr key={s.campaignId} className="bg-[var(--wos-surface)] border border-[var(--wos-border)]">
                 <td className="px-3 py-2.5 rounded-l-lg text-[var(--wos-ink)] font-medium">
@@ -45,9 +61,19 @@ export default function EventoAngleTable({ stats }: { stats: EventoAngleStat[] }
                 <td className="px-3 py-2.5 text-right text-[var(--wos-ink)] tabular-nums">{s.llegaronWp}</td>
                 <td className="px-3 py-2.5 text-right text-[var(--wos-ink)] tabular-nums font-semibold">{s.confirmados}</td>
                 <td className="px-3 py-2.5 text-right text-[var(--wos-ink)] tabular-nums">{s.checkins}</td>
-                <td className="px-3 py-2.5 rounded-r-lg text-right text-[var(--wos-ink-muted)] tabular-nums">
+                <td className={`px-3 py-2.5 text-right text-[var(--wos-ink-muted)] tabular-nums ${showSpend ? "" : "rounded-r-lg"}`}>
                   {formatPercent(s.conversionConfirmado ?? undefined)}
                 </td>
+                {showSpend && (
+                  <td className="px-3 py-2.5 text-right text-[var(--wos-ink)] tabular-nums">
+                    {spend > 0 ? formatMoney(spend) : "—"}
+                  </td>
+                )}
+                {showSpend && (
+                  <td className="px-3 py-2.5 rounded-r-lg text-right text-[var(--wos-ink-muted)] tabular-nums">
+                    {cpl != null ? formatMoney(cpl) : "—"}
+                  </td>
+                )}
               </tr>
             );
           })}

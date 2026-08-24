@@ -21,3 +21,19 @@ export type EventoAngleStat = {
 
 // Fila real del webhook "Resumen Pagos" — desglose por tier de la etapa "Confirmación".
 export type EventoTierRow = { tier: string; total: number; ingresos: string };
+
+// Fila real del webhook "Ver Gasto por Ángulo" — una fila por campaña + fecha con pauta activa.
+export type EventoAdSpendRow = {
+  campaign_id: number;
+  campaign_name: string;
+  slug: string;
+  entry_date: string;
+  spend: string | number;
+  clicks: string | number;
+  impressions: string | number;
+  ctr: string | number;
+  cpm: string | number;
+  cpc: string | number;
+  leads: string | number;
+  whatsapp: string | number;
+};
