@@ -20,6 +20,10 @@ function tierBadgeClass(tier: string) {
   return "text-on-surface-faint bg-on-surface-faint/10 border-outline";
 }
 
+function tierLabel(tier: string) {
+  return tier === "Platino" ? "Platinum" : tier;
+}
+
 export default function CheckinPage() {
   const [query, setQuery] = useState("");
   const [resultados, setResultados] = useState<Inscrito[]>([]);
@@ -113,7 +117,7 @@ export default function CheckinPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-on-surface font-medium truncate">{r.name || "(sin nombre)"}</p>
                   <span className={`shrink-0 text-[10px] font-semibold uppercase tracking-[0.06em] rounded-full px-2 py-0.5 border whitespace-nowrap ${tierBadgeClass(r.tier)}`}>
-                    {r.tier}
+                    {tierLabel(r.tier)}
                   </span>
                 </div>
                 <p className="text-xs text-on-surface-faint truncate">{r.email}</p>

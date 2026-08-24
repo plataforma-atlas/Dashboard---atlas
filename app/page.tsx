@@ -771,7 +771,7 @@ export default function Home() {
                   {eventoAngleId === "all" ? "Vista consolidada del evento" : eventoCampaigns.find((c) => c.id === eventoAngleId)?.name}
                 </h2>
                 <p className="text-sm text-[var(--wos-ink-muted)]">
-                  Registro (acceso General), check-in del día del evento y ventas de Platino/VIP — todo con datos reales.
+                  Registro (acceso General), check-in del día del evento y ventas de Platinum/VIP — todo con datos reales.
                 </p>
               </div>
 
@@ -789,7 +789,7 @@ export default function Home() {
                   label="Confirmados"
                   value={String(eventoKpis.confirmados)}
                   tone="up"
-                  note={eventoKpis.conversionConfirmado != null ? `${formatPercent(eventoKpis.conversionConfirmado)} de conversión` : "Gratis + Platino + VIP"}
+                  note={eventoKpis.conversionConfirmado != null ? `${formatPercent(eventoKpis.conversionConfirmado)} de conversión` : "Gratis + Platinum + VIP"}
                 />
                 <VslKpiCard
                   label="Check-in"
@@ -803,12 +803,12 @@ export default function Home() {
               {eventoTiers.length > 0 && (
                 <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
                   <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Desglose de confirmados</h3>
-                  <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Cuántos confirmaron gratis vs. compraron Platino/VIP — total real del evento.</p>
+                  <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Cuántos confirmaron gratis vs. compraron Platinum/VIP — total real del evento.</p>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {eventoTiers.map((t) => (
                       <VslKpiCard
                         key={t.tier}
-                        label={t.tier}
+                        label={t.tier === "Platino" ? "Platinum" : t.tier}
                         value={String(t.total)}
                         tone="up"
                         note={Number(t.ingresos) > 0 ? formatMoney(Number(t.ingresos)) : "Acceso gratuito"}
