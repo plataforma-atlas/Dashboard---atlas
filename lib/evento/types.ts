@@ -37,3 +37,13 @@ export type EventoAdSpendRow = {
   leads: string | number;
   whatsapp: string | number;
 };
+
+// Fila real del webhook "Ver Gasto Consolidado" — todas las campañas con pauta combinadas por fecha.
+export type EventoAdSpendConsolidatedRow = {
+  entry_date: string;
+  spend: string | number;
+  clicks: string | number;
+  impressions: string | number;
+  leads: string | number;
+  whatsapp: string | number;
+};

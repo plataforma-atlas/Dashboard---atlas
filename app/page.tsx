@@ -11,7 +11,7 @@ import { WebinarDetail, WebinarMetrics, WebinarSummary } from "@/lib/webinar-os/
 import { countryFlagEmoji } from "@/lib/webinar-os/countryFlag";
 import { toVslDailyRows, toVslKpis, toVslFunnelStages } from "@/lib/vsl/aggregate";
 import { toEventoKpis, toEventoAngleStats } from "@/lib/evento/aggregate";
-import { EventoTierRow, EventoAdSpendRow } from "@/lib/evento/types";
+import { EventoTierRow, EventoAdSpendRow, EventoAdSpendConsolidatedRow } from "@/lib/evento/types";
 import VslSelector from "@/components/vsl/VslSelector";
 import VslKpiCard from "@/components/vsl/VslKpiCard";
 import VslDailyChart from "@/components/vsl/VslDailyChart";
@@ -20,6 +20,7 @@ import VslFunnel from "@/components/vsl/VslFunnel";
 import EventoSelector from "@/components/evento/EventoSelector";
 import EventoAngleTable from "@/components/evento/EventoAngleTable";
 import EventoAdSpendDailyTable from "@/components/evento/EventoAdSpendDailyTable";
+import EventoAdSpendConsolidatedTable from "@/components/evento/EventoAdSpendConsolidatedTable";
 import KpiCards from "@/components/KpiCards";
 import LaunchFunnel from "@/components/LaunchFunnel";
 import CountryBarChart from "@/components/CountryBarChart";
@@ -118,6 +119,7 @@ export default function Home() {
   const [eventoLoading, setEventoLoading] = useState(false);
   const [eventoTiers, setEventoTiers] = useState<EventoTierRow[]>([]);
   const [eventoAdSpend, setEventoAdSpend] = useState<EventoAdSpendRow[]>([]);
+  const [eventoAdSpendConsolidated, setEventoAdSpendConsolidated] = useState<EventoAdSpendConsolidatedRow[]>([]);
 
   const [visibleClients, setVisibleClients] = useState<ClientConfig[]>([]);
 
@@ -390,6 +392,26 @@ export default function Home() {
       })
       .catch(() => {
         if (!cancelled) setEventoAdSpend([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isEventoPresencial]);
+
+  // 10. Gasto de pauta consolidado (todas las campañas con pauta, combinadas por fecha).
+  useEffect(() => {
+    if (!isEventoPresencial) {
+      setEventoAdSpendConsolidated([]);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/evento/gasto-pauta-consolidado", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data: { adSpendConsolidated?: EventoAdSpendConsolidatedRow[] }) => {
+        if (!cancelled) setEventoAdSpendConsolidated(data.adSpendConsolidated ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setEventoAdSpendConsolidated([]);
       });
     return () => {
       cancelled = true;
@@ -781,7 +803,13 @@ export default function Home() {
               </div>
 
               <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
-                <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Gasto de pauta día a día</h3>
+                <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Gasto de pauta consolidado</h3>
+                <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Total combinado de las 3 campañas con pauta activa, por día.</p>
+                <EventoAdSpendConsolidatedTable rows={eventoAdSpendConsolidated} />
+              </div>
+
+              <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
+                <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Gasto de pauta día a día por ángulo</h3>
                 <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Desglose diario por ángulo — solo las campañas con pauta activa.</p>
                 <EventoAdSpendDailyTable rows={eventoAdSpend} />
               </div>
