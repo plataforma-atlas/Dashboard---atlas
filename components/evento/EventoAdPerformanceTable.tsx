@@ -71,7 +71,6 @@ export default function EventoAdPerformanceTable({ rows }: { rows: EventoAdPerfo
                             <th className="text-right px-2 pb-1">Leads</th>
                             <th className="text-right px-2 pb-1">CPL</th>
                             <th className="text-right px-2 pb-1">CPM</th>
-                            <th className="text-right px-2 pb-1">CTR</th>
                             <th className="text-right px-2 pb-1">CTR único</th>
                           </tr>
                         </thead>
@@ -80,12 +79,10 @@ export default function EventoAdPerformanceTable({ rows }: { rows: EventoAdPerfo
                             const spend = Number(r.spend);
                             const leads = Number(r.leads);
                             const impressions = Number(r.impressions);
-                            const clicks = Number(r.clicks);
                             const reach = Number(r.reach);
                             const uniqueLinkClicks = Number(r.unique_link_clicks);
                             const cpl = leads > 0 ? spend / leads : null;
                             const cpm = impressions > 0 ? (spend / impressions) * 1000 : null;
-                            const ctr = impressions > 0 ? (clicks / impressions) * 100 : null;
                             const uniqueCtr = reach > 0 ? (uniqueLinkClicks / reach) * 100 : null;
                             return (
                               <tr key={r.entry_date} className="bg-[var(--wos-surface-alt)] border border-[var(--wos-border)]">
@@ -94,7 +91,6 @@ export default function EventoAdPerformanceTable({ rows }: { rows: EventoAdPerfo
                                 <td className="px-3 py-2 text-right text-[var(--wos-ink)] tabular-nums font-semibold">{leads}</td>
                                 <td className="px-3 py-2 text-right text-[var(--wos-ink-muted)] tabular-nums">{cpl != null ? formatMoney(cpl) : "—"}</td>
                                 <td className="px-3 py-2 text-right text-[var(--wos-ink-muted)] tabular-nums">{cpm != null ? formatMoney(cpm) : "—"}</td>
-                                <td className="px-3 py-2 text-right text-[var(--wos-ink-muted)] tabular-nums">{ctr != null ? `${ctr.toFixed(2)}%` : "—"}</td>
                                 <td className="px-3 py-2 rounded-r-lg text-right text-[var(--wos-ink-muted)] tabular-nums">{uniqueCtr != null ? `${uniqueCtr.toFixed(2)}%` : "—"}</td>
                               </tr>
                             );

@@ -31,7 +31,6 @@ export default function EventoAdSpendDailyTable({ rows }: { rows: EventoAdSpendR
                   <th className="text-right px-2 pb-1">Leads</th>
                   <th className="text-right px-2 pb-1">CPL</th>
                   <th className="text-right px-2 pb-1">CPM</th>
-                  <th className="text-right px-2 pb-1">CTR</th>
                   <th className="text-right px-2 pb-1">CTR único</th>
                   <th className="text-right px-2 pb-1">WhatsApp</th>
                 </tr>
@@ -48,7 +47,6 @@ export default function EventoAdSpendDailyTable({ rows }: { rows: EventoAdSpendR
                       <td className="px-3 py-2 text-right text-[var(--wos-ink)] tabular-nums font-semibold">{leads}</td>
                       <td className="px-3 py-2 text-right text-[var(--wos-ink-muted)] tabular-nums">{cpl != null ? formatMoney(cpl) : "—"}</td>
                       <td className="px-3 py-2 text-right text-[var(--wos-ink-muted)] tabular-nums">{formatMoney(Number(r.cpm))}</td>
-                      <td className="px-3 py-2 text-right text-[var(--wos-ink-muted)] tabular-nums">{Number(r.ctr).toFixed(2)}%</td>
                       <td className="px-3 py-2 text-right text-[var(--wos-ink-muted)] tabular-nums">{Number(r.unique_ctr).toFixed(2)}%</td>
                       <td className="px-3 py-2 rounded-r-lg text-right text-[var(--wos-ink)] tabular-nums">{Number(r.whatsapp)}</td>
                     </tr>
