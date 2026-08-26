@@ -34,6 +34,9 @@ export type EventoAdSpendRow = {
   ctr: string | number;
   cpm: string | number;
   cpc: string | number;
+  unique_link_clicks: string | number;
+  reach: string | number;
+  unique_ctr: string | number;
   leads: string | number;
   whatsapp: string | number;
 };
@@ -44,6 +47,8 @@ export type EventoAdSpendConsolidatedRow = {
   spend: string | number;
   clicks: string | number;
   impressions: string | number;
+  unique_link_clicks: string | number;
+  reach: string | number;
   leads: string | number;
   whatsapp: string | number;
 };
@@ -57,5 +62,7 @@ export type EventoAdPerformanceRow = {
   spend: string | number;
   clicks: string | number;
   impressions: string | number;
+  unique_link_clicks: string | number;
+  reach: string | number;
   leads: string | number;
 };
