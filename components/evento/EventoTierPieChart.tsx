@@ -11,7 +11,9 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 function tierLabel(tier: string) {
-  return tier === "Platino" ? "Platinum" : tier;
+  if (tier === "Platino") return "Platinum";
+  if (tier === "Confirmado") return "Gratuita";
+  return tier;
 }
 
 function colorFor(tier: string) {

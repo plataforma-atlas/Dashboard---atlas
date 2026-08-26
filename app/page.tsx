@@ -809,7 +809,7 @@ export default function Home() {
                     {eventoTiers.map((t) => (
                       <VslKpiCard
                         key={t.tier}
-                        label={t.tier === "Platino" ? "Platinum" : t.tier}
+                        label={t.tier === "Platino" ? "Platinum" : t.tier === "Confirmado" ? "Gratuita" : t.tier}
                         value={String(t.total)}
                         tone="up"
                         note={Number(t.ingresos) > 0 ? formatMoney(Number(t.ingresos)) : "Acceso gratuito"}
