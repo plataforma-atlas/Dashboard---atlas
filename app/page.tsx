@@ -22,6 +22,7 @@ import EventoAngleTable from "@/components/evento/EventoAngleTable";
 import EventoAdSpendDailyTable from "@/components/evento/EventoAdSpendDailyTable";
 import EventoAdSpendConsolidatedTable from "@/components/evento/EventoAdSpendConsolidatedTable";
 import EventoAdPerformanceTable from "@/components/evento/EventoAdPerformanceTable";
+import EventoTierPieChart from "@/components/evento/EventoTierPieChart";
 import KpiCards from "@/components/KpiCards";
 import LaunchFunnel from "@/components/LaunchFunnel";
 import CountryBarChart from "@/components/CountryBarChart";
@@ -804,7 +805,7 @@ export default function Home() {
                 <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
                   <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Desglose de confirmados</h3>
                   <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Cuántos confirmaron gratis vs. compraron Platinum/VIP — total real del evento.</p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
                     {eventoTiers.map((t) => (
                       <VslKpiCard
                         key={t.tier}
@@ -815,6 +816,7 @@ export default function Home() {
                       />
                     ))}
                   </div>
+                  <EventoTierPieChart tiers={eventoTiers} />
                 </div>
               )}
 
