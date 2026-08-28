@@ -19,6 +19,19 @@ export type EventoAngleStat = {
   conversionConfirmado: number | null;
 };
 
+// Clasificación tibio/frío según el origen del ángulo: campañas "orgánica" (redes propias
+// de los expertos) cuentan como tibio; el resto (pauta paga: estructura/operativa/etc.) como frío.
+export type EventoTemperaturaRow = { temperatura: "Tráfico Tibio" | "Tráfico Frío"; registros: number };
+
+// Combina el gasto de pauta consolidado (leads pagos + CPL) con los registros orgánicos
+// del mismo día, para la gráfica combinada de barras + línea de CPL.
+export type EventoDailyTraficoRow = {
+  entry_date: string;
+  leadsPauta: number;
+  leadsOrganico: number;
+  cpl: number | null;
+};
+
 // Fila real del webhook "Resumen Pagos" — desglose por tier de la etapa "Confirmación".
 export type EventoTierRow = { tier: string; total: number; ingresos: string };
 

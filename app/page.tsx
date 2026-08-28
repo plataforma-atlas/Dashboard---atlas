@@ -10,7 +10,7 @@ import { MODULE_ORDER } from "@/lib/webinar-os/moduleConfigs";
 import { WebinarDetail, WebinarMetrics, WebinarSummary } from "@/lib/webinar-os/types";
 import { countryFlagEmoji } from "@/lib/webinar-os/countryFlag";
 import { toVslDailyRows, toVslKpis, toVslFunnelStages } from "@/lib/vsl/aggregate";
-import { toEventoKpis, toEventoAngleStats } from "@/lib/evento/aggregate";
+import { toEventoKpis, toEventoAngleStats, toEventoTemperaturaStats, toEventoDailyTraficoStats } from "@/lib/evento/aggregate";
 import { EventoTierRow, EventoAdSpendRow, EventoAdSpendConsolidatedRow, EventoAdPerformanceRow } from "@/lib/evento/types";
 import VslSelector from "@/components/vsl/VslSelector";
 import VslKpiCard from "@/components/vsl/VslKpiCard";
@@ -23,6 +23,8 @@ import EventoAdSpendDailyTable from "@/components/evento/EventoAdSpendDailyTable
 import EventoAdSpendConsolidatedTable from "@/components/evento/EventoAdSpendConsolidatedTable";
 import EventoAdPerformanceTable from "@/components/evento/EventoAdPerformanceTable";
 import EventoTierPieChart from "@/components/evento/EventoTierPieChart";
+import EventoTemperaturaChart from "@/components/evento/EventoTemperaturaChart";
+import EventoDailyTraficoChart from "@/components/evento/EventoDailyTraficoChart";
 import KpiCards from "@/components/KpiCards";
 import LaunchFunnel from "@/components/LaunchFunnel";
 import CountryBarChart from "@/components/CountryBarChart";
@@ -462,6 +464,11 @@ export default function Home() {
   const vslFunnelStages = useMemo(() => toVslFunnelStages(vslKpis), [vslKpis]);
 
   const eventoAngleStats = useMemo(() => toEventoAngleStats(eventoByAngle), [eventoByAngle]);
+  const eventoTemperaturaStats = useMemo(() => toEventoTemperaturaStats(eventoByAngle), [eventoByAngle]);
+  const eventoDailyTrafico = useMemo(
+    () => toEventoDailyTraficoStats(eventoAdSpendConsolidated, eventoByAngle),
+    [eventoAdSpendConsolidated, eventoByAngle]
+  );
   const eventoSelectedRows = useMemo(() => {
     if (eventoAngleId === "all") return eventoByAngle.flatMap((a) => a.rows);
     return eventoByAngle.find((a) => a.campaign.id === eventoAngleId)?.rows ?? [];
@@ -827,9 +834,18 @@ export default function Home() {
               </div>
 
               <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
+                <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Leads por temperatura</h3>
+                <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Tibio = redes propias de los expertos (orgánico). Frío = pauta paga.</p>
+                <EventoTemperaturaChart rows={eventoTemperaturaStats} />
+              </div>
+
+              <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
                 <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Gasto de pauta consolidado</h3>
-                <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Total combinado de las 3 campañas con pauta activa, por día.</p>
-                <EventoAdSpendConsolidatedTable rows={eventoAdSpendConsolidated} />
+                <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Leads pagos vs. orgánicos por día, con CPL — total combinado de las campañas con pauta activa.</p>
+                <EventoDailyTraficoChart rows={eventoDailyTrafico} />
+                <div className="mt-5">
+                  <EventoAdSpendConsolidatedTable rows={eventoAdSpendConsolidated} />
+                </div>
               </div>
 
               <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
