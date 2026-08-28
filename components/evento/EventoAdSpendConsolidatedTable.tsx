@@ -48,6 +48,30 @@ export default function EventoAdSpendConsolidatedTable({ rows }: { rows: EventoA
             );
           })}
         </tbody>
+        <tfoot>
+          {(() => {
+            const totalSpend = rows.reduce((sum, r) => sum + Number(r.spend), 0);
+            const totalLeads = rows.reduce((sum, r) => sum + Number(r.leads), 0);
+            const totalImpressions = rows.reduce((sum, r) => sum + Number(r.impressions), 0);
+            const totalReach = rows.reduce((sum, r) => sum + Number(r.reach), 0);
+            const totalUniqueLinkClicks = rows.reduce((sum, r) => sum + Number(r.unique_link_clicks), 0);
+            const totalWhatsapp = rows.reduce((sum, r) => sum + Number(r.whatsapp), 0);
+            const totalCpl = totalLeads > 0 ? totalSpend / totalLeads : null;
+            const totalCpm = totalImpressions > 0 ? (totalSpend / totalImpressions) * 1000 : null;
+            const totalUniqueCtr = totalReach > 0 ? (totalUniqueLinkClicks / totalReach) * 100 : null;
+            return (
+              <tr className="bg-[var(--wos-surface-alt)] border border-[var(--wos-border)] font-semibold">
+                <td className="px-3 py-2 rounded-l-lg text-[var(--wos-ink)]">Total</td>
+                <td className="px-3 py-2 text-right text-[var(--wos-ink)] tabular-nums">{formatMoney(totalSpend)}</td>
+                <td className="px-3 py-2 text-right text-[var(--wos-ink)] tabular-nums">{totalLeads}</td>
+                <td className="px-3 py-2 text-right text-[var(--wos-ink-muted)] tabular-nums font-normal">{totalCpl != null ? formatMoney(totalCpl) : "—"}</td>
+                <td className="px-3 py-2 text-right text-[var(--wos-ink-muted)] tabular-nums font-normal">{totalCpm != null ? formatMoney(totalCpm) : "—"}</td>
+                <td className="px-3 py-2 text-right text-[var(--wos-ink-muted)] tabular-nums font-normal">{totalUniqueCtr != null ? `${totalUniqueCtr.toFixed(2)}%` : "—"}</td>
+                <td className="px-3 py-2 rounded-r-lg text-right text-[var(--wos-ink)] tabular-nums">{totalWhatsapp}</td>
+              </tr>
+            );
+          })()}
+        </tfoot>
       </table>
     </div>
   );
