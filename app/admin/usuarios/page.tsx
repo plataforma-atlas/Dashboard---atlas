@@ -93,6 +93,26 @@ export default function AdminUsuariosPage() {
     }
   }
 
+  async function eliminarUsuario(userId: number, email: string) {
+    if (!confirm(`¿Eliminar al usuario ${email}? Esta acción no se puede deshacer.`)) return;
+    setBusy(userId);
+    try {
+      const res = await fetch("/api/admin/eliminar-usuario", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "No se pudo eliminar el usuario");
+        return;
+      }
+      await cargar();
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <main className="min-h-screen px-4 py-8 md:px-8 max-w-5xl mx-auto flex flex-col gap-6 bg-background">
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -126,6 +146,7 @@ export default function AdminUsuariosPage() {
                 <th className="px-4 py-3 font-medium">Usuario</th>
                 <th className="px-4 py-3 font-medium">Rol</th>
                 <th className="px-4 py-3 font-medium">Clientes asignados</th>
+                <th className="px-4 py-3 font-medium"></th>
               </tr>
             </thead>
             <tbody>
@@ -171,12 +192,21 @@ export default function AdminUsuariosPage() {
                         </div>
                       )}
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        disabled={isBusy}
+                        onClick={() => eliminarUsuario(u.id, u.email)}
+                        className="text-xs text-error border border-outline-error rounded-full px-3 py-1.5 hover:bg-error-container transition disabled:opacity-50"
+                      >
+                        Eliminar
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
               {usuarios.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-4 py-6 text-center text-on-surface-variant text-sm">
+                  <td colSpan={4} className="px-4 py-6 text-center text-on-surface-variant text-sm">
                     No hay usuarios registrados todavía.
                   </td>
                 </tr>
