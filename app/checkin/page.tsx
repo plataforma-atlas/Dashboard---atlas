@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Inscrito = {
   lead_id: number;
@@ -13,6 +13,10 @@ type Inscrito = {
   checked_in: boolean;
 };
 
+type ResumenTier = { tier: string; total: string; checked_in: string };
+
+type EditForm = { name: string; email: string; phone: string; notes: string };
+
 function tierBadgeClass(tier: string) {
   if (tier === "VIP") return "text-violet-300 bg-violet-500/10 border-violet-500/30";
   if (tier === "Platino") return "text-slate-200 bg-slate-400/10 border-slate-400/30";
@@ -21,7 +25,7 @@ function tierBadgeClass(tier: string) {
 }
 
 function tierLabel(tier: string) {
-  return tier === "Platino" ? "Platinum" : tier;
+  return tier === "Platino" ? "Platinum" : tier === "Confirmado" ? "Gratuita" : tier;
 }
 
 export default function CheckinPage() {
@@ -32,12 +36,34 @@ export default function CheckinPage() {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [searched, setSearched] = useState(false);
 
+  const [resumen, setResumen] = useState<ResumenTier[]>([]);
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({ name: "", email: "", phone: "", notes: "" });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+
+  async function cargarResumen() {
+    try {
+      const res = await fetch("/api/evento/checkin-resumen", { cache: "no-store" });
+      const data = await res.json();
+      if (res.ok) setResumen(data.resumen ?? []);
+    } catch {
+      // el resumen es informativo — si falla, no bloquea el resto de la pantalla
+    }
+  }
+
+  useEffect(() => {
+    cargarResumen();
+  }, []);
+
   async function buscar(e: React.FormEvent) {
     e.preventDefault();
     if (!query.trim()) return;
     setLoading(true);
     setError(null);
     setSearched(true);
+    setEditingId(null);
     try {
       const res = await fetch(`/api/evento/buscar?q=${encodeURIComponent(query.trim())}`, { cache: "no-store" });
       const data = await res.json();
@@ -69,10 +95,84 @@ export default function CheckinPage() {
         return;
       }
       setResultados((prev) => prev.map((r) => (r.lead_id === leadId ? { ...r, checked_in: true } : r)));
+      cargarResumen();
     } finally {
       setBusyId(null);
     }
   }
+
+  async function deshacerCheckin(leadId: number) {
+    if (!confirm("¿Deshacer el check-in de esta persona?")) return;
+    setBusyId(leadId);
+    try {
+      const res = await fetch("/api/evento/checkin-deshacer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lead_id: leadId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "No se pudo deshacer el check-in");
+        return;
+      }
+      setResultados((prev) => prev.map((r) => (r.lead_id === leadId ? { ...r, checked_in: false } : r)));
+      cargarResumen();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function abrirEdicion(leadId: number) {
+    setEditingId(leadId);
+    setEditLoading(true);
+    try {
+      const res = await fetch(`/api/evento/lead-detalle?lead_id=${leadId}`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "No se pudo cargar el inscrito");
+        setEditingId(null);
+        return;
+      }
+      const lead = data.lead ?? {};
+      setEditForm({
+        name: lead.name ?? "",
+        email: lead.email ?? "",
+        phone: lead.phone ?? "",
+        notes: lead.notes ?? "",
+      });
+    } finally {
+      setEditLoading(false);
+    }
+  }
+
+  function cancelarEdicion() {
+    setEditingId(null);
+  }
+
+  async function guardarEdicion(leadId: number) {
+    setEditSaving(true);
+    try {
+      const res = await fetch("/api/evento/lead-actualizar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lead_id: leadId, ...editForm }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "No se pudo guardar");
+        return;
+      }
+      setResultados((prev) =>
+        prev.map((r) => (r.lead_id === leadId ? { ...r, name: editForm.name, email: editForm.email, phone: editForm.phone } : r))
+      );
+      setEditingId(null);
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  const totalGeneral = resumen.reduce((acc, r) => acc + Number(r.total), 0);
+  const checkedInGeneral = resumen.reduce((acc, r) => acc + Number(r.checked_in), 0);
 
   return (
     <div className="min-h-screen bg-background px-4 py-8">
@@ -82,6 +182,35 @@ export default function CheckinPage() {
           <h1 className="font-display text-2xl text-on-surface font-semibold">Check-in del evento</h1>
           <p className="text-sm text-on-surface-faint">Busca al inscrito por nombre, correo o teléfono y confirma su entrada.</p>
         </div>
+
+        {resumen.length > 0 && (
+          <div className="rounded-lg border border-outline bg-surface p-4 mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs uppercase tracking-[0.08em] text-on-surface-faint">Entradas</span>
+              <span className="text-sm font-semibold text-on-surface tabular-nums">
+                {checkedInGeneral} / {totalGeneral}
+              </span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {resumen.map((r) => {
+                const total = Number(r.total);
+                const checkedIn = Number(r.checked_in);
+                const pct = total > 0 ? (checkedIn / total) * 100 : 0;
+                return (
+                  <div key={r.tier} className="flex items-center gap-3">
+                    <span className="text-xs text-on-surface-variant w-24 shrink-0 truncate">{tierLabel(r.tier)}</span>
+                    <div className="flex-1 h-1.5 rounded-full bg-on-surface-faint/10 overflow-hidden">
+                      <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-xs text-on-surface-faint tabular-nums w-14 text-right shrink-0">
+                      {checkedIn}/{total}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <form onSubmit={buscar} className="flex gap-2 mb-6">
           <input
@@ -109,33 +238,108 @@ export default function CheckinPage() {
 
         <div className="flex flex-col gap-3">
           {resultados.map((r) => (
-            <div
-              key={r.lead_id}
-              className="rounded-lg border border-outline bg-surface p-4 flex items-center justify-between gap-4"
-            >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-on-surface font-medium truncate">{r.name || "(sin nombre)"}</p>
-                  <span className={`shrink-0 text-[10px] font-semibold uppercase tracking-[0.06em] rounded-full px-2 py-0.5 border whitespace-nowrap ${tierBadgeClass(r.tier)}`}>
-                    {tierLabel(r.tier)}
-                  </span>
+            <div key={r.lead_id} className="rounded-lg border border-outline bg-surface p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-on-surface font-medium truncate">{r.name || "(sin nombre)"}</p>
+                    <span className={`shrink-0 text-[10px] font-semibold uppercase tracking-[0.06em] rounded-full px-2 py-0.5 border whitespace-nowrap ${tierBadgeClass(r.tier)}`}>
+                      {tierLabel(r.tier)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-on-surface-faint truncate">{r.email}</p>
+                  {r.phone && <p className="text-xs text-on-surface-faint truncate">{r.phone}</p>}
+                  <p className="text-[11px] uppercase tracking-[0.08em] text-on-surface-variant mt-1">{r.campaign_name}</p>
                 </div>
-                <p className="text-xs text-on-surface-faint truncate">{r.email}</p>
-                {r.phone && <p className="text-xs text-on-surface-faint truncate">{r.phone}</p>}
-                <p className="text-[11px] uppercase tracking-[0.08em] text-on-surface-variant mt-1">{r.campaign_name}</p>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  {r.checked_in ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-3 py-1.5 whitespace-nowrap">
+                        ✓ Ya ingresó
+                      </span>
+                      <button
+                        onClick={() => deshacerCheckin(r.lead_id)}
+                        disabled={busyId === r.lead_id}
+                        className="text-xs text-on-surface-faint hover:text-error underline disabled:opacity-50"
+                      >
+                        Deshacer
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => marcarCheckin(r.lead_id)}
+                      disabled={busyId === r.lead_id}
+                      className="bg-primary text-background font-semibold rounded-md px-4 py-2.5 text-sm disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {busyId === r.lead_id ? "Marcando…" : "Marcar check-in"}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => (editingId === r.lead_id ? cancelarEdicion() : abrirEdicion(r.lead_id))}
+                    className="text-xs text-on-surface-faint hover:text-on-surface underline"
+                  >
+                    {editingId === r.lead_id ? "Cerrar" : "Editar"}
+                  </button>
+                </div>
               </div>
-              {r.checked_in ? (
-                <span className="shrink-0 text-xs font-semibold text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-3 py-1.5 whitespace-nowrap">
-                  ✓ Ya ingresó
-                </span>
-              ) : (
-                <button
-                  onClick={() => marcarCheckin(r.lead_id)}
-                  disabled={busyId === r.lead_id}
-                  className="shrink-0 bg-primary text-background font-semibold rounded-md px-4 py-2.5 text-sm disabled:opacity-50 whitespace-nowrap"
-                >
-                  {busyId === r.lead_id ? "Marcando…" : "Marcar check-in"}
-                </button>
+
+              {editingId === r.lead_id && (
+                <div className="mt-4 pt-4 border-t border-outline flex flex-col gap-3">
+                  {editLoading ? (
+                    <p className="text-xs text-on-surface-faint">Cargando datos…</p>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label className="flex flex-col gap-1">
+                          <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Nombre</span>
+                          <input
+                            value={editForm.name}
+                            onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                            className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Teléfono</span>
+                          <input
+                            value={editForm.phone}
+                            onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                            className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                          />
+                        </label>
+                      </div>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Correo</span>
+                        <input
+                          value={editForm.email}
+                          onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                          className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Notas del equipo de acceso</span>
+                        <textarea
+                          value={editForm.notes}
+                          onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
+                          placeholder="Ej. llegó sin cédula, cambio de nombre autorizado…"
+                          rows={2}
+                          className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none resize-none"
+                        />
+                      </label>
+                      <div className="flex justify-end gap-2">
+                        <button onClick={cancelarEdicion} className="text-xs text-on-surface-faint hover:text-on-surface px-3 py-2">
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={() => guardarEdicion(r.lead_id)}
+                          disabled={editSaving}
+                          className="bg-primary text-background font-semibold rounded-md px-4 py-2 text-xs disabled:opacity-50"
+                        >
+                          {editSaving ? "Guardando…" : "Guardar"}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           ))}
