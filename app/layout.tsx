@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import "./webinar-os-theme.css";
+import { ThemeModeProvider } from "@/components/ThemeModeProvider";
 
 const display = Space_Grotesk({ subsets: ["latin"], weight: ["500", "700"], variable: "--font-display" });
 const body = Inter({ subsets: ["latin"], variable: "--font-body" });
@@ -16,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <body className={`${display.variable} ${body.variable} ${mono.variable} font-body bg-background text-on-surface antialiased`}>
-        {children}
+        <ThemeModeProvider>{children}</ThemeModeProvider>
       </body>
     </html>
   );

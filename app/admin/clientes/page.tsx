@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useThemeMode } from "@/components/ThemeModeProvider";
+import ThemeModeToggle from "@/components/ThemeModeToggle";
 
 const ESTRATEGIAS: { id: string; label: string }[] = [
   { id: "lanzamiento", label: "Lanzamiento" },
@@ -14,6 +16,7 @@ type Cliente = { id: string; name: string; status: "active" | "archived" };
 
 export default function AdminClientesPage() {
   const router = useRouter();
+  const { mode, toggleMode } = useThemeMode();
   const [vista, setVista] = useState<"active" | "archived">("active");
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,6 +126,7 @@ export default function AdminClientesPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <ThemeModeToggle mode={mode} onToggle={toggleMode} />
           <a href="/admin/usuarios" className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition">
             ← Usuarios
           </a>

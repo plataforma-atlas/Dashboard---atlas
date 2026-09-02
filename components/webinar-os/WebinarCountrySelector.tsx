@@ -41,13 +41,13 @@ export default function WebinarCountrySelector({
                 onClick={() => onSelectCountry(country)}
                 className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition ${
                   active
-                    ? "bg-[var(--wos-primary)] text-white"
+                    ? "bg-[var(--wos-primary)] text-[var(--wos-on-primary)]"
                     : "bg-[var(--wos-surface)] border border-[var(--wos-border)] text-[var(--wos-ink)] hover:border-[var(--wos-primary)]"
                 }`}
               >
                 <span className="text-lg leading-none">{countryFlagEmoji(country)}</span>
                 <span className="flex-1 text-sm font-medium">{country}</span>
-                <span className={`text-[11px] font-mono ${active ? "text-white/80" : "text-[var(--wos-ink-faint)]"}`}>
+                <span className={`text-[11px] font-mono ${active ? "text-[var(--wos-on-primary)] opacity-80" : "text-[var(--wos-ink-faint)]"}`}>
                   {count} ed.
                 </span>
               </button>

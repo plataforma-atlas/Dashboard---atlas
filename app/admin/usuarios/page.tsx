@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useThemeMode } from "@/components/ThemeModeProvider";
+import ThemeModeToggle from "@/components/ThemeModeToggle";
 
 type Usuario = {
   id: number;
@@ -14,6 +16,7 @@ type Usuario = {
 
 export default function AdminUsuariosPage() {
   const router = useRouter();
+  const { mode, toggleMode } = useThemeMode();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -122,6 +125,7 @@ export default function AdminUsuariosPage() {
           <p className="text-sm text-on-surface-variant">Cambia roles y asigna qué clientes puede ver cada usuario.</p>
         </div>
         <div className="flex items-center gap-3">
+          <ThemeModeToggle mode={mode} onToggle={toggleMode} />
           <a href="/admin/clientes" className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition">
             Clientes →
           </a>

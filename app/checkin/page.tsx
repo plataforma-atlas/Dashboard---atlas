@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useThemeMode } from "@/components/ThemeModeProvider";
+import ThemeModeToggle from "@/components/ThemeModeToggle";
 
 type Inscrito = {
   lead_id: number;
@@ -29,6 +31,7 @@ function tierLabel(tier: string) {
 }
 
 export default function CheckinPage() {
+  const { mode, toggleMode } = useThemeMode();
   const [query, setQuery] = useState("");
   const [resultados, setResultados] = useState<Inscrito[]>([]);
   const [loading, setLoading] = useState(false);
@@ -175,8 +178,11 @@ export default function CheckinPage() {
   const checkedInGeneral = resumen.reduce((acc, r) => acc + Number(r.checked_in), 0);
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8">
-      <div className="w-full max-w-lg mx-auto">
+    <div className="min-h-screen bg-background">
+      <div className="flex justify-end px-4 pt-4">
+        <ThemeModeToggle mode={mode} onToggle={toggleMode} />
+      </div>
+      <div className="w-full max-w-lg mx-auto px-4 pb-8">
         <div className="flex flex-col items-center gap-1 mb-6 text-center">
           <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">The Trading Experience</span>
           <h1 className="font-display text-2xl text-on-surface font-semibold">Check-in del evento</h1>

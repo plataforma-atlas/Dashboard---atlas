@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Campaign, FunnelRow } from "@/lib/types";
 import { toCountryBreakdown, toKpis, toSourceBreakdown, toStageSummary } from "@/lib/aggregate";
-import { defaultClient, toLightTheme, themeForClient, ClientConfig } from "@/lib/clients";
+import { defaultClient, themeForClient, ClientConfig } from "@/lib/clients";
 import { toFunnelStages, formatMoney, formatPercent } from "@/lib/webinar-os/aggregate";
 import { MODULE_ORDER } from "@/lib/webinar-os/moduleConfigs";
 import { WebinarDetail, WebinarMetrics, WebinarSummary } from "@/lib/webinar-os/types";
@@ -32,7 +32,7 @@ import SourceTable from "@/components/SourceTable";
 import FiltersBar from "@/components/FiltersBar";
 import ClientSelector from "@/components/ClientSelector";
 import CampaignSelector from "@/components/CampaignSelector";
-import ThemeSwitch from "@/components/ThemeSwitch";
+import { useThemeMode } from "@/components/ThemeModeProvider";
 import ExecutiveFunnel from "@/components/webinar-os/ExecutiveFunnel";
 import ExecutiveSummaryKpis from "@/components/webinar-os/ExecutiveSummaryKpis";
 import ModuleShell from "@/components/webinar-os/ModuleShell";
@@ -75,20 +75,10 @@ export default function Home() {
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
 
-  // Modo claro/oscuro global — aplica al shell entero (ThemeSwitch) y al scope de
-  // Webinar OS (data-wos-theme) por igual, con un solo toggle en el header.
-  const [mode, setMode] = useState<"light" | "dark">("dark");
-  useEffect(() => {
-    const saved = typeof window !== "undefined" ? window.localStorage.getItem("atlas-theme-mode") : null;
-    if (saved === "light" || saved === "dark") setMode(saved);
-  }, []);
-  function toggleMode() {
-    setMode((prev) => {
-      const next = prev === "dark" ? "light" : "dark";
-      if (typeof window !== "undefined") window.localStorage.setItem("atlas-theme-mode", next);
-      return next;
-    });
-  }
+  // Modo claro/oscuro y tema activo ahora viven en ThemeModeProvider (app/layout.tsx),
+  // compartidos por toda la app — este componente solo avisa cuál es su tema (el del
+  // cliente seleccionado) cada vez que cambia.
+  const { mode, toggleMode, setActiveTheme } = useThemeMode();
 
   const [rows, setRows] = useState<FunnelRow[]>([]);
   const [source, setSource] = useState<FunnelResponse["source"] | null>(null);
@@ -132,6 +122,12 @@ export default function Home() {
     () => visibleClients.find((c) => c.id === selectedClientId) ?? visibleClients[0] ?? defaultClient,
     [selectedClientId, visibleClients]
   );
+
+  // Avisa al ThemeModeProvider global cuál es el tema activo (el del cliente
+  // seleccionado) — el provider se encarga de aplicar la variante clara/oscura.
+  useEffect(() => {
+    setActiveTheme(selectedClient.theme);
+  }, [selectedClient, setActiveTheme]);
 
   // 1. Sesión
   useEffect(() => {
@@ -544,8 +540,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen px-4 py-6 md:px-8 md:py-8 max-w-7xl mx-auto flex flex-col gap-5">
-      <ThemeSwitch theme={mode === "light" ? toLightTheme(selectedClient.theme) : selectedClient.theme} />
-
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">Panel de lanzamiento</span>
@@ -560,9 +554,14 @@ export default function Home() {
           <CampaignSelector campaigns={campaigns} selectedId={selectedCampaignId} onSelect={setSelectedCampaignId} loading={campaignsLoading} />
           <ThemeModeToggle mode={mode} onToggle={toggleMode} />
           {session.role === "admin" && (
-            <a href="/admin/usuarios" className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition">
-              Usuarios
-            </a>
+            <>
+              <a href="/admin/cartera" className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition">
+                Cartera
+              </a>
+              <a href="/admin/usuarios" className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition">
+                Usuarios
+              </a>
+            </>
           )}
           <button onClick={handleLogout} className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition">
             Salir
@@ -616,8 +615,8 @@ export default function Home() {
               </aside>
 
               <div className="flex flex-col gap-5 min-w-0">
-                {errorMsg && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{errorMsg}</div>}
-                {webinarDetailError && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{webinarDetailError}</div>}
+                {errorMsg && <div className="rounded-lg border border-outline-error bg-error-container px-4 py-3 text-sm text-error">{errorMsg}</div>}
+                {webinarDetailError && <div className="rounded-lg border border-outline-error bg-error-container px-4 py-3 text-sm text-error">{webinarDetailError}</div>}
                 {webinarDetailLoading && <p className="text-sm text-[var(--wos-ink-muted)]">Cargando datos del webinar…</p>}
 
                 {webinarDetail &&

@@ -15,6 +15,10 @@ html {
   --color-on-surface: #F5F0E8;
   --color-on-surface-variant: #B0A48C;
   --color-on-surface-faint: #7A715E;
+  /* Colores de sistema — fijos, no cambian con el cliente. */
+  --color-error: #F04438;
+  --color-success: #16A34A;
+  --color-warning: #D97706;
 }
 
 body {

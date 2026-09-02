@@ -18,9 +18,15 @@ const config: Config = {
         "on-surface-variant": "var(--color-on-surface-variant, #B0A48C)",
         "on-surface-faint": "var(--color-on-surface-faint, #7A715E)",
         // Colores de SISTEMA — fijos, no cambian con el cliente (DESIGN.md regla 7)
-        error: "#F04438",
-        "error-container": "rgba(240, 68, 56, 0.1)",
-        "outline-error": "rgba(240, 68, 56, 0.4)",
+        error: "var(--color-error, #F04438)",
+        "error-container": "color-mix(in srgb, var(--color-error, #F04438) 12%, transparent)",
+        "outline-error": "color-mix(in srgb, var(--color-error, #F04438) 40%, transparent)",
+        success: "var(--color-success, #16A34A)",
+        "success-container": "color-mix(in srgb, var(--color-success, #16A34A) 12%, transparent)",
+        "outline-success": "color-mix(in srgb, var(--color-success, #16A34A) 40%, transparent)",
+        warning: "var(--color-warning, #D97706)",
+        "warning-container": "color-mix(in srgb, var(--color-warning, #D97706) 12%, transparent)",
+        "outline-warning": "color-mix(in srgb, var(--color-warning, #D97706) 40%, transparent)",
       },
       fontFamily: {
         display: ["var(--font-display)", "sans-serif"],

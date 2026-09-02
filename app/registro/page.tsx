@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useThemeMode } from "@/components/ThemeModeProvider";
+import ThemeModeToggle from "@/components/ThemeModeToggle";
 
 export default function RegistroPage() {
   const router = useRouter();
+  const { mode, toggleMode } = useThemeMode();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,7 +41,11 @@ export default function RegistroPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
+      <div className="flex justify-end px-4 pt-4">
+        <ThemeModeToggle mode={mode} onToggle={toggleMode} />
+      </div>
+      <div className="flex-1 flex items-center justify-center px-4 pb-16">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center gap-1 mb-8">
           <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">Agencia Atlas</span>
@@ -107,6 +114,7 @@ export default function RegistroPage() {
             Inicia sesión
           </Link>
         </p>
+      </div>
       </div>
     </div>
   );
