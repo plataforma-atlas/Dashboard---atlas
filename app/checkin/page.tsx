@@ -44,6 +44,7 @@ export default function CheckinPage() {
   const [searched, setSearched] = useState(false);
 
   const [resumen, setResumen] = useState<ResumenTier[]>([]);
+  const [invitadosVip, setInvitadosVip] = useState(0);
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({ name: "", email: "", phone: "", notes: "" });
@@ -59,7 +60,12 @@ export default function CheckinPage() {
     try {
       const res = await fetch("/api/evento/checkin-resumen", { cache: "no-store" });
       const data = await res.json();
-      if (res.ok) setResumen(data.resumen ?? []);
+      if (res.ok) {
+        const filas: ResumenTier[] = data.resumen ?? [];
+        const invitados = filas.find((r) => r.tier === "__invitados_vip__");
+        setResumen(filas.filter((r) => r.tier !== "__invitados_vip__"));
+        setInvitadosVip(invitados ? Number(invitados.total) : 0);
+      }
     } catch {
       // el resumen es informativo — si falla, no bloquea el resto de la pantalla
     }
@@ -208,6 +214,7 @@ export default function CheckinPage() {
       }
       setGuestByLead((prev) => ({ ...prev, [leadId]: { ...guestForm } }));
       setGuestOpenId(null);
+      cargarResumen();
     } finally {
       setGuestSaving(false);
     }
@@ -253,6 +260,10 @@ export default function CheckinPage() {
                   </div>
                 );
               })}
+            </div>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-outline">
+              <span className="text-xs text-violet-300">Invitados VIP</span>
+              <span className="text-sm font-semibold text-violet-300 tabular-nums">{invitadosVip}</span>
             </div>
           </div>
         )}
