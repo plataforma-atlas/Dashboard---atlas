@@ -19,6 +19,10 @@ type ResumenTier = { tier: string; total: string; checked_in: string };
 
 type EditForm = { name: string; email: string; phone: string; notes: string };
 
+type GuestForm = { name: string; phone: string; email: string };
+
+type Guest = { name: string; phone: string; email: string };
+
 function tierBadgeClass(tier: string) {
   if (tier === "VIP") return "text-violet-300 bg-violet-500/10 border-violet-500/30";
   if (tier === "Platino") return "text-slate-200 bg-slate-400/10 border-slate-400/30";
@@ -45,6 +49,11 @@ export default function CheckinPage() {
   const [editForm, setEditForm] = useState<EditForm>({ name: "", email: "", phone: "", notes: "" });
   const [editLoading, setEditLoading] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
+
+  const [guestOpenId, setGuestOpenId] = useState<number | null>(null);
+  const [guestForm, setGuestForm] = useState<GuestForm>({ name: "", phone: "", email: "" });
+  const [guestSaving, setGuestSaving] = useState(false);
+  const [guestByLead, setGuestByLead] = useState<Record<number, Guest>>({});
 
   async function cargarResumen() {
     try {
@@ -174,6 +183,36 @@ export default function CheckinPage() {
     }
   }
 
+  function abrirInvitado(leadId: number) {
+    setGuestForm({ name: "", phone: "", email: "" });
+    setGuestOpenId(leadId);
+  }
+
+  function cancelarInvitado() {
+    setGuestOpenId(null);
+  }
+
+  async function guardarInvitado(leadId: number) {
+    if (!guestForm.name.trim()) return;
+    setGuestSaving(true);
+    try {
+      const res = await fetch("/api/evento/invitado-guardar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lead_id: leadId, ...guestForm }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "No se pudo guardar el invitado");
+        return;
+      }
+      setGuestByLead((prev) => ({ ...prev, [leadId]: { ...guestForm } }));
+      setGuestOpenId(null);
+    } finally {
+      setGuestSaving(false);
+    }
+  }
+
   const totalGeneral = resumen.reduce((acc, r) => acc + Number(r.total), 0);
   const checkedInGeneral = resumen.reduce((acc, r) => acc + Number(r.checked_in), 0);
 
@@ -286,8 +325,63 @@ export default function CheckinPage() {
                   >
                     {editingId === r.lead_id ? "Cerrar" : "Editar"}
                   </button>
+                  {r.tier === "VIP" &&
+                    (guestByLead[r.lead_id] ? (
+                      <span className="text-[11px] text-on-surface-faint whitespace-nowrap">+1 {guestByLead[r.lead_id].name}</span>
+                    ) : (
+                      <button
+                        onClick={() => (guestOpenId === r.lead_id ? cancelarInvitado() : abrirInvitado(r.lead_id))}
+                        className="text-xs text-violet-300 hover:text-violet-200 underline whitespace-nowrap"
+                      >
+                        {guestOpenId === r.lead_id ? "Cerrar" : "+ Agregar invitado"}
+                      </button>
+                    ))}
                 </div>
               </div>
+
+              {guestOpenId === r.lead_id && (
+                <div className="mt-4 pt-4 border-t border-outline flex flex-col gap-3">
+                  <p className="text-[11px] text-on-surface-faint">Como entrada VIP, puede traer un invitado. Registra sus datos.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label className="flex flex-col gap-1">
+                      <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Nombre del invitado</span>
+                      <input
+                        value={guestForm.name}
+                        onChange={(e) => setGuestForm((f) => ({ ...f, name: e.target.value }))}
+                        className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1">
+                      <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Teléfono</span>
+                      <input
+                        value={guestForm.phone}
+                        onChange={(e) => setGuestForm((f) => ({ ...f, phone: e.target.value }))}
+                        className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                      />
+                    </label>
+                  </div>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Correo</span>
+                    <input
+                      value={guestForm.email}
+                      onChange={(e) => setGuestForm((f) => ({ ...f, email: e.target.value }))}
+                      className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                    />
+                  </label>
+                  <div className="flex justify-end gap-2">
+                    <button onClick={cancelarInvitado} className="text-xs text-on-surface-faint hover:text-on-surface px-3 py-2">
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => guardarInvitado(r.lead_id)}
+                      disabled={guestSaving || !guestForm.name.trim()}
+                      className="bg-primary text-background font-semibold rounded-md px-4 py-2 text-xs disabled:opacity-50"
+                    >
+                      {guestSaving ? "Guardando…" : "Guardar invitado"}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {editingId === r.lead_id && (
                 <div className="mt-4 pt-4 border-t border-outline flex flex-col gap-3">
