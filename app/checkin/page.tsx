@@ -106,13 +106,13 @@ export default function CheckinPage() {
       const res = await fetch(`/api/evento/buscar?q=${encodeURIComponent(query.trim())}`, { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "No se pudo buscar");
+        setError(data.error || "No pudimos hacer la búsqueda. Intenta de nuevo.");
         setResultados([]);
         return;
       }
       setResultados(data.inscritos ?? []);
     } catch {
-      setError("No se pudo conectar al servidor");
+      setError("No pudimos conectar. Revisa tu internet e intenta de nuevo.");
       setResultados([]);
     } finally {
       setLoading(false);

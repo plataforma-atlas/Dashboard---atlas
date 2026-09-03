@@ -2,6 +2,15 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { COOKIE_NAME, verifySession } from "@/lib/auth";
 
+function safeParse(text: string): any {
+  if (!text.trim()) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
@@ -21,14 +30,16 @@ export async function GET(req: Request) {
     const target = new URL(url);
     target.searchParams.set("q", q);
     const res = await fetch(target.toString(), { method: "GET", cache: "no-store" });
+    const text = await res.text();
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      return NextResponse.json({ error: body.error || "No se pudo buscar" }, { status: res.status });
+      const body = safeParse(text) ?? {};
+      return NextResponse.json({ error: body.error || "No pudimos completar la búsqueda" }, { status: res.status });
     }
-    const data = await res.json();
+    // Sin coincidencias, n8n responde con el cuerpo vacío en vez de "[]"
+    const data = safeParse(text) ?? [];
     return NextResponse.json({ inscritos: data });
   } catch (err) {
     console.error("Error buscando inscritos:", err);
-    return NextResponse.json({ error: "No se pudo conectar al servidor" }, { status: 502 });
+    return NextResponse.json({ error: "No pudimos completar la búsqueda. Intenta de nuevo." }, { status: 502 });
   }
 }
