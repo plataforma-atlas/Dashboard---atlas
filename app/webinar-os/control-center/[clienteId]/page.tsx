@@ -7,12 +7,14 @@ import ThemeModeToggle from "@/components/ThemeModeToggle";
 import { themeForClient } from "@/lib/clients";
 import { CampanaCartera } from "@/lib/webinar-os/control-center/types";
 import { aggregateCampanas, pickRecomendaciones, pickBalance } from "@/lib/webinar-os/control-center/insights";
+import { rangoRapido } from "@/lib/webinar-os/control-center/dateRanges";
 import { formatMoney, formatDecimal, formatNumber, formatPercent } from "@/lib/webinar-os/aggregate";
 import KpiCard from "@/components/webinar-os/KpiCard";
 import RankingTable from "@/components/webinar-os/control-center/RankingTable";
 import WccAccordion from "@/components/webinar-os/control-center/WccAccordion";
 import WccSidebarNav from "@/components/webinar-os/control-center/WccSidebarNav";
 import FunnelSteps from "@/components/webinar-os/control-center/FunnelSteps";
+import WccFilterBar from "@/components/webinar-os/control-center/WccFilterBar";
 import { WebinarSummary, WebinarDetail } from "@/lib/webinar-os/types";
 
 export default function ControlCenterPage() {
@@ -55,12 +57,14 @@ export default function ControlCenterPage() {
     router.refresh();
   }
 
-  function cargar() {
+  function cargar(fiOverride?: string, ffOverride?: string) {
     setLoading(true);
     setError(null);
+    const fi = fiOverride ?? fechaInicio;
+    const ff = ffOverride ?? fechaFin;
     const qs = new URLSearchParams({ cliente_id: clienteId });
-    if (fechaInicio) qs.set("fecha_inicio", fechaInicio);
-    if (fechaFin) qs.set("fecha_fin", fechaFin);
+    if (fi) qs.set("fecha_inicio", fi);
+    if (ff) qs.set("fecha_fin", ff);
     fetch(`/api/webinar-os/cartera-por-campana?${qs.toString()}`, { cache: "no-store" })
       .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
       .then(({ ok, data }) => {
@@ -75,7 +79,10 @@ export default function ControlCenterPage() {
   }
 
   useEffect(() => {
-    cargar();
+    const { fecha_inicio, fecha_fin } = rangoRapido("4weeks");
+    setFechaInicio(fecha_inicio);
+    setFechaFin(fecha_fin);
+    cargar(fecha_inicio, fecha_fin);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clienteId]);
 
@@ -138,6 +145,12 @@ export default function ControlCenterPage() {
       </aside>
 
       <main className="flex-1 min-w-0 p-4 md:p-8 flex flex-col gap-6 bg-[var(--wcc-page-bg)]">
+        <div className="hidden print:block mb-2">
+          <div className="text-lg font-bold text-[var(--wos-ink)]">{clienteName} · Webinar Control Center</div>
+          <div className="text-xs text-[var(--wos-ink-muted)]">
+            {new Date().toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}
+          </div>
+        </div>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--wos-primary)]">Dashboard semanal</div>
@@ -147,45 +160,37 @@ export default function ControlCenterPage() {
             <p className="text-sm text-[var(--wos-ink-muted)] mt-1">
               {isAll ? "Vista consolidada de todas las campañas activas." : "Resultados de la campaña seleccionada."}
             </p>
+            <div className="wcc-no-print flex gap-2 flex-wrap mt-2.5">
+              <span className="text-[11px] text-[var(--wos-ink-muted)] bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-full px-2.5 py-1">
+                {isAll ? "Todas las campañas" : campanaActiva?.campaign_name}
+              </span>
+              {fechaInicio && fechaFin && (
+                <span className="text-[11px] text-[var(--wos-ink-muted)] bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-full px-2.5 py-1">
+                  Periodo: {fechaInicio} – {fechaFin}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <select
-              value={campanaSeleccionada}
-              onChange={(e) => setCampanaSeleccionada(e.target.value)}
-              className="border border-[var(--wos-border)] bg-[var(--wos-surface)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px]"
-            >
-              <option value="all">Todas las campañas</option>
-              {campanas.map((c) => (
-                <option key={c.campaign_id} value={c.campaign_id}>
-                  {c.campaign_name}
-                </option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={fechaInicio}
-              onChange={(e) => setFechaInicio(e.target.value)}
-              className="border border-[var(--wos-border)] bg-[var(--wos-surface)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px]"
+          <div className="flex flex-col items-end gap-2">
+            <WccFilterBar
+              campanas={campanas}
+              campanaSeleccionada={campanaSeleccionada}
+              onCampanaChange={setCampanaSeleccionada}
+              onAplicar={(fi, ff) => {
+                setFechaInicio(fi);
+                setFechaFin(ff);
+                cargar(fi, ff);
+              }}
             />
-            <input
-              type="date"
-              value={fechaFin}
-              onChange={(e) => setFechaFin(e.target.value)}
-              className="border border-[var(--wos-border)] bg-[var(--wos-surface)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px]"
-            />
-            <button
-              onClick={cargar}
-              className="border border-[var(--wos-border)] bg-[var(--wos-surface)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px] hover:bg-[var(--wos-surface-alt)]"
-            >
-              Aplicar
-            </button>
-            <ThemeModeToggle mode={mode} onToggle={toggleMode} />
-            <a href="/admin/cartera" className="text-xs text-[var(--wos-ink-muted)] hover:text-[var(--wos-ink)] border border-[var(--wos-border)] rounded-full px-3 py-1.5 transition">
-              ← Cartera
-            </a>
-            <button onClick={handleLogout} className="text-xs text-[var(--wos-ink-muted)] hover:text-[var(--wos-ink)] border border-[var(--wos-border)] rounded-full px-3 py-1.5 transition">
-              Salir
-            </button>
+            <div className="wcc-no-print flex items-center gap-2 flex-wrap">
+              <ThemeModeToggle mode={mode} onToggle={toggleMode} />
+              <a href="/admin/cartera" className="text-xs text-[var(--wos-ink-muted)] hover:text-[var(--wos-ink)] border border-[var(--wos-border)] rounded-full px-3 py-1.5 transition">
+                ← Cartera
+              </a>
+              <button onClick={handleLogout} className="text-xs text-[var(--wos-ink-muted)] hover:text-[var(--wos-ink)] border border-[var(--wos-border)] rounded-full px-3 py-1.5 transition">
+                Salir
+              </button>
+            </div>
           </div>
         </div>
 

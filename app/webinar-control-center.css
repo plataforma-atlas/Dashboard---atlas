@@ -39,3 +39,32 @@
   --wos-shadow-lg: 0 10px 28px rgba(0,0,0,.4);
   --wcc-page-bg: #0E1015;
 }
+
+/* Mobile: la barra lateral pasa a fila horizontal con scroll (WccSidebarNav ya trae
+   flex/overflow-x-auto por Tailwind); acá solo se ajusta el padding/alto del contenedor
+   para que no ocupe toda la pantalla como en desktop. */
+@media (max-width: 767px) {
+  .wcc-page > aside {
+    min-height: 0;
+    position: static;
+  }
+}
+
+/* Impresión: solo el contenido de negocio, sin sidebar/filtros/botones de acción. */
+@media print {
+  .wcc-page {
+    background: #fff !important;
+  }
+  .wcc-page > aside,
+  .wcc-no-print {
+    display: none !important;
+  }
+  .wcc-page main {
+    padding: 0 !important;
+  }
+  .wcc-page section {
+    break-inside: avoid;
+    margin-top: 18px !important;
+  }
+}
+

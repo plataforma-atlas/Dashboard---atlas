@@ -574,6 +574,12 @@ export default function Home() {
           <div className="flex items-center justify-between gap-3 mb-5">
             <span className="text-[11px] uppercase tracking-[0.1em] text-[var(--wos-ink-faint)] font-mono">Webinar OS</span>
             <div className="flex items-center gap-2">
+              <a
+                href={`/webinar-os/control-center/${selectedClient.id}`}
+                className="text-xs text-[var(--wos-ink-muted)] hover:text-[var(--wos-ink)] border border-[var(--wos-border)] rounded-full px-3 py-1.5 transition"
+              >
+                Ver Control Center →
+              </a>
               <input
                 type="date"
                 value={fechaInicio}
