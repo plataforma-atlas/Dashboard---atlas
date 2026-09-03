@@ -230,7 +230,8 @@ export default function CheckinPage() {
     }
   }
 
-  async function marcarVip(leadId: number) {
+  async function marcarVip(leadId: number, nombre: string | null) {
+    if (!confirm(`¿Seguro que quieres marcar a "${nombre || "esta persona"}" como VIP?`)) return;
     setVipMarkingId(leadId);
     try {
       const res = await fetch("/api/evento/marcar-vip", {
@@ -244,6 +245,27 @@ export default function CheckinPage() {
         return;
       }
       setResultados((prev) => prev.map((r) => (r.lead_id === leadId ? { ...r, tier: "VIP" } : r)));
+      cargarResumen();
+    } finally {
+      setVipMarkingId(null);
+    }
+  }
+
+  async function quitarVip(leadId: number, nombre: string | null) {
+    if (!confirm(`¿Quitarle el VIP a "${nombre || "esta persona"}"? Volverá al tier gratuito.`)) return;
+    setVipMarkingId(leadId);
+    try {
+      const res = await fetch("/api/evento/quitar-vip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lead_id: leadId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "No se pudo quitar el VIP");
+        return;
+      }
+      setResultados((prev) => prev.map((r) => (r.lead_id === leadId ? { ...r, tier: "General (gratis)" } : r)));
       cargarResumen();
     } finally {
       setVipMarkingId(null);
@@ -498,13 +520,21 @@ export default function CheckinPage() {
                   >
                     {editingId === r.lead_id ? "Cerrar" : "Editar"}
                   </button>
-                  {r.tier !== "VIP" && (
+                  {r.tier !== "VIP" ? (
                     <button
-                      onClick={() => marcarVip(r.lead_id)}
+                      onClick={() => marcarVip(r.lead_id, r.name)}
                       disabled={vipMarkingId === r.lead_id}
                       className="text-xs text-violet-300 hover:text-violet-200 underline whitespace-nowrap disabled:opacity-50"
                     >
                       {vipMarkingId === r.lead_id ? "Marcando…" : "Marcar como VIP"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => quitarVip(r.lead_id, r.name)}
+                      disabled={vipMarkingId === r.lead_id}
+                      className="text-xs text-on-surface-faint hover:text-error underline whitespace-nowrap disabled:opacity-50"
+                    >
+                      {vipMarkingId === r.lead_id ? "Quitando…" : "Quitar VIP"}
                     </button>
                   )}
                   {r.tier === "VIP" &&
