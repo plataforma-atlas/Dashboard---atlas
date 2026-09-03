@@ -56,6 +56,12 @@ export default function CheckinPage() {
   const [guestSaving, setGuestSaving] = useState(false);
   const [guestByLead, setGuestByLead] = useState<Record<number, Guest>>({});
 
+  const [vipMarkingId, setVipMarkingId] = useState<number | null>(null);
+
+  const [ponenteFormOpen, setPonenteFormOpen] = useState(false);
+  const [ponenteForm, setPonenteForm] = useState<GuestForm>({ name: "", phone: "", email: "" });
+  const [ponenteSaving, setPonenteSaving] = useState(false);
+
   async function cargarResumen() {
     try {
       const res = await fetch("/api/evento/checkin-resumen", { cache: "no-store" });
@@ -73,6 +79,8 @@ export default function CheckinPage() {
 
   useEffect(() => {
     cargarResumen();
+    const interval = setInterval(cargarResumen, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   async function buscar(e: React.FormEvent) {
@@ -220,6 +228,62 @@ export default function CheckinPage() {
     }
   }
 
+  async function marcarVip(leadId: number) {
+    setVipMarkingId(leadId);
+    try {
+      const res = await fetch("/api/evento/marcar-vip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lead_id: leadId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "No se pudo marcar como VIP");
+        return;
+      }
+      setResultados((prev) => prev.map((r) => (r.lead_id === leadId ? { ...r, tier: "VIP" } : r)));
+      cargarResumen();
+    } finally {
+      setVipMarkingId(null);
+    }
+  }
+
+  async function registrarPonente(e: React.FormEvent) {
+    e.preventDefault();
+    if (!ponenteForm.name.trim()) return;
+    setPonenteSaving(true);
+    try {
+      const res = await fetch("/api/evento/registrar-invitado-ponente", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ponenteForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "No se pudo registrar el invitado");
+        return;
+      }
+      const lead = data.lead ?? {};
+      const nuevo: Inscrito = {
+        lead_id: lead.lead_id,
+        name: lead.name ?? ponenteForm.name,
+        email: lead.email ?? ponenteForm.email,
+        phone: lead.phone ?? ponenteForm.phone,
+        country: null,
+        campaign_name: "Invitados de Ponentes",
+        tier: "VIP",
+        checked_in: false,
+      };
+      setResultados((prev) => [nuevo, ...prev]);
+      setSearched(true);
+      setPonenteForm({ name: "", phone: "", email: "" });
+      setPonenteFormOpen(false);
+      cargarResumen();
+    } finally {
+      setPonenteSaving(false);
+    }
+  }
+
   const totalGeneral = resumen.reduce((acc, r) => acc + Number(r.total), 0);
   const checkedInGeneral = resumen.reduce((acc, r) => acc + Number(r.checked_in), 0);
 
@@ -238,7 +302,17 @@ export default function CheckinPage() {
         {resumen.length > 0 && (
           <div className="rounded-lg border border-outline bg-surface p-4 mb-6">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs uppercase tracking-[0.08em] text-on-surface-faint">Entradas</span>
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <span className="text-xs uppercase tracking-[0.08em] text-on-surface-faint">En vivo · personas en el evento ahora</span>
+              </div>
+              <span className="text-2xl font-bold text-on-surface tabular-nums">{checkedInGeneral + invitadosVip}</span>
+            </div>
+            <div className="flex items-center justify-between mb-3 pb-3 border-b border-outline">
+              <span className="text-xs uppercase tracking-[0.08em] text-on-surface-faint">Entradas confirmadas</span>
               <span className="text-sm font-semibold text-on-surface tabular-nums">
                 {checkedInGeneral} / {totalGeneral}
               </span>
@@ -289,7 +363,81 @@ export default function CheckinPage() {
         {error && <p className="text-sm text-error mb-4">{error}</p>}
 
         {searched && !loading && !error && resultados.length === 0 && (
-          <p className="text-sm text-on-surface-faint text-center">No se encontró ningún inscrito con ese dato.</p>
+          <div className="text-center mb-4">
+            <p className="text-sm text-on-surface-faint mb-3">No se encontró ningún inscrito con ese dato.</p>
+            {!ponenteFormOpen ? (
+              <button
+                onClick={() => {
+                  setPonenteForm({ name: query, phone: "", email: "" });
+                  setPonenteFormOpen(true);
+                }}
+                className="text-xs text-violet-300 hover:text-violet-200 underline"
+              >
+                + Registrar invitado de ponente (VIP)
+              </button>
+            ) : null}
+          </div>
+        )}
+
+        {!searched && (
+          <div className="text-center mb-4">
+            <button
+              onClick={() => {
+                setPonenteForm({ name: "", phone: "", email: "" });
+                setPonenteFormOpen((v) => !v);
+              }}
+              className="text-xs text-violet-300 hover:text-violet-200 underline"
+            >
+              {ponenteFormOpen ? "Cerrar" : "+ Registrar invitado de ponente (VIP)"}
+            </button>
+          </div>
+        )}
+
+        {ponenteFormOpen && (
+          <form onSubmit={registrarPonente} className="rounded-lg border border-violet-500/30 bg-violet-500/5 p-4 mb-6 flex flex-col gap-3">
+            <p className="text-[11px] text-on-surface-faint">
+              Invitado de un ponente — entra sin pagar, se registra directo como VIP y ocupa cupo VIP.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Nombre</span>
+                <input
+                  value={ponenteForm.name}
+                  onChange={(e) => setPonenteForm((f) => ({ ...f, name: e.target.value }))}
+                  autoFocus
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Teléfono</span>
+                <input
+                  value={ponenteForm.phone}
+                  onChange={(e) => setPonenteForm((f) => ({ ...f, phone: e.target.value }))}
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                />
+              </label>
+            </div>
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Correo</span>
+              <input
+                value={ponenteForm.email}
+                onChange={(e) => setPonenteForm((f) => ({ ...f, email: e.target.value }))}
+                className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+              />
+            </label>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setPonenteFormOpen(false)} className="text-xs text-on-surface-faint hover:text-on-surface px-3 py-2">
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={ponenteSaving || !ponenteForm.name.trim()}
+                className="bg-violet-500 text-white font-semibold rounded-md px-4 py-2 text-xs disabled:opacity-50"
+              >
+                {ponenteSaving ? "Registrando…" : "Registrar como VIP"}
+              </button>
+            </div>
+          </form>
         )}
 
         <div className="flex flex-col gap-3">
@@ -336,6 +484,15 @@ export default function CheckinPage() {
                   >
                     {editingId === r.lead_id ? "Cerrar" : "Editar"}
                   </button>
+                  {r.tier !== "VIP" && (
+                    <button
+                      onClick={() => marcarVip(r.lead_id)}
+                      disabled={vipMarkingId === r.lead_id}
+                      className="text-xs text-violet-300 hover:text-violet-200 underline whitespace-nowrap disabled:opacity-50"
+                    >
+                      {vipMarkingId === r.lead_id ? "Marcando…" : "Marcar como VIP"}
+                    </button>
+                  )}
                   {r.tier === "VIP" &&
                     (guestByLead[r.lead_id] ? (
                       <span className="text-[11px] text-on-surface-faint whitespace-nowrap">+1 {guestByLead[r.lead_id].name}</span>
