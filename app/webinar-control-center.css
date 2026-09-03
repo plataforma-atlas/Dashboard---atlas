@@ -1,0 +1,41 @@
+/* Webinar Control Center: identidad visual FIJA propia, tal como el prototipo HTML
+   real (dashboard_webinars_ux_mobile_sin_barras_kpi.html) — a diferencia del resto de
+   webinar-os, esta página NO hereda el color de marca de cada cliente. Sobreescribe los
+   --wos-* solo dentro de .wcc-page (mismas variables que ya consumen KpiCard/Panel/
+   RankingTable/WccAccordion), así ningún componente necesita cambiar. */
+.wcc-page {
+  --wos-surface: #FFFFFF;
+  --wos-surface-alt: #FFFFFF;
+  --wos-border: #E5E7EE;
+  --wos-ink: #17191F;
+  --wos-ink-muted: #707684;
+  --wos-ink-faint: #9CA3AF;
+  --wos-primary: #5B5BF7;
+  --wos-primary-soft: #EEEEFF;
+  --wos-on-primary: #FFFFFF;
+  --wos-positive: #16834A;
+  --wos-negative: #C0392B;
+  --wos-shadow: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+  --wos-radius-card: 16px;
+  --wos-shadow-lg: 0 10px 28px rgba(21,25,38,.06);
+  /* Fondo de página — distinto de --wos-surface (blanco, para las tarjetas) a propósito,
+     igual que el mockup (--bg:#f6f7fb vs --surface:#fff). */
+  --wcc-page-bg: #F6F7FB;
+}
+
+.wcc-page[data-wos-theme="dark"] {
+  --wos-surface: #181A22;
+  --wos-surface-alt: #181A22;
+  --wos-border: #272A35;
+  --wos-ink: #F3F4F6;
+  --wos-ink-muted: #9CA3AF;
+  --wos-ink-faint: #6B7280;
+  --wos-primary: #7C7CFB;
+  --wos-primary-soft: color-mix(in srgb, #7C7CFB 18%, #181A22);
+  --wos-on-primary: #FFFFFF;
+  --wos-positive: #34D399;
+  --wos-negative: #F87171;
+  --wos-shadow: 0 1px 2px rgba(0,0,0,.3), 0 1px 3px rgba(0,0,0,.4);
+  --wos-shadow-lg: 0 10px 28px rgba(0,0,0,.4);
+  --wcc-page-bg: #0E1015;
+}

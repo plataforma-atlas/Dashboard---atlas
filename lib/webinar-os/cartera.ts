@@ -1,3 +1,5 @@
+export type Estado = "Escalar" | "Estable" | "Revisar" | "Atención" | "Sin datos de inversión";
+
 export type CarteraCliente = {
   cliente_id: string;
   cliente_name: string;
@@ -10,10 +12,10 @@ export type CarteraCliente = {
   roas_bruto: number | null;
   roas_neto: number | null;
   registro_a_venta: number | null;
-  estado: "Escalar" | "Estable" | "Revisar" | "Atención" | "Sin datos de inversión";
+  estado: Estado;
 };
 
-export function estadoBadgeClass(estado: CarteraCliente["estado"]) {
+export function estadoBadgeClass(estado: Estado) {
   if (estado === "Escalar") return "text-success bg-success-container border-outline-success";
   if (estado === "Estable") return "text-primary bg-[var(--wos-primary-soft)] border-[var(--wos-primary)]";
   if (estado === "Revisar") return "text-warning bg-warning-container border-outline-warning";

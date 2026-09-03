@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import "./webinar-os-theme.css";
+import "./webinar-control-center.css";
 import { ThemeModeProvider } from "@/components/ThemeModeProvider";
 
 const display = Space_Grotesk({ subsets: ["latin"], weight: ["500", "700"], variable: "--font-display" });
