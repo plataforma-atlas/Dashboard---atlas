@@ -16,13 +16,17 @@
   --wos-ink-faint: var(--color-on-surface-faint, #9CA3AF);
   --wos-primary: var(--color-primary, #4F46E5);
   --wos-primary-soft: color-mix(in srgb, var(--color-primary, #4F46E5) 12%, var(--wos-surface));
-  /* Texto sobre una píldora sólida de --wos-primary. Fijo (no var) a propósito: las marcas
-     actuales (dorado, naranja, tostado) son todas claras/medias, así que tinta oscura
-     siempre contrasta bien, sin importar si el modo activo es claro u oscuro. */
-  --wos-on-primary: #14171F;
+  /* Texto sobre una píldora sólida de --wos-primary. Fijo (no var) a propósito: la
+     identidad única del sistema es índigo (#5b5bf7 claro / #7c7cfb oscuro) — un tono
+     medio-oscuro donde texto blanco siempre contrasta mejor que tinta oscura. */
+  --wos-on-primary: #FFFFFF;
   --wos-positive: var(--color-success, #16A34A);
   --wos-negative: var(--color-error, #DC2626);
   --wos-shadow: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+  /* Tokens nuevos del Webinar Control Center — no reemplazan --wos-shadow/radius
+     existentes (ya usados por Panel/ModuleShell/Cartera), se suman aparte. */
+  --wos-radius-card: 16px;
+  --wos-shadow-lg: 0 10px 28px rgba(21,25,38,.06);
 }
 
 .webinar-os-scope[data-wos-theme="dark"] {
@@ -35,8 +39,10 @@
   --wos-ink-faint: var(--color-on-surface-faint, #6B7280);
   --wos-primary: var(--color-primary, #818CF8);
   --wos-primary-soft: color-mix(in srgb, var(--color-primary, #818CF8) 16%, var(--wos-surface));
-  --wos-on-primary: #14171F;
+  --wos-on-primary: #FFFFFF;
   --wos-positive: var(--color-success, #34D399);
   --wos-negative: var(--color-error, #F87171);
   --wos-shadow: 0 1px 2px rgba(0,0,0,.3), 0 1px 3px rgba(0,0,0,.4);
+  --wos-radius-card: 16px;
+  --wos-shadow-lg: 0 10px 28px rgba(0,0,0,.35);
 }

@@ -20,7 +20,7 @@ export default function ClientSelector({
             key={c.id}
             onClick={() => onSelect(c.id)}
             className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition ${
-              active ? "bg-primary text-background" : "text-on-surface-variant hover:text-on-surface"
+              active ? "bg-primary text-on-primary" : "text-on-surface-variant hover:text-on-surface"
             }`}
           >
             {c.name}

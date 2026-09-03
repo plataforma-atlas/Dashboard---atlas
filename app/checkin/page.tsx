@@ -280,7 +280,7 @@ export default function CheckinPage() {
           <button
             type="submit"
             disabled={loading || !query.trim()}
-            className="bg-primary text-background font-semibold rounded-md px-5 py-3 text-sm disabled:opacity-50"
+            className="bg-primary text-on-primary font-semibold rounded-md px-5 py-3 text-sm disabled:opacity-50"
           >
             {loading ? "Buscando…" : "Buscar"}
           </button>
@@ -325,7 +325,7 @@ export default function CheckinPage() {
                     <button
                       onClick={() => marcarCheckin(r.lead_id)}
                       disabled={busyId === r.lead_id}
-                      className="bg-primary text-background font-semibold rounded-md px-4 py-2.5 text-sm disabled:opacity-50 whitespace-nowrap"
+                      className="bg-primary text-on-primary font-semibold rounded-md px-4 py-2.5 text-sm disabled:opacity-50 whitespace-nowrap"
                     >
                       {busyId === r.lead_id ? "Marcando…" : "Marcar check-in"}
                     </button>
@@ -386,7 +386,7 @@ export default function CheckinPage() {
                     <button
                       onClick={() => guardarInvitado(r.lead_id)}
                       disabled={guestSaving || !guestForm.name.trim()}
-                      className="bg-primary text-background font-semibold rounded-md px-4 py-2 text-xs disabled:opacity-50"
+                      className="bg-primary text-on-primary font-semibold rounded-md px-4 py-2 text-xs disabled:opacity-50"
                     >
                       {guestSaving ? "Guardando…" : "Guardar invitado"}
                     </button>
@@ -443,7 +443,7 @@ export default function CheckinPage() {
                         <button
                           onClick={() => guardarEdicion(r.lead_id)}
                           disabled={editSaving}
-                          className="bg-primary text-background font-semibold rounded-md px-4 py-2 text-xs disabled:opacity-50"
+                          className="bg-primary text-on-primary font-semibold rounded-md px-4 py-2 text-xs disabled:opacity-50"
                         >
                           {editSaving ? "Guardando…" : "Guardar"}
                         </button>

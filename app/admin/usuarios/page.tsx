@@ -186,7 +186,7 @@ export default function AdminUsuariosPage() {
                                 disabled={isBusy}
                                 onClick={() => toggleCliente(u.id, c.id, tieneAcceso)}
                                 className={`text-xs px-2.5 py-1 rounded-full border transition disabled:opacity-50 ${
-                                  tieneAcceso ? "bg-primary text-background border-primary" : "border-outline text-on-surface-variant hover:text-on-surface"
+                                  tieneAcceso ? "bg-primary text-on-primary border-primary" : "border-outline text-on-surface-variant hover:text-on-surface"
                                 }`}
                               >
                                 {c.name}

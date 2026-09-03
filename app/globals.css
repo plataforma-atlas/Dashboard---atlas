@@ -4,21 +4,26 @@
 
 html {
   color-scheme: dark;
-  /* Tema por defecto (Atlas, la agencia). ThemeSwitch.tsx sobreescribe
-     estas variables en runtime según el cliente seleccionado. */
-  --color-background: #1A1A1A;
-  --color-surface: #221F1A;
-  --color-surface-high: #2A2620;
-  --color-outline: #3A3428;
-  --color-primary: #C9A96E;
-  --color-secondary: #D4C5A0;
-  --color-on-surface: #F5F0E8;
-  --color-on-surface-variant: #B0A48C;
-  --color-on-surface-faint: #7A715E;
-  /* Colores de sistema — fijos, no cambian con el cliente. */
+  /* Identidad única del sistema (Webinar Control Center) — ya no varía por cliente.
+     ThemeSwitch.tsx sobreescribe estas variables en runtime con el mismo valor fijo
+     (ver lib/clients.ts) más la variante clara cuando el modo es "light". */
+  --color-background: #0E1015;
+  --color-surface: #181A22;
+  --color-surface-high: #1F222C;
+  --color-outline: #272A35;
+  --color-primary: #7C7CFB;
+  --color-secondary: #A5A0FF;
+  --color-on-surface: #F3F4F6;
+  --color-on-surface-variant: #9CA3AF;
+  --color-on-surface-faint: #6B7280;
+  /* Colores de sistema — fijos. */
   --color-error: #F04438;
-  --color-success: #16A34A;
+  --color-success: #16834A;
   --color-warning: #D97706;
+  /* Texto sobre un botón/píldora sólida de --color-primary. Índigo es un tono
+     medio-oscuro en ambos modos, así que blanco fijo es lo que mejor contrasta
+     (mismo criterio que --wos-on-primary en webinar-os-theme.css). */
+  --color-on-primary: #FFFFFF;
 }
 
 body {

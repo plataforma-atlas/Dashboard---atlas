@@ -51,7 +51,7 @@ export default function FiltersBar({ fechaInicio, fechaFin, pais, paisesDisponib
       <button
         onClick={onRefresh}
         disabled={loading}
-        className="ml-auto rounded-md bg-primary text-background text-sm font-medium px-4 py-1.5 hover:brightness-110 disabled:opacity-50 transition"
+        className="ml-auto rounded-md bg-primary text-on-primary text-sm font-medium px-4 py-1.5 hover:brightness-110 disabled:opacity-50 transition"
       >
         {loading ? "Actualizando…" : "Actualizar"}
       </button>

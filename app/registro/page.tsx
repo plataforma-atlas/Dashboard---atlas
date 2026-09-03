@@ -98,7 +98,7 @@ export default function RegistroPage() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 rounded-md bg-primary text-background text-sm font-medium py-2.5 hover:brightness-110 disabled:opacity-50 transition"
+              className="mt-2 rounded-md bg-primary text-on-primary text-sm font-medium py-2.5 hover:brightness-110 disabled:opacity-50 transition"
             >
               {loading ? "Creando cuenta…" : "Crear cuenta"}
             </button>

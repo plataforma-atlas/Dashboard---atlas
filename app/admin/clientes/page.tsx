@@ -145,7 +145,7 @@ export default function AdminClientesPage() {
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="bg-primary text-background font-semibold rounded-md px-4 py-2.5 text-sm"
+            className="bg-primary text-on-primary font-semibold rounded-md px-4 py-2.5 text-sm"
           >
             + Nuevo cliente
           </button>
@@ -156,7 +156,7 @@ export default function AdminClientesPage() {
               key={v}
               onClick={() => setVista(v)}
               className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition ${
-                vista === v ? "bg-primary text-background" : "text-on-surface-variant hover:text-on-surface"
+                vista === v ? "bg-primary text-on-primary" : "text-on-surface-variant hover:text-on-surface"
               }`}
             >
               {v === "active" ? "Activos" : "Archivados"}
@@ -190,7 +190,7 @@ export default function AdminClientesPage() {
                     type="button"
                     onClick={() => toggleEstrategia(s.id)}
                     className={`text-xs px-3 py-1.5 rounded-full border transition ${
-                      activa ? "bg-primary text-background border-primary" : "border-outline text-on-surface-variant hover:text-on-surface"
+                      activa ? "bg-primary text-on-primary border-primary" : "border-outline text-on-surface-variant hover:text-on-surface"
                     }`}
                   >
                     {s.label}
@@ -206,7 +206,7 @@ export default function AdminClientesPage() {
             <button
               type="submit"
               disabled={creando}
-              className="bg-primary text-background font-semibold rounded-md px-4 py-2.5 text-sm disabled:opacity-50"
+              className="bg-primary text-on-primary font-semibold rounded-md px-4 py-2.5 text-sm disabled:opacity-50"
             >
               {creando ? "Creando…" : "Crear cliente"}
             </button>
