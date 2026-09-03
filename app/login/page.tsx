@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
+import PasswordInput from "@/components/PasswordInput";
 
 function LoginForm() {
   const router = useRouter();
@@ -65,12 +66,11 @@ function LoginForm() {
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-[11px] uppercase tracking-[0.1em] text-on-surface-faint">Contraseña</label>
-            <input
-              type="password"
-              required
+            <PasswordInput
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+              onChange={setPassword}
+              required
+              autoComplete="current-password"
               placeholder="••••••••"
             />
           </div>

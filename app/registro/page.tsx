@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function RegistroPage() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function RegistroPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -19,6 +21,10 @@ export default function RegistroPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (password !== passwordConfirm) {
+      setError("Las contraseñas no coinciden");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/auth/registro", {
@@ -82,22 +88,35 @@ export default function RegistroPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] uppercase tracking-[0.1em] text-on-surface-faint">Contraseña</label>
-              <input
-                type="password"
+              <PasswordInput
+                value={password}
+                onChange={setPassword}
                 required
                 minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                autoComplete="new-password"
                 placeholder="Mínimo 6 caracteres"
               />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] uppercase tracking-[0.1em] text-on-surface-faint">Confirmar contraseña</label>
+              <PasswordInput
+                value={passwordConfirm}
+                onChange={setPasswordConfirm}
+                required
+                minLength={6}
+                autoComplete="new-password"
+                placeholder="Repite la contraseña"
+              />
+              {passwordConfirm && password !== passwordConfirm && (
+                <p className="text-xs text-error">Las contraseñas no coinciden</p>
+              )}
             </div>
 
             {error && <p className="text-sm text-error">{error}</p>}
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (passwordConfirm !== "" && password !== passwordConfirm)}
               className="mt-2 rounded-md bg-primary text-on-primary text-sm font-medium py-2.5 hover:brightness-110 disabled:opacity-50 transition"
             >
               {loading ? "Creando cuenta…" : "Crear cuenta"}
