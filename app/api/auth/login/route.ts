@@ -18,9 +18,10 @@ export async function POST(req: Request) {
       cache: "no-store",
     });
 
-    if (!res.ok) return NextResponse.json({ error: "Correo o contraseña incorrectos" }, { status: 401 });
+    const data = await res.json().catch(() => ({}));
 
-    const data = await res.json();
+    if (!res.ok) return NextResponse.json({ error: data?.error || "Correo o contraseña incorrectos" }, { status: res.status });
+
     const token = data?.token as string | undefined;
     if (!token) return NextResponse.json({ error: "Correo o contraseña incorrectos" }, { status: 401 });
 
