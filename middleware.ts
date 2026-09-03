@@ -29,7 +29,8 @@ export async function middleware(req: NextRequest) {
   if (
     session?.role === "checkin" &&
     !pathname.startsWith("/checkin") &&
-    !pathname.startsWith("/api/evento")
+    !pathname.startsWith("/api/evento") &&
+    !pathname.startsWith("/api/auth")
   ) {
     return NextResponse.redirect(new URL("/checkin", req.url));
   }
