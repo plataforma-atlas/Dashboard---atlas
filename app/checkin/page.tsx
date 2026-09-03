@@ -85,6 +85,16 @@ export default function CheckinPage() {
     return () => clearInterval(interval);
   }, []);
 
+  function limpiarBusqueda() {
+    setQuery("");
+    setResultados([]);
+    setSearched(false);
+    setError(null);
+    setEditingId(null);
+    setGuestOpenId(null);
+    setPonenteFormOpen(false);
+  }
+
   async function buscar(e: React.FormEvent) {
     e.preventDefault();
     if (!query.trim()) return;
@@ -379,14 +389,26 @@ export default function CheckinPage() {
         )}
 
         <form onSubmit={buscar} className="flex gap-2 mb-6">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Nombre, correo o teléfono"
-            autoFocus
-            className="flex-1 bg-surface border border-outline rounded-md px-3 py-3 text-base text-on-surface focus:border-primary outline-none"
-          />
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Nombre, correo o teléfono"
+              autoFocus
+              className="w-full bg-surface border border-outline rounded-md px-3 py-3 pr-9 text-base text-on-surface focus:border-primary outline-none"
+            />
+            {(query || searched) && (
+              <button
+                type="button"
+                onClick={limpiarBusqueda}
+                aria-label="Borrar búsqueda"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-faint hover:text-on-surface text-lg leading-none px-1"
+              >
+                ×
+              </button>
+            )}
+          </div>
           <button
             type="submit"
             disabled={loading || !query.trim()}
