@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   const session = token ? await verifySession(token) : null;
   if (!session) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
-  if (session.role !== "admin" && !session.clientes.includes("atlas")) {
+  if (session.role !== "admin" && session.role !== "checkin" && !session.clientes.includes("atlas")) {
     return NextResponse.json({ error: "Sin acceso al evento" }, { status: 403 });
   }
 

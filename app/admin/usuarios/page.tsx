@@ -9,7 +9,7 @@ type Usuario = {
   id: number;
   email: string;
   name: string;
-  role: "admin" | "client";
+  role: "admin" | "client" | "checkin";
   created_at: string;
   clientes: string[];
 };
@@ -58,7 +58,7 @@ export default function AdminUsuariosPage() {
     cargar();
   }, []);
 
-  async function cambiarRol(userId: number, role: "admin" | "client") {
+  async function cambiarRol(userId: number, role: "admin" | "client" | "checkin") {
     setBusy(userId);
     try {
       const res = await fetch("/api/admin/cambiar-rol", {
@@ -166,16 +166,19 @@ export default function AdminUsuariosPage() {
                       <select
                         value={u.role}
                         disabled={isBusy}
-                        onChange={(e) => cambiarRol(u.id, e.target.value as "admin" | "client")}
+                        onChange={(e) => cambiarRol(u.id, e.target.value as "admin" | "client" | "checkin")}
                         className="bg-background border border-outline rounded-md px-2 py-1.5 text-sm text-on-surface focus:border-primary outline-none disabled:opacity-50"
                       >
                         <option value="client">client</option>
                         <option value="admin">admin</option>
+                        <option value="checkin">check-in</option>
                       </select>
                     </td>
                     <td className="px-4 py-3">
                       {u.role === "admin" ? (
                         <span className="text-xs text-on-surface-faint">Ve todos los clientes (es admin)</span>
+                      ) : u.role === "checkin" ? (
+                        <span className="text-xs text-on-surface-faint">Solo acceso a Check-in del evento (no ve clientes)</span>
                       ) : (
                         <div className="flex flex-wrap gap-2">
                           {clientesDisponibles.map((c) => {

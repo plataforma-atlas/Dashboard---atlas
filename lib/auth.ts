@@ -2,7 +2,7 @@ import { jwtVerify } from "jose";
 
 export type SessionPayload = {
   user_id: number;
-  role: "admin" | "client";
+  role: "admin" | "client" | "checkin";
   clientes: string[];
 };
 

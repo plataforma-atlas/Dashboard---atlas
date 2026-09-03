@@ -21,7 +21,17 @@ export async function middleware(req: NextRequest) {
   }
 
   if (isPublic && session && (pathname === "/login" || pathname === "/registro")) {
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(new URL(session.role === "checkin" ? "/checkin" : "/", req.url));
+  }
+
+  // El rol "checkin" es para staff externo del evento que solo debe poder
+  // usar la pantalla de check-in — no ve el resto del dashboard (ni /admin).
+  if (
+    session?.role === "checkin" &&
+    !pathname.startsWith("/checkin") &&
+    !pathname.startsWith("/api/evento")
+  ) {
+    return NextResponse.redirect(new URL("/checkin", req.url));
   }
 
   if (pathname.startsWith("/admin") && session?.role !== "admin") {
