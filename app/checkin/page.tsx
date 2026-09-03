@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 
@@ -35,6 +36,7 @@ function tierLabel(tier: string) {
 }
 
 export default function CheckinPage() {
+  const router = useRouter();
   const { mode, toggleMode } = useThemeMode();
   const [query, setQuery] = useState("");
   const [resultados, setResultados] = useState<Inscrito[]>([]);
@@ -287,10 +289,22 @@ export default function CheckinPage() {
   const totalGeneral = resumen.reduce((acc, r) => acc + Number(r.total), 0);
   const checkedInGeneral = resumen.reduce((acc, r) => acc + Number(r.checked_in), 0);
 
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="flex justify-end px-4 pt-4">
+      <div className="flex justify-end items-center gap-2 px-4 pt-4">
         <ThemeModeToggle mode={mode} onToggle={toggleMode} />
+        <button
+          onClick={handleLogout}
+          className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition"
+        >
+          Salir
+        </button>
       </div>
       <div className="w-full max-w-lg mx-auto px-4 pb-8">
         <div className="flex flex-col items-center gap-1 mb-6 text-center">
