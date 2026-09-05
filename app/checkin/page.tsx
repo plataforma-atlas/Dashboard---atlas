@@ -52,6 +52,9 @@ export default function CheckinPage() {
   const [resumen, setResumen] = useState<ResumenTier[]>([]);
   const [invitadosVip, setInvitadosVip] = useState(0);
 
+  const [filtroTier, setFiltroTier] = useState<string | null>(null);
+  const [filtroLoading, setFiltroLoading] = useState(false);
+
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({ name: "", email: "", phone: "", notes: "" });
   const [editLoading, setEditLoading] = useState(false);
@@ -102,6 +105,35 @@ export default function CheckinPage() {
     setGuestOpenId(null);
     setPonenteFormOpen(false);
     setGeneralFormOpen(false);
+    setFiltroTier(null);
+  }
+
+  async function filtrarPorTier(tier: string) {
+    if (filtroTier === tier) {
+      limpiarBusqueda();
+      return;
+    }
+    setQuery("");
+    setFiltroTier(tier);
+    setFiltroLoading(true);
+    setError(null);
+    setSearched(true);
+    setEditingId(null);
+    try {
+      const res = await fetch(`/api/evento/listar-por-tier?tier=${encodeURIComponent(tier)}`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "No pudimos cargar la lista.");
+        setResultados([]);
+        return;
+      }
+      setResultados(data.inscritos ?? []);
+    } catch {
+      setError("No pudimos conectar. Revisa tu internet e intenta de nuevo.");
+      setResultados([]);
+    } finally {
+      setFiltroLoading(false);
+    }
   }
 
   async function buscar(e: React.FormEvent) {
@@ -111,6 +143,7 @@ export default function CheckinPage() {
     setError(null);
     setSearched(true);
     setEditingId(null);
+    setFiltroTier(null);
     try {
       const res = await fetch(`/api/evento/buscar?q=${encodeURIComponent(query.trim())}`, { cache: "no-store" });
       const data = await res.json();
@@ -463,9 +496,38 @@ export default function CheckinPage() {
           </button>
         </form>
 
+        <div className="flex items-center justify-center gap-2 flex-wrap mb-6">
+          <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Ver quién falta:</span>
+          {[
+            { value: "VIP", label: "VIP" },
+            { value: "Platino", label: "Platinum" },
+            { value: "Confirmado", label: "Gratuita" },
+            { value: "General (gratis)", label: "General" },
+          ].map((t) => (
+            <button
+              key={t.value}
+              onClick={() => filtrarPorTier(t.value)}
+              disabled={filtroLoading}
+              className={`text-[11px] font-semibold uppercase tracking-[0.04em] rounded-full px-3 py-1.5 border transition disabled:opacity-50 ${
+                filtroTier === t.value
+                  ? "bg-primary text-on-primary border-primary"
+                  : "text-on-surface-variant border-outline hover:border-primary"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         {error && <p className="text-sm text-error mb-4">{error}</p>}
 
-        {searched && !loading && !error && resultados.length === 0 && (
+        {filtroTier && !filtroLoading && !error && (
+          <p className="text-xs text-on-surface-faint text-center mb-4">
+            {resultados.length} inscrito{resultados.length === 1 ? "" : "s"} · {resultados.filter((r) => !r.checked_in).length} sin ingresar todavía (arriba de la lista)
+          </p>
+        )}
+
+        {searched && !filtroTier && !loading && !error && resultados.length === 0 && (
           <div className="text-center mb-4 flex flex-col items-center gap-2">
             <p className="text-sm text-on-surface-faint mb-1">No se encontró ningún inscrito con ese dato.</p>
             {!ponenteFormOpen && (
