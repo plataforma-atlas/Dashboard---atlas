@@ -14,10 +14,12 @@ function safeParse(text: string): any {
 export async function GET(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
-  if (!session) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-
-  if (session.role !== "admin" && session.role !== "checkin" && !session.clientes.includes("atlas")) {
-    return NextResponse.json({ error: "Sin acceso al evento" }, { status: 403 });
+  const checkinPublico = process.env.EVENTO_CHECKIN_PUBLICO === "true";
+  if (!checkinPublico) {
+    if (!session) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    if (session.role !== "admin" && session.role !== "checkin" && !session.clientes.includes("atlas")) {
+      return NextResponse.json({ error: "Sin acceso al evento" }, { status: 403 });
+    }
   }
 
   const { searchParams } = new URL(req.url);

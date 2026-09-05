@@ -22,6 +22,8 @@ type EditForm = { name: string; email: string; phone: string; notes: string };
 
 type GuestForm = { name: string; phone: string; email: string };
 
+type PonenteForm = { name: string; phone: string; email: string; pais: string };
+
 type Guest = { name: string; phone: string; email: string };
 
 function tierBadgeClass(tier: string) {
@@ -61,7 +63,7 @@ export default function CheckinPage() {
   const [vipMarkingId, setVipMarkingId] = useState<number | null>(null);
 
   const [ponenteFormOpen, setPonenteFormOpen] = useState(false);
-  const [ponenteForm, setPonenteForm] = useState<GuestForm>({ name: "", phone: "", email: "" });
+  const [ponenteForm, setPonenteForm] = useState<PonenteForm>({ name: "", phone: "", email: "", pais: "" });
   const [ponenteSaving, setPonenteSaving] = useState(false);
 
   async function cargarResumen() {
@@ -284,7 +286,7 @@ export default function CheckinPage() {
 
   async function registrarPonente(e: React.FormEvent) {
     e.preventDefault();
-    if (!ponenteForm.name.trim()) return;
+    if (!ponenteForm.name.trim() || !ponenteForm.pais.trim()) return;
     setPonenteSaving(true);
     try {
       const res = await fetch("/api/evento/registrar-invitado-ponente", {
@@ -303,14 +305,14 @@ export default function CheckinPage() {
         name: lead.name ?? ponenteForm.name,
         email: lead.email ?? ponenteForm.email,
         phone: lead.phone ?? ponenteForm.phone,
-        country: null,
+        country: lead.country ?? ponenteForm.pais,
         campaign_name: "Invitados de Ponentes",
         tier: "VIP",
         checked_in: false,
       };
       setResultados((prev) => [nuevo, ...prev]);
       setSearched(true);
-      setPonenteForm({ name: "", phone: "", email: "" });
+      setPonenteForm({ name: "", phone: "", email: "", pais: "" });
       setPonenteFormOpen(false);
       cargarResumen();
     } finally {
@@ -426,7 +428,7 @@ export default function CheckinPage() {
             {!ponenteFormOpen ? (
               <button
                 onClick={() => {
-                  setPonenteForm({ name: query, phone: "", email: "" });
+                  setPonenteForm({ name: query, phone: "", email: "", pais: "" });
                   setPonenteFormOpen(true);
                 }}
                 className="text-xs text-violet-300 hover:text-violet-200 underline"
@@ -441,7 +443,7 @@ export default function CheckinPage() {
           <div className="text-center mb-4">
             <button
               onClick={() => {
-                setPonenteForm({ name: "", phone: "", email: "" });
+                setPonenteForm({ name: "", phone: "", email: "", pais: "" });
                 setPonenteFormOpen((v) => !v);
               }}
               className="text-xs text-violet-300 hover:text-violet-200 underline"
@@ -475,21 +477,33 @@ export default function CheckinPage() {
                 />
               </label>
             </div>
-            <label className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Correo</span>
-              <input
-                value={ponenteForm.email}
-                onChange={(e) => setPonenteForm((f) => ({ ...f, email: e.target.value }))}
-                className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
-              />
-            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Correo</span>
+                <input
+                  value={ponenteForm.email}
+                  onChange={(e) => setPonenteForm((f) => ({ ...f, email: e.target.value }))}
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">País *</span>
+                <input
+                  value={ponenteForm.pais}
+                  onChange={(e) => setPonenteForm((f) => ({ ...f, pais: e.target.value }))}
+                  placeholder="Ej. Colombia"
+                  required
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                />
+              </label>
+            </div>
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setPonenteFormOpen(false)} className="text-xs text-on-surface-faint hover:text-on-surface px-3 py-2">
                 Cancelar
               </button>
               <button
                 type="submit"
-                disabled={ponenteSaving || !ponenteForm.name.trim()}
+                disabled={ponenteSaving || !ponenteForm.name.trim() || !ponenteForm.pais.trim()}
                 className="bg-violet-500 text-white font-semibold rounded-md px-4 py-2 text-xs disabled:opacity-50"
               >
                 {ponenteSaving ? "Registrando…" : "Registrar como VIP"}

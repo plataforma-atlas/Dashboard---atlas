@@ -3,13 +3,19 @@ import { COOKIE_NAME, verifySession } from "@/lib/auth";
 
 const PUBLIC_PATHS = ["/login", "/registro"];
 
+// Interruptor de emergencia: cuando el equipo de check-in no ha podido crear/usar
+// cuentas todavía, esto permite que CUALQUIERA entre a /checkin sin sesión.
+// Revertir apagando la variable de entorno cuando el equipo ya tenga acceso normal.
+const CHECKIN_PUBLICO = process.env.EVENTO_CHECKIN_PUBLICO === "true";
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isPublic =
     PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
-    pathname === "/favicon.ico";
+    pathname === "/favicon.ico" ||
+    (CHECKIN_PUBLICO && (pathname.startsWith("/checkin") || pathname.startsWith("/api/evento")));
 
   const token = req.cookies.get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
