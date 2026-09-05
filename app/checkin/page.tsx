@@ -24,6 +24,8 @@ type GuestForm = { name: string; phone: string; email: string };
 
 type PonenteForm = { name: string; phone: string; email: string; pais: string };
 
+type GeneralForm = { name: string; phone: string; email: string; pais: string };
+
 type Guest = { name: string; phone: string; email: string };
 
 function tierBadgeClass(tier: string) {
@@ -66,6 +68,10 @@ export default function CheckinPage() {
   const [ponenteForm, setPonenteForm] = useState<PonenteForm>({ name: "", phone: "", email: "", pais: "" });
   const [ponenteSaving, setPonenteSaving] = useState(false);
 
+  const [generalFormOpen, setGeneralFormOpen] = useState(false);
+  const [generalForm, setGeneralForm] = useState<GeneralForm>({ name: "", phone: "", email: "", pais: "" });
+  const [generalSaving, setGeneralSaving] = useState(false);
+
   async function cargarResumen() {
     try {
       const res = await fetch("/api/evento/checkin-resumen", { cache: "no-store" });
@@ -95,6 +101,7 @@ export default function CheckinPage() {
     setEditingId(null);
     setGuestOpenId(null);
     setPonenteFormOpen(false);
+    setGeneralFormOpen(false);
   }
 
   async function buscar(e: React.FormEvent) {
@@ -320,6 +327,42 @@ export default function CheckinPage() {
     }
   }
 
+  async function registrarGeneral(e: React.FormEvent) {
+    e.preventDefault();
+    if (!generalForm.name.trim()) return;
+    setGeneralSaving(true);
+    try {
+      const res = await fetch("/api/evento/registrar-invitado-general", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(generalForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "No se pudo registrar la entrada");
+        return;
+      }
+      const lead = data.lead ?? {};
+      const nuevo: Inscrito = {
+        lead_id: lead.lead_id,
+        name: lead.name ?? generalForm.name,
+        email: lead.email ?? generalForm.email,
+        phone: lead.phone ?? generalForm.phone,
+        country: lead.country ?? generalForm.pais,
+        campaign_name: "Walk-in General",
+        tier: "General (gratis)",
+        checked_in: true,
+      };
+      setResultados((prev) => [nuevo, ...prev]);
+      setSearched(true);
+      setGeneralForm({ name: "", phone: "", email: "", pais: "" });
+      setGeneralFormOpen(false);
+      cargarResumen();
+    } finally {
+      setGeneralSaving(false);
+    }
+  }
+
   const totalGeneral = resumen.reduce((acc, r) => acc + Number(r.total), 0);
   const checkedInGeneral = resumen.reduce((acc, r) => acc + Number(r.checked_in), 0);
 
@@ -423,9 +466,9 @@ export default function CheckinPage() {
         {error && <p className="text-sm text-error mb-4">{error}</p>}
 
         {searched && !loading && !error && resultados.length === 0 && (
-          <div className="text-center mb-4">
-            <p className="text-sm text-on-surface-faint mb-3">No se encontró ningún inscrito con ese dato.</p>
-            {!ponenteFormOpen ? (
+          <div className="text-center mb-4 flex flex-col items-center gap-2">
+            <p className="text-sm text-on-surface-faint mb-1">No se encontró ningún inscrito con ese dato.</p>
+            {!ponenteFormOpen && (
               <button
                 onClick={() => {
                   setPonenteForm({ name: query, phone: "", email: "", pais: "" });
@@ -435,12 +478,23 @@ export default function CheckinPage() {
               >
                 + Registrar invitado de ponente (VIP)
               </button>
-            ) : null}
+            )}
+            {!generalFormOpen && (
+              <button
+                onClick={() => {
+                  setGeneralForm({ name: query, phone: "", email: "", pais: "" });
+                  setGeneralFormOpen(true);
+                }}
+                className="text-xs text-primary hover:underline underline"
+              >
+                + Entrada general (sin registro previo)
+              </button>
+            )}
           </div>
         )}
 
         {!searched && (
-          <div className="text-center mb-4">
+          <div className="text-center mb-4 flex flex-col items-center gap-2">
             <button
               onClick={() => {
                 setPonenteForm({ name: "", phone: "", email: "", pais: "" });
@@ -449,6 +503,15 @@ export default function CheckinPage() {
               className="text-xs text-violet-300 hover:text-violet-200 underline"
             >
               {ponenteFormOpen ? "Cerrar" : "+ Registrar invitado de ponente (VIP)"}
+            </button>
+            <button
+              onClick={() => {
+                setGeneralForm({ name: "", phone: "", email: "", pais: "" });
+                setGeneralFormOpen((v) => !v);
+              }}
+              className="text-xs text-primary hover:underline underline"
+            >
+              {generalFormOpen ? "Cerrar" : "+ Entrada general (sin registro previo)"}
             </button>
           </div>
         )}
@@ -507,6 +570,64 @@ export default function CheckinPage() {
                 className="bg-violet-500 text-white font-semibold rounded-md px-4 py-2 text-xs disabled:opacity-50"
               >
                 {ponenteSaving ? "Registrando…" : "Registrar como VIP"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {generalFormOpen && (
+          <form onSubmit={registrarGeneral} className="rounded-lg border border-primary/30 bg-primary/5 p-4 mb-6 flex flex-col gap-3">
+            <p className="text-[11px] text-on-surface-faint">
+              Entrada general para alguien que nunca se registró (sin cobro por ahora) — queda con check-in ya hecho.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Nombre</span>
+                <input
+                  value={generalForm.name}
+                  onChange={(e) => setGeneralForm((f) => ({ ...f, name: e.target.value }))}
+                  autoFocus
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Teléfono</span>
+                <input
+                  value={generalForm.phone}
+                  onChange={(e) => setGeneralForm((f) => ({ ...f, phone: e.target.value }))}
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                />
+              </label>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Correo</span>
+                <input
+                  value={generalForm.email}
+                  onChange={(e) => setGeneralForm((f) => ({ ...f, email: e.target.value }))}
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">País</span>
+                <input
+                  value={generalForm.pais}
+                  onChange={(e) => setGeneralForm((f) => ({ ...f, pais: e.target.value }))}
+                  placeholder="Ej. Colombia"
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
+                />
+              </label>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setGeneralFormOpen(false)} className="text-xs text-on-surface-faint hover:text-on-surface px-3 py-2">
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={generalSaving || !generalForm.name.trim()}
+                className="bg-primary text-on-primary font-semibold rounded-md px-4 py-2 text-xs disabled:opacity-50"
+              >
+                {generalSaving ? "Registrando…" : "Registrar entrada"}
               </button>
             </div>
           </form>
