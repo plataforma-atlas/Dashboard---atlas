@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vermetricas — Fondo animado de login (vanilla)</title>
+<style>
+  /* ============================================================
+     Esta es la MISMA versión (colores, comportamiento, todos los
+     ajustes finos) que quedó funcionando en la app real, portada a
+     HTML + CSS + JS puro sin ningún framework ni librería.
+     ============================================================ */
+  :root {
+    --accent: #5b5bf7;
+    --accent-soft: #8b86ff;
+    --ink: #f3f4f6;
+    --ink-muted: #9aa0ae;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+
+  body {
+    background: #090d0e;
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    overflow: hidden;
+  }
+
+  /* Contenedor del fondo animado — cubre toda la pantalla, detrás de todo. */
+  #bg-stage {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    background: #090d0e;
+  }
+
+  #bg-canvas {
+    position: absolute;
+    top: 0;
+    display: block;
+  }
+
+  /* Degradados de arriba y abajo: ocultan el logo/tope y desvanecen la
+     última fila hacia abajo, en vez de cortar en seco. */
+  #bg-fade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, #090d0e 0%, #090d0e 28%, transparent 48%),
+      linear-gradient(180deg, transparent 52%, rgba(9, 13, 14, 0.82) 72%),
+      linear-gradient(180deg, rgba(9, 13, 14, 0.08), transparent 12%, transparent 90%, rgba(9, 13, 14, 0.14));
+  }
+
+  /* Capa de login por encima del fondo — demo, reemplazalo por tu propio
+     formulario/markup. */
+  .login-wrap {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 28px;
+  }
+
+  .brand__mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent-soft), var(--accent));
+    box-shadow: 0 0 30px rgba(139, 134, 255, 0.45);
+  }
+
+  .brand__name {
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent-soft);
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 360px;
+    background: rgba(24, 26, 34, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px;
+    padding: 32px 28px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  }
+
+  .login-card h1 {
+    margin: 0 0 22px;
+    font-size: 20px;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .field label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  .field input {
+    background: #090d0e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--ink);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .field input:focus { border-color: var(--accent); }
+
+  .login-card button {
+    width: 100%;
+    margin-top: 8px;
+    padding: 11px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s ease;
+  }
+
+  .login-card button:hover { filter: brightness(1.1); }
+</style>
+</head>
+<body>
+
+  <div id="bg-stage" aria-hidden="true">
+    <canvas id="bg-canvas"></canvas>
+    <div id="bg-fade"></div>
+  </div>
+
+  <div class="login-wrap">
+    <div class="brand">
+      <div class="brand__mark"></div>
+      <span class="brand__name">Vermetricas</span>
+    </div>
+    <form class="login-card" onsubmit="return false;">
+      <h1>Iniciar sesión</h1>
+      <div class="field">
+        <label>Correo</label>
+        <input type="email" placeholder="tu@correo.com" />
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" placeholder="••••••••" />
+      </div>
+      <button type="submit">Ingresar</button>
+    </form>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    const stage = document.getElementById("bg-stage");
+    const canvas = document.getElementById("bg-canvas");
+    const ctx = canvas.getContext("2d");
+
+    // ============================================================
+    // CONFIG — los mismos valores que quedaron afinados a mano en la
+    // app real. Cambialos acá si querés ajustar el look.
+    // ============================================================
+    const COL = { base: "#0E1018", low: "#181A2D", mid: "#5B5BF7", hot: "#A5A0FF" };
+    const cfg = {
+      rows: 6,           // cantidad de filas
+      gapX: 7,           // separación horizontal entre módulos
+      gapY: 7,           // separación vertical entre módulos
+      radius: 2,         // radio de esquina
+      cycle: 4700,       // ms que tarda la luz en cruzar toda la fila (ida)
+      sourceRow: 3,      // fila donde viaja la luz (0 = arriba)
+      shadowX: 7,        // desplazamiento horizontal de la sombra de cada celda
+      shadowY: 7,        // desplazamiento vertical de la sombra de cada celda
+      spread: 3.2,       // alcance del brillo hacia los costados (columnas)
+      spreadY: 1.8,      // alcance del brillo hacia arriba/abajo (filas) en el centro del recorrido
+      spreadYEdge: 3.8,  // alcance vertical cerca de los bordes (efecto abanico/bombillo)
+    };
+
+    let W = 0, H = 0, DPR = 1, rafId = 0;
+    // El canvas dibuja "bleed" px de más a cada lado (recortados por el
+    // overflow-hidden del contenedor) para que el resplandor/sombra de las
+    // celdas del borde no se corte en seco contra el límite del canvas.
+    const bleed = 24;
+
+    function resize() {
+      const r = stage.getBoundingClientRect();
+      W = r.width;
+      H = r.height;
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.style.left = "-" + bleed + "px";
+      canvas.style.width = (W + bleed * 2) + "px";
+      canvas.width = Math.round((W + bleed * 2) * DPR);
+      canvas.height = Math.round(H * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, bleed * DPR, 0);
+    }
+
+    // --- utilidades de color ---
+    const rgb = (h) => {
+      const n = parseInt(h.replace("#", ""), 16);
+      return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+    };
+    const base = rgb(COL.base), low = rgb(COL.low), mid = rgb(COL.mid), hot = rgb(COL.hot);
+    const white = { r: 255, g: 255, b: 255 };
+    const mix = (a, b, t) => ({
+      r: Math.round(a.r + (b.r - a.r) * t),
+      g: Math.round(a.g + (b.g - a.g) * t),
+      b: Math.round(a.b + (b.b - a.b) * t),
+    });
+    const rgba = (c, a) => "rgba(" + c.r + "," + c.g + "," + c.b + "," + (a === undefined ? 1 : a) + ")";
+    const clamp = (v, a, b) => Math.max(a === undefined ? 0 : a, Math.min(b === undefined ? 1 : b, v));
+    const smooth = (t) => t * t * (3 - 2 * t);
+    function travel(t) {
+      t %= 1;
+      return t < 0.5 ? smooth(t * 2) : smooth((1 - t) * 2);
+    }
+
+    function rounded(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // ============================================================
+    // Se detiene (congela el frame actual) mientras el usuario está
+    // escribiendo en algún campo del formulario, para no distraer.
+    // Al enfocar un campo, la luz baja a la última fila (debajo de la
+    // card) y se queda ahí; al dejar de escribir retoma el recorrido
+    // desde ese mismo punto, en vez de saltar de vuelta arriba.
+    // ============================================================
+    let paused = false;
+    let activeRow = cfg.sourceRow;
+    let pauseStart = 0;
+    let pausedElapsed = 0;
+    let frozenNow = 0;
+    const isFormField = (el) => el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA");
+    const handleFocusIn = (e) => {
+      if (!isFormField(e.target)) return;
+      pauseStart = performance.now();
+      frozenNow = pauseStart - pausedElapsed;
+      paused = true;
+      activeRow = cfg.rows - 1;
+    };
+    const handleFocusOut = (e) => {
+      if (!isFormField(e.target)) return;
+      paused = false;
+      pausedElapsed += performance.now() - pauseStart;
+    };
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("focusout", handleFocusOut);
+
+    function draw(rawNow) {
+      const now = paused ? frozenNow : rawNow - pausedElapsed;
+      ctx.clearRect(-bleed, 0, W + bleed * 2, H);
+
+      const padX = 0;
+      const padY = Math.max(18, H * 0.06);
+      const usableW = W - padX * 2;
+      const usableH = H - padY * 2;
+
+      // Filas fijas, sin tope de alto: la celda crece para llenar el alto
+      // completo (aunque la ventana sea muy alta). Columnas: se recalculan
+      // según el ancho disponible para que la celda SIEMPRE quede vertical
+      // (más alta que ancha) y la grilla llene el ancho completo.
+      const cellH = (usableH - cfg.gapY * (cfg.rows - 1)) / cfg.rows;
+      const targetCellW = cellH * 0.62;
+      const cols = Math.max(1, Math.round((usableW + cfg.gapX) / (targetCellW + cfg.gapX)));
+      const cellW = (usableW - cfg.gapX * (cols - 1)) / cols;
+      // El alcance del brillo escala con la cantidad de columnas — si no,
+      // en pantallas anchas gran parte de la grilla queda casi apagada.
+      const spread = Math.max(cfg.spread, cols * 0.32);
+
+      const gridW = cellW * cols + cfg.gapX * (cols - 1);
+      const gridH = cellH * cfg.rows + cfg.gapY * (cfg.rows - 1);
+      const startX = (W - gridW) / 2;
+      const startY = (H - gridH) / 2;
+
+      // El recorrido se pasa un poco de cada borde (overshoot) para que el
+      // destello alcance a "salirse" de la página — la celda del borde deja
+      // de verse como núcleo sólido y se apaga como si fuera solo la mitad
+      // del destello, en vez de quedar pegado ahí como bloque fijo.
+      const overshoot = 0.9;
+      const t = reducedMotion ? 0.5 : (now % cfg.cycle) / cfg.cycle;
+      const pos = -overshoot + travel(t) * (cols - 1 + overshoot * 2);
+      const sourceX = startX + pos * (cellW + cfg.gapX);
+      const sourceY = startY + (activeRow + 0.5) * (cellH + cfg.gapY);
+
+      // La celda "núcleo" (la más brillante) es siempre UNA sola: la más
+      // cercana en fila/columna a la posición de la luz.
+      const coreCol = Math.max(0, Math.min(cols - 1, Math.round(pos)));
+      const coreDist = Math.abs(pos - coreCol);
+      const coreRow = Math.max(0, Math.min(cfg.rows - 1, Math.round(activeRow)));
+
+      // Efecto abanico: cerca de cada extremo del recorrido, el haz se abre
+      // iluminando varias filas de esa columna, en vez de solo una.
+      const distFromEdge = Math.min(pos, cols - 1 - pos);
+      const edgeRange = 2.2;
+      const fanT = smooth(clamp(1 - distFromEdge / edgeRange));
+      const spreadY = cfg.spreadY + (cfg.spreadYEdge - cfg.spreadY) * fanT;
+
+      const halo = ctx.createRadialGradient(sourceX, sourceY, 0, sourceX, sourceY, cellW * 6.0);
+      halo.addColorStop(0, rgba(hot, 0.075));
+      halo.addColorStop(0.38, rgba(mid, 0.032));
+      halo.addColorStop(1, rgba(mid, 0));
+      ctx.fillStyle = halo;
+      ctx.fillRect(-bleed, 0, W + bleed * 2, H);
+
+      // Una fila extra arriba y otra abajo (fuera del rango "real") para que
+      // se asome un rectángulo más en cada margen en vez de dejar espacio
+      // vacío — el degradado CSS ya se encarga de desvanecerlas.
+      for (let r = -1; r <= cfg.rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x = startX + c * (cellW + cfg.gapX);
+          const y = startY + r * (cellH + cfg.gapY);
+          const cx = x + cellW / 2;
+          const cy = y + cellH / 2;
+
+          const dx = (cx - sourceX) / (cellW + cfg.gapX);
+          const dy = (cy - sourceY) / (cellH + cfg.gapY);
+
+          // Caída anisotrópica: horizontal (spread) más amplia que la
+          // vertical (spreadY) — con el abanico abriéndose cerca de los
+          // bordes.
+          let intensity = Math.exp(-((dx * dx) / (2 * spread) + (dy * dy) / (2 * spreadY)));
+          intensity = Math.pow(intensity, 1.04);
+          // El núcleo solo es bloque sólido mientras la luz está
+          // razonablemente encima de esta celda — si se pasó de largo hacia
+          // un borde (overshoot), se apaga con la caída normal.
+          const core = r === coreRow && c === coreCol && coreDist < 0.55;
+          if (core) intensity = 0.82;
+
+          ctx.save();
+          ctx.shadowColor = "rgba(0,0,0,.72)";
+          ctx.shadowBlur = 10;
+          rounded(x + cfg.shadowX, y + cfg.shadowY, cellW, cellH, cfg.radius);
+          ctx.fillStyle = "rgba(3,6,7,.95)";
+          ctx.fill();
+          ctx.restore();
+
+          let vx = sourceX - cx, vy = sourceY - cy;
+          const len = Math.hypot(vx, vy) || 1;
+          vx /= len; vy /= len;
+          const reach = Math.max(cellW, cellH) * 0.7;
+          const gx1 = cx + vx * reach, gy1 = cy + vy * reach;
+          const gx2 = cx - vx * reach, gy2 = cy - vy * reach;
+
+          // Piso de contraste: incluso una celda sin nada de luz cerca debe
+          // seguir viéndose como rectángulo, nunca como fondo vacío.
+          const dark = mix(base, low, 0.48 + intensity * 0.14);
+          const lit = mix(low, mid, clamp(intensity * 0.86));
+          const peak = mix(lit, hot, clamp((intensity - 0.24) * 1.25));
+
+          rounded(x, y, cellW, cellH, cfg.radius);
+          const g = ctx.createLinearGradient(gx1, gy1, gx2, gy2);
+          g.addColorStop(0, rgba(core ? hot : peak, 0.99));
+          g.addColorStop(0.34, rgba(lit, 0.99));
+          g.addColorStop(1, rgba(dark, 0.995));
+          ctx.fillStyle = g;
+          ctx.fill();
+
+          rounded(x, y, cellW, cellH, cfg.radius);
+          const depth = ctx.createLinearGradient(x, y, x, y + cellH);
+          depth.addColorStop(0, "rgba(255,255,255,.010)");
+          depth.addColorStop(0.7, "rgba(0,0,0,.03)");
+          depth.addColorStop(1, "rgba(0,0,0,.22)");
+          ctx.fillStyle = depth;
+          ctx.fill();
+
+          const edge = ctx.createLinearGradient(gx1, gy1, gx2, gy2);
+          edge.addColorStop(0, rgba(mix(mid, white, 0.2), 0.16 + intensity * 0.2));
+          edge.addColorStop(0.18, "rgba(255,255,255,0)");
+          edge.addColorStop(1, "rgba(255,255,255,0)");
+          rounded(x + 0.45, y + 0.45, cellW - 0.9, cellH - 0.9, cfg.radius);
+          ctx.strokeStyle = edge;
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+
+          if (core) {
+            // Bloque de color sólido y parejo (sin degradado interno) —
+            // más gráfico que un resplandor continuo.
+            rounded(x, y, cellW, cellH, cfg.radius);
+            ctx.save();
+            ctx.globalAlpha = 0.85;
+            ctx.fillStyle = rgba(hot, 1);
+            ctx.shadowColor = rgba(hot, 0.3);
+            ctx.shadowBlur = 14;
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+      }
+
+      if (!reducedMotion) rafId = requestAnimationFrame(draw);
+    }
+
+    const ro = new ResizeObserver(resize);
+    ro.observe(stage);
+    resize();
+    rafId = requestAnimationFrame(draw);
+
+    window.addEventListener("beforeunload", function () {
+      if (rafId) cancelAnimationFrame(rafId);
+      ro.disconnect();
+      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("focusout", handleFocusOut);
+    });
+  })();
+  </script>
+</body>
+</html>

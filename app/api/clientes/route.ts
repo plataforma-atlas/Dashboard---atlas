@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { COOKIE_NAME, verifySession } from "@/lib/auth";
+import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
 
 export async function GET(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: body.error || "No se pudo listar clientes" }, { status: res.status });
     }
     const data: { id: string; name: string; status: string }[] = await res.json();
-    const visibles = session.role === "admin" ? data : data.filter((c) => session.clientes.includes(c.id));
+    const visibles = session.role === "admin" ? data : data.filter((c) => clientesDeSesion(session).includes(c.id));
     return NextResponse.json({ clientes: visibles });
   } catch (err) {
     console.error("Error listando clientes:", err);

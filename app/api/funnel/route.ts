@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { FunnelRow } from "@/lib/types";
-import { COOKIE_NAME, verifySession } from "@/lib/auth";
+import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
 
 export async function GET(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
@@ -21,7 +21,7 @@ export async function GET(req: Request) {
 
   // Defensa en profundidad: un usuario "client" no puede pedir datos de un
   // cliente que no es suyo, aunque manipule la URL directamente.
-  if (session.role !== "admin" && cliente_id && !session.clientes.includes(cliente_id)) {
+  if (session.role !== "admin" && cliente_id && !clientesDeSesion(session).includes(cliente_id)) {
     return NextResponse.json({ source: "error", rows: [], message: "Sin acceso a este cliente" }, { status: 403 });
   }
 

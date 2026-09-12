@@ -10,7 +10,7 @@ const body = Inter({ subsets: ["latin"], variable: "--font-body" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: "Control de Lanzamiento — Agencia Atlas",
+  title: "Control de Lanzamiento — Agencia Vermetricas",
   description: "Panel de telemetría del funnel de marketing por cliente.",
 };
 

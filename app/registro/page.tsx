@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import PasswordInput from "@/components/PasswordInput";
+import LoginGridCanvas from "@/components/LoginGridCanvas";
 
 export default function RegistroPage() {
   const router = useRouter();
@@ -47,15 +48,20 @@ export default function RegistroPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <div className="flex justify-end px-4 pt-4">
+    <div className="relative min-h-screen flex flex-col bg-background overflow-hidden">
+      <LoginGridCanvas />
+      <div className="relative z-10 flex justify-end px-4 pt-4">
         <ThemeModeToggle mode={mode} onToggle={toggleMode} />
       </div>
-      <div className="flex-1 flex items-center justify-center px-4 pb-16">
+      <div className="relative z-10 flex-1 flex items-center justify-center px-4 pb-16">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center gap-1 mb-8">
-          <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">Agencia Atlas</span>
-          <h1 className="font-display text-2xl text-on-surface font-semibold">Crear cuenta</h1>
+          {/* Colores fijos (no tokens de tema): este bloque vive sobre el fondo del
+              LoginGridCanvas, que siempre es oscuro sin importar claro/oscuro. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/vermetricas-icon.png" alt="" className="h-20 w-auto mb-2 drop-shadow-[0_0_24px_rgba(124,124,251,0.45)]" />
+          <span className="text-[11px] uppercase tracking-[0.14em] text-secondary font-mono">Vermetricas</span>
+          <h1 className="font-display text-2xl text-white font-semibold">Crear cuenta</h1>
         </div>
 
         {success ? (

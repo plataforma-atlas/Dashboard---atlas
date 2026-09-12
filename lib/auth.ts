@@ -23,4 +23,16 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
   }
 }
 
+/**
+ * Sesiones firmadas antes del fix del 2026-09-11 pueden traer `clientes` como
+ * un string plano (bug del template del JWT) en vez de array. Normaliza ambos casos
+ * para no depender de que todos hayan vuelto a iniciar sesión.
+ */
+export function clientesDeSesion(session: SessionPayload): string[] {
+  const raw = session.clientes as unknown;
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string" && raw) return raw.split(",");
+  return [];
+}
+
 export { COOKIE_NAME };

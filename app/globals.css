@@ -52,3 +52,46 @@ body {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
+
+/* Loader de marca: la "V" se dibuja como trazo y luego se resuelve en el
+   ícono sólido (ref: concepto "animación de carga" del logo), en loop. */
+.verm-loader {
+  position: relative;
+}
+
+.verm-loader__line {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--color-primary) 70%, transparent));
+}
+
+.verm-loader__line path {
+  stroke-dasharray: 1;
+  animation: verm-loader-line 2.6s ease-in-out infinite;
+}
+
+.verm-loader__solid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: verm-loader-solid 2.6s ease-in-out infinite;
+}
+
+@keyframes verm-loader-line {
+  0% { stroke-dashoffset: 1; opacity: 1; }
+  45% { stroke-dashoffset: 0; opacity: 1; }
+  65% { opacity: 1; }
+  80% { opacity: 0; }
+  100% { opacity: 0; stroke-dashoffset: 1; }
+}
+
+@keyframes verm-loader-solid {
+  0%, 45% { opacity: 0; transform: scale(0.9); }
+  62% { opacity: 1; transform: scale(1); }
+  85% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.96); }
+}

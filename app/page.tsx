@@ -45,6 +45,7 @@ import PdfReportButton from "@/components/webinar-os/PdfReportButton";
 import WebinarCountrySelector from "@/components/webinar-os/WebinarCountrySelector";
 import WebinarNavSidebar, { NavSection } from "@/components/webinar-os/WebinarNavSidebar";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
+import VermetricasLoader from "@/components/VermetricasLoader";
 
 type FunnelResponse = { source: "n8n" | "error"; rows: FunnelRow[]; message?: string };
 type Session = { authenticated: boolean; role?: "admin" | "client"; clientes?: string[] };
@@ -89,7 +90,10 @@ export default function Home() {
   const [fechaFin, setFechaFin] = useState("");
   const [pais, setPais] = useState("");
 
-  const [selectedClientId, setSelectedClientId] = useState(defaultClient.id);
+  // Vacío = "todavía no elegido". Un cliente (role=client) se auto-selecciona
+  // a sí mismo abajo; un admin ve la pantalla de "elige un cliente" hasta que
+  // haga clic en uno — nunca cae en un cliente fijo por defecto.
+  const [selectedClientId, setSelectedClientId] = useState("");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignsLoading, setCampaignsLoading] = useState(false);
   const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
@@ -471,11 +475,21 @@ export default function Home() {
   }, [eventoByAngle, eventoAngleId]);
   const eventoKpis = useMemo(() => toEventoKpis(eventoSelectedRows), [eventoSelectedRows]);
 
-  if (!session) return <div className="min-h-screen bg-background" />;
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <VermetricasLoader />
+      </div>
+    );
+  }
 
   if (!session.authenticated) {
     if (typeof window !== "undefined") window.location.href = "/login";
-    return <div className="min-h-screen bg-background" />;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <VermetricasLoader />
+      </div>
+    );
   }
 
   if (session.role === "client" && visibleClients.length === 0) {
@@ -489,6 +503,79 @@ export default function Home() {
           <button onClick={handleLogout} className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-4 py-2 transition">
             Salir
           </button>
+        </div>
+      </main>
+    );
+  }
+
+  if (session.role === "admin" && !selectedClientId) {
+    // Paleta de acentos para los avatares — se asigna por índice, ciclando,
+    // así cada cliente se distingue de un vistazo sin depender de datos que
+    // no tenemos (logo/color propio por cliente).
+    const avatarAccents = [
+      "from-primary to-secondary",
+      "from-secondary to-primary",
+      "from-[#7C7CFB] to-[#A5A0FF]",
+      "from-[#A5A0FF] to-[#7C7CFB]",
+    ];
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-background">
+        <div className="w-full max-w-2xl">
+          <div className="text-center flex flex-col items-center gap-2 mb-10">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface border border-outline mb-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/brand/vermetricas-icon.png" alt="" className="h-6 w-6" />
+            </span>
+            <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">Agencia Vermetricas</span>
+            <h1 className="font-display text-2xl text-on-surface font-semibold">¿Qué cliente quieres revisar?</h1>
+            <p className="text-sm text-on-surface-variant max-w-sm">
+              Elegí una cuenta para entrar a su panel, o revisá la cartera completa.
+            </p>
+          </div>
+
+          {visibleClients.length === 0 ? (
+            <p className="text-sm text-on-surface-variant text-center">Cargando clientes…</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {visibleClients.map((c, i) => (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedClientId(c.id)}
+                  className="group flex items-center gap-3 rounded-xl border border-outline bg-surface hover:bg-surface-high hover:border-primary/60 px-4 py-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20"
+                >
+                  <span
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${avatarAccents[i % avatarAccents.length]} text-sm font-semibold text-on-primary`}
+                  >
+                    {c.name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-on-surface">{c.name}</span>
+                    <span className="block truncate text-[11px] font-mono text-on-surface-faint mt-0.5">{c.id}</span>
+                  </span>
+                  <svg
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    className="h-4 w-4 shrink-0 text-on-surface-faint group-hover:text-primary group-hover:translate-x-0.5 transition-all"
+                  >
+                    <path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-10 flex items-center justify-center gap-3 border-t border-outline pt-6">
+            <a
+              href="/admin/cartera"
+              className="text-xs font-medium text-on-surface-variant hover:text-primary transition"
+            >
+              Ver Cartera en su lugar
+            </a>
+            <span className="text-outline">•</span>
+            <button onClick={handleLogout} className="text-xs font-medium text-on-surface-variant hover:text-error transition">
+              Salir
+            </button>
+          </div>
         </div>
       </main>
     );
@@ -542,6 +629,12 @@ export default function Home() {
     <main className="min-h-screen px-4 py-6 md:px-8 md:py-8 max-w-7xl mx-auto flex flex-col gap-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={mode === "dark" ? "/brand/vermetricas-horizontal-dark.png" : "/brand/vermetricas-horizontal-light.png"}
+            alt="Vermetricas"
+            className="h-7 w-auto self-start mb-1"
+          />
           <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">Panel de lanzamiento</span>
           <h1 className="font-display text-2xl md:text-3xl text-on-surface font-semibold">{selectedClient.name}</h1>
           <p className="text-sm text-on-surface-variant">

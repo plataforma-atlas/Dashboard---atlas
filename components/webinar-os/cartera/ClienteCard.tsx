@@ -15,6 +15,16 @@ export default function ClienteCard({ cliente }: { cliente: CarteraCliente }) {
         </span>
       </div>
 
+      <span
+        className={`self-start text-[11px] font-medium rounded-full px-2.5 py-1 border whitespace-nowrap ${
+          cliente.ghl_conectado
+            ? "text-primary border-[var(--wos-primary)] bg-[var(--wos-primary-soft)]"
+            : "text-warning border-outline-warning bg-warning-container"
+        }`}
+      >
+        {cliente.ghl_conectado ? `Conectado · ${cliente.conexiones_activas} integración${cliente.conexiones_activas === 1 ? "" : "es"}` : "Sin conectar aún"}
+      </span>
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className="text-[11px] uppercase tracking-[0.08em] text-[var(--wos-ink-muted)] mb-1">Facturación bruta</div>

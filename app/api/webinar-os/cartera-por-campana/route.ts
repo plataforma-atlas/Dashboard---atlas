@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { COOKIE_NAME, verifySession } from "@/lib/auth";
+import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
 
 export async function GET(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   const fecha_fin = searchParams.get("fecha_fin") ?? "";
 
   if (!cliente_id) return NextResponse.json({ error: "Falta cliente_id" }, { status: 400 });
-  if (session.role !== "admin" && !session.clientes.includes(cliente_id)) {
+  if (session.role !== "admin" && !clientesDeSesion(session).includes(cliente_id)) {
     return NextResponse.json({ error: "Sin acceso a este cliente" }, { status: 403 });
   }
 

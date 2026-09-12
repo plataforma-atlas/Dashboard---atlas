@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { COOKIE_NAME, verifySession } from "@/lib/auth";
+import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
 
 export async function GET() {
   const token = cookies().get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
   if (!session) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
-  if (session.role !== "admin" && !session.clientes.includes("atlas")) {
+  if (session.role !== "admin" && !clientesDeSesion(session).includes("atlas")) {
     return NextResponse.json({ error: "Sin acceso al evento" }, { status: 403 });
   }
 

@@ -1,20 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { COOKIE_NAME, verifySession } from "@/lib/auth";
 
-const PUBLIC_PATHS = ["/login", "/registro"];
+const PUBLIC_PATHS = ["/login", "/registro", "/invitacion"];
 
 // Interruptor de emergencia: cuando el equipo de check-in no ha podido crear/usar
 // cuentas todavía, esto permite que CUALQUIERA entre a /checkin sin sesión.
 // Revertir apagando la variable de entorno cuando el equipo ya tenga acceso normal.
 const CHECKIN_PUBLICO = process.env.EVENTO_CHECKIN_PUBLICO === "true";
 
+// Archivos estáticos (logo, favicon generado por Next, etc.) — nunca deben
+// redirigir a /login. Antes solo se excluían _next y favicon.ico a mano, y
+// eso rompió /brand/vermetricas-icon.png (la petición devolvía el HTML de
+// login en vez del PNG, porque el middleware la trataba como ruta protegida).
+const STATIC_ASSET_RE = /\.(png|jpe?g|svg|gif|webp|ico|avif|css|js|map|woff2?|txt|xml|json)$/i;
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isPublic =
     PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
     pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/invitacion") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
+    STATIC_ASSET_RE.test(pathname) ||
     (CHECKIN_PUBLICO && (pathname.startsWith("/checkin") || pathname.startsWith("/api/evento")));
 
   const token = req.cookies.get(COOKIE_NAME)?.value;

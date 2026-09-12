@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { COOKIE_NAME, verifySession } from "@/lib/auth";
+import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
 
 export async function GET(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Faltan parámetros: webinar_id y cliente_id son requeridos" }, { status: 400 });
   }
 
-  if (session.role !== "admin" && !session.clientes.includes(cliente_id)) {
+  if (session.role !== "admin" && !clientesDeSesion(session).includes(cliente_id)) {
     return NextResponse.json({ error: "Sin acceso a este cliente" }, { status: 403 });
   }
 

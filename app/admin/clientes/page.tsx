@@ -29,6 +29,10 @@ export default function AdminClientesPage() {
   const [creando, setCreando] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const [invitandoId, setInvitandoId] = useState<string | null>(null);
+  const [linkInvitacion, setLinkInvitacion] = useState<{ clienteId: string; url: string } | null>(null);
+  const [copiado, setCopiado] = useState(false);
+
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -74,6 +78,37 @@ export default function AdminClientesPage() {
       await cargar();
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function generarInvitacion(c: Cliente) {
+    setInvitandoId(c.id);
+    setLinkInvitacion(null);
+    setCopiado(false);
+    try {
+      const res = await fetch("/api/admin/generar-invitacion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: c.id, cliente_nombre: c.name }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "No se pudo generar la invitación");
+        return;
+      }
+      setLinkInvitacion({ clienteId: c.id, url: data.url });
+    } finally {
+      setInvitandoId(null);
+    }
+  }
+
+  async function copiarLink() {
+    if (!linkInvitacion) return;
+    try {
+      await navigator.clipboard.writeText(linkInvitacion.url);
+      setCopiado(true);
+    } catch {
+      // el navegador puede bloquear el portapapeles; el link se queda visible para copiar a mano
     }
   }
 
@@ -228,6 +263,36 @@ export default function AdminClientesPage() {
         </form>
       )}
 
+      {linkInvitacion && (
+        <div className="rounded-lg border border-primary bg-surface p-5 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-on-surface">
+              Link de invitación para <span className="font-mono text-primary">{linkInvitacion.clienteId}</span>
+            </span>
+            <button onClick={() => setLinkInvitacion(null)} className="text-xs text-on-surface-variant hover:text-on-surface">
+              Cerrar
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              readOnly
+              value={linkInvitacion.url}
+              onFocus={(e) => e.currentTarget.select()}
+              className="flex-1 bg-background border border-outline rounded-md px-3 py-2 text-xs font-mono text-on-surface-variant outline-none"
+            />
+            <button
+              onClick={copiarLink}
+              className="text-xs px-3 py-2 rounded-md bg-primary text-on-primary font-medium shrink-0"
+            >
+              {copiado ? "¡Copiado!" : "Copiar"}
+            </button>
+          </div>
+          <p className="text-xs text-on-surface-faint">
+            Válido por 7 días. Quien lo abra crea su cuenta y queda asignado directamente a este cliente — ya no necesitas asignarlo a mano en Usuarios.
+          </p>
+        </div>
+      )}
+
       {loading ? (
         <p className="text-sm text-on-surface-variant">Cargando clientes…</p>
       ) : (
@@ -248,23 +313,34 @@ export default function AdminClientesPage() {
                     <td className="px-4 py-3 text-on-surface">{c.name}</td>
                     <td className="px-4 py-3 text-on-surface-faint font-mono text-xs">{c.id}</td>
                     <td className="px-4 py-3 text-right">
-                      {vista === "active" ? (
-                        <button
-                          disabled={isBusy}
-                          onClick={() => cambiarEstado(c.id, "archived")}
-                          className="text-xs px-3 py-1.5 rounded-full border border-outline text-on-surface-variant hover:text-error hover:border-outline-error transition disabled:opacity-50"
-                        >
-                          {isBusy ? "…" : "Desactivar"}
-                        </button>
-                      ) : (
-                        <button
-                          disabled={isBusy}
-                          onClick={() => cambiarEstado(c.id, "active")}
-                          className="text-xs px-3 py-1.5 rounded-full border border-outline text-on-surface-variant hover:text-primary hover:border-primary transition disabled:opacity-50"
-                        >
-                          {isBusy ? "…" : "Reactivar"}
-                        </button>
-                      )}
+                      <div className="flex items-center justify-end gap-2">
+                        {vista === "active" && (
+                          <button
+                            disabled={invitandoId === c.id}
+                            onClick={() => generarInvitacion(c)}
+                            className="text-xs px-3 py-1.5 rounded-full border border-primary text-primary hover:bg-primary hover:text-on-primary transition disabled:opacity-50"
+                          >
+                            {invitandoId === c.id ? "…" : "Invitar"}
+                          </button>
+                        )}
+                        {vista === "active" ? (
+                          <button
+                            disabled={isBusy}
+                            onClick={() => cambiarEstado(c.id, "archived")}
+                            className="text-xs px-3 py-1.5 rounded-full border border-outline text-on-surface-variant hover:text-error hover:border-outline-error transition disabled:opacity-50"
+                          >
+                            {isBusy ? "…" : "Desactivar"}
+                          </button>
+                        ) : (
+                          <button
+                            disabled={isBusy}
+                            onClick={() => cambiarEstado(c.id, "active")}
+                            className="text-xs px-3 py-1.5 rounded-full border border-outline text-on-surface-variant hover:text-primary hover:border-primary transition disabled:opacity-50"
+                          >
+                            {isBusy ? "…" : "Reactivar"}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

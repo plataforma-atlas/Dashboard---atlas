@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { COOKIE_NAME, verifySession } from "@/lib/auth";
+import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
 
 export async function GET(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
@@ -10,7 +10,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const cliente_id = searchParams.get("cliente_id") ?? "";
 
-  if (session.role !== "admin" && !session.clientes.includes(cliente_id)) {
+  if (session.role !== "admin" && !clientesDeSesion(session).includes(cliente_id)) {
     return NextResponse.json({ error: "Sin acceso a este cliente" }, { status: 403 });
   }
 

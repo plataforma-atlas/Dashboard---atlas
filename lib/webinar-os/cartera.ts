@@ -13,6 +13,8 @@ export type CarteraCliente = {
   roas_neto: number | null;
   registro_a_venta: number | null;
   estado: Estado;
+  conexiones_activas: number;
+  ghl_conectado: boolean;
 };
 
 export function estadoBadgeClass(estado: Estado) {
