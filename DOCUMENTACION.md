@@ -154,7 +154,7 @@ public/brand/                      Los 4 assets de marca que sí se sirven en pr
 | `/registro` | Público | Alta de cuenta sin acceso a ningún cliente todavía (lo asigna un admin después). |
 | `/invitacion/[token]` | Público | Signup pre-vinculado a un cliente vía token de invitación. |
 | `/checkin` | Admin/checkin/cliente `atlas`, o público si `EVENTO_CHECKIN_PUBLICO=true` | Consola de check-in del evento: buscar, marcar/deshacer entrada, editar datos, registrar walk-ins, marcar VIP. |
-| `/panel/conexiones` | Cualquier rol autenticado | Estado de integraciones del cliente (GHL activo; Meta Ads/Whop/WebinarKit son placeholders "Próximamente"). |
+| `/panel/conexiones` | Cualquier rol autenticado | Estado de integraciones del cliente (GHL con credencial; ClaseEspecial muestra un webhook para pegar en su plataforma; Meta Ads/Whop son placeholders "Próximamente"). |
 | `/webinar-os/control-center/[clienteId]` | Autenticado, scoped al cliente | Vista semanal agregada entre campañas de webinar de un cliente: ranking, embudo, filtros, recomendaciones. |
 | `/admin/cartera` | **Admin** | Portafolio cruzado entre TODOS los clientes (Webinar OS). |
 | `/admin/clientes` | **Admin** | Alta/archivado de clientes, generación de invitaciones. |
@@ -244,7 +244,13 @@ Fuente: `app/api/onboarding/conectar-ghl`, `app/api/onboarding/estado`, `app/pan
 - `POST /api/onboarding/conectar-ghl` normaliza el token a `Bearer <token>` y lo reenvía a `N8N_ONBOARDING_CONECTAR_URL` como `{ cliente_id, integration_type: "ghl", config: { locationId }, credential }`. n8n es responsable de persistirlo.
 - `GET /api/onboarding/estado?cliente_id=` devuelve el estado de cada integración: `{ integration_type, status, updated_at, tiene_credencial }` — **nunca** devuelve el valor real de la credencial, solo un booleano.
 - La UI considera "Conectado" solo si `integration_type === "ghl" && status === "active" && tiene_credencial === true`.
-- **Meta Ads, Whop y WebinarKit son placeholders** en la UI (`disponible: false`, "Próximamente") — no tienen rutas de backend todavía.
+- **Meta Ads y Whop son placeholders** en la UI (`disponible: false`, "Próximamente") — no tienen rutas de backend todavía.
+
+**ClaseEspecial (antes "WebinarKit") — integración inversa, sin credencial.** A diferencia de GHL, acá no le pedimos nada al cliente: le mostramos un webhook (`/panel/conexiones`, botón "Ver webhook") para que él lo pegue en la configuración de webhooks de su plataforma de ClaseEspecial/WebinarKit. Es una única URL compartida entre todos los clientes, diferenciada por `?cliente_id=` en la query — no pasa por `client_connections`/`tiene_credencial` como GHL, así que nunca muestra "Conectado", solo el botón para ver la URL.
+
+El webhook lo recibe el workflow de n8n **"ClaseEspecial (WebinarKit) Eventos → GHL — multi-cliente"** (id `G3ewsX3kI0SNyIUS`, antes `John | WebinarKit Eventos → GHL`): recibe `{ email, first, last, phone, attended_webinar, webinar_view_percentage }` por POST, lee `cliente_id` de la query (default `"john"` si no viene, por compatibilidad con la config existente de John), busca la fila `client_connections` de ese cliente (`integration_type='ghl'`) para sacar el `ghl_auth`/`locationId`, y mueve la oportunidad en el pipeline `config.pipelines.implementacion` (registro → encuesta → webinar → menos_50/más_50 → …) según el % de reproducción.
+
+**Importante para dar de alta un cliente nuevo en esta integración**: la URL del webhook por sí sola no alcanza — antes de dársela al cliente, alguien del equipo tiene que insertar (a mano, en Postgres) su fila en `client_connections` con `integration_type='ghl'` y un `config.pipelines.implementacion` que tenga `pipelineId` + `stages` (los 9 IDs de etapa) de SU pipeline en GHL. Sin esa fila, el webhook llega pero no encuentra config y no hace nada.
 
 ## 14. `middleware.ts` — protección de rutas
 
