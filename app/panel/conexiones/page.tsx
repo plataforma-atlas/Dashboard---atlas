@@ -7,11 +7,20 @@ import ThemeModeToggle from "@/components/ThemeModeToggle";
 
 type EstadoConexion = { integration_type: string; status: string; updated_at: string; tiene_credencial: boolean };
 
+// El webhook de ClaseEspecial es un mismo endpoint compartido para todos los
+// clientes — se diferencia por el ?cliente_id= en la URL, no por credencial.
+const CLASE_ESPECIAL_WEBHOOK_BASE = "https://n8n-n8n.hbus8n.easypanel.host/webhook/dsm-webinarkit";
+
 const INTEGRACIONES: { tipo: string; label: string; descripcion: string; disponible: boolean }[] = [
   { tipo: "ghl", label: "GoHighLevel", descripcion: "Tu CRM — donde llegan tus leads y oportunidades.", disponible: true },
   { tipo: "meta_ads", label: "Meta Ads", descripcion: "Para traer el gasto e inversión de tus campañas.", disponible: false },
   { tipo: "whop", label: "Whop", descripcion: "Para sincronizar compras y membresías.", disponible: false },
-  { tipo: "webinarkit", label: "WebinarKit", descripcion: "Para trackear asistencia y visualización de tus webinars.", disponible: false },
+  {
+    tipo: "webinarkit",
+    label: "ClaseEspecial",
+    descripcion: "Para trackear asistencia y % de reproducción de tus webinars.",
+    disponible: true,
+  },
 ];
 
 function PanelConexionesContent() {
@@ -29,6 +38,9 @@ function PanelConexionesContent() {
   const [tokenGhl, setTokenGhl] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const [webhookAbierto, setWebhookAbierto] = useState(false);
+  const [webhookCopiado, setWebhookCopiado] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -72,6 +84,17 @@ function PanelConexionesContent() {
 
   function estadoDe(tipo: string) {
     return estado.find((e) => e.integration_type === tipo && e.status === "active" && e.tiene_credencial) || null;
+  }
+
+  async function copiarWebhook(url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setWebhookCopiado(true);
+      setTimeout(() => setWebhookCopiado(false), 2000);
+    } catch {
+      // Si el navegador bloquea el clipboard, el usuario igual puede
+      // seleccionar el texto a mano — no hace falta un error visible.
+    }
   }
 
   async function conectarGhl(e: React.FormEvent) {
@@ -146,7 +169,14 @@ function PanelConexionesContent() {
                   {!integ.disponible && <span className="text-[11px] text-on-surface-faint mt-0.5">Próximamente</span>}
                 </div>
                 {integ.disponible ? (
-                  conectada ? (
+                  integ.tipo === "webinarkit" ? (
+                    <button
+                      onClick={() => setWebhookAbierto((v) => !v)}
+                      className="text-xs px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition"
+                    >
+                      {webhookAbierto ? "Ocultar webhook" : "Ver webhook"}
+                    </button>
+                  ) : conectada ? (
                     <span className="text-xs px-3 py-1.5 rounded-full border border-primary text-primary shrink-0">Conectado</span>
                   ) : integ.tipo === "ghl" && formAbierto ? null : (
                     <button
@@ -162,6 +192,30 @@ function PanelConexionesContent() {
               </div>
             );
           })}
+
+          {webhookAbierto && (
+            <div className="rounded-lg border border-outline bg-surface p-5 flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-on-surface">Webhook de ClaseEspecial</span>
+                <p className="text-xs text-on-surface-variant">
+                  Pegá esta URL en la configuración de webhooks de tu plataforma de ClaseEspecial (o WebinarKit) — así nos avisa
+                  automáticamente cuando alguien se registra o asiste a tu webinar.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 min-w-0 truncate bg-background border border-outline rounded-md px-3 py-2 text-xs text-on-surface font-mono">
+                  {CLASE_ESPECIAL_WEBHOOK_BASE}?cliente_id={clienteId}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => copiarWebhook(`${CLASE_ESPECIAL_WEBHOOK_BASE}?cliente_id=${clienteId}`)}
+                  className="text-xs px-3 py-2 rounded-md bg-primary text-on-primary font-medium shrink-0"
+                >
+                  {webhookCopiado ? "¡Copiado!" : "Copiar"}
+                </button>
+              </div>
+            </div>
+          )}
 
           {formAbierto && (
             <form onSubmit={conectarGhl} className="rounded-lg border border-outline bg-surface p-5 flex flex-col gap-4">
