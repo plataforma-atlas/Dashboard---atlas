@@ -83,6 +83,7 @@ export function toEventoDailyTraficoStats(
   const byDate = new Map<string, { spend: number; leadsPauta: number; leadsOrganico: number }>();
 
   for (const row of adSpendConsolidated) {
+    if (!row.entry_date) continue;
     const date = row.entry_date.slice(0, 10);
     const prev = byDate.get(date) ?? { spend: 0, leadsPauta: 0, leadsOrganico: 0 };
     prev.spend += Number(row.spend) || 0;

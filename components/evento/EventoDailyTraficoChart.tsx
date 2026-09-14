@@ -5,6 +5,7 @@ import { formatMoney } from "@/lib/webinar-os/aggregate";
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 function formatFecha(iso: string) {
+  if (!iso) return "—";
   const d = new Date(iso.slice(0, 10) + "T00:00:00");
   return d.toLocaleDateString("es-CO", { day: "2-digit", month: "short" });
 }
