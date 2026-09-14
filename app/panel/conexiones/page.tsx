@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
@@ -14,7 +14,7 @@ const INTEGRACIONES: { tipo: string; label: string; descripcion: string; disponi
   { tipo: "webinarkit", label: "WebinarKit", descripcion: "Para trackear asistencia y visualización de tus webinars.", disponible: false },
 ];
 
-export default function PanelConexionesPage() {
+function PanelConexionesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { mode, toggleMode } = useThemeMode();
@@ -220,5 +220,13 @@ export default function PanelConexionesPage() {
         </div>
       ) : null}
     </main>
+  );
+}
+
+export default function PanelConexionesPage() {
+  return (
+    <Suspense fallback={null}>
+      <PanelConexionesContent />
+    </Suspense>
   );
 }
