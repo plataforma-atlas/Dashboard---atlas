@@ -646,6 +646,12 @@ export default function Home() {
           {visibleClients.length > 1 && <ClientSelector clients={visibleClients} selectedId={selectedClient.id} onSelect={setSelectedClientId} />}
           <CampaignSelector campaigns={campaigns} selectedId={selectedCampaignId} onSelect={setSelectedCampaignId} loading={campaignsLoading} />
           <ThemeModeToggle mode={mode} onToggle={toggleMode} />
+          <a
+            href={session.role === "admin" ? `/panel/conexiones?cliente_id=${selectedClient.id}` : "/panel/conexiones"}
+            className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition"
+          >
+            Conexiones
+          </a>
           {session.role === "admin" && (
             <>
               <a href="/admin/cartera" className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition">
