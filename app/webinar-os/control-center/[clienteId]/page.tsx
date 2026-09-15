@@ -184,6 +184,9 @@ export default function ControlCenterPage() {
             />
             <div className="wcc-no-print flex items-center gap-2 flex-wrap">
               <ThemeModeToggle mode={mode} onToggle={toggleMode} />
+              <a href="/?vista=clasica" className="text-xs text-[var(--wos-ink-muted)] hover:text-[var(--wos-ink)] border border-[var(--wos-border)] rounded-full px-3 py-1.5 transition">
+                Dashboard clásico
+              </a>
               <a href="/admin/cartera" className="text-xs text-[var(--wos-ink-muted)] hover:text-[var(--wos-ink)] border border-[var(--wos-border)] rounded-full px-3 py-1.5 transition">
                 ← Cartera
               </a>

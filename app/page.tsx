@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Campaign, FunnelRow } from "@/lib/types";
 import { toCountryBreakdown, toKpis, toSourceBreakdown, toStageSummary } from "@/lib/aggregate";
 import { defaultClient, themeForClient, ClientConfig } from "@/lib/clients";
@@ -72,8 +72,9 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString("es-CO", { day: "2-digit", month: "long", year: "numeric" });
 }
 
-export default function Home() {
+function Home() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [session, setSession] = useState<Session | null>(null);
 
   // Modo claro/oscuro y tema activo ahora viven en ThemeModeProvider (app/layout.tsx),
@@ -184,6 +185,17 @@ export default function Home() {
   const isWebinarAutomatizado = selectedCampaign?.strategy_type === "webinar_automatizado";
   const isVsl = selectedCampaign?.strategy_type === "vsl";
   const isEventoPresencial = selectedCampaign?.strategy_type === "evento_presencial";
+
+  // Los clientes de Webinar Automático van directo al Control Center (vista
+  // semanal agregada) en vez de este dashboard por campaña — ese es ahora
+  // el destino por defecto para esa estrategia. "?vista=clasica" es la
+  // salida de emergencia para seguir viendo este dashboard si hace falta.
+  useEffect(() => {
+    if (!selectedClientId || campaignsLoading) return;
+    if (!isWebinarAutomatizado) return;
+    if (searchParams.get("vista") === "clasica") return;
+    router.replace(`/webinar-os/control-center/${selectedClientId}`);
+  }, [selectedClientId, campaignsLoading, isWebinarAutomatizado, searchParams, router]);
   const selectedWebinarSummary = webinarsList.find((w) => w.id === selectedWebinarId) ?? null;
   const vslCampaigns = useMemo(() => campaigns.filter((c) => c.strategy_type === "vsl"), [campaigns]);
   const eventoCampaigns = useMemo(
@@ -1000,5 +1012,13 @@ export default function Home() {
         </>
       )}
     </main>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={null}>
+      <Home />
+    </Suspense>
   );
 }
