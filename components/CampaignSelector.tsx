@@ -50,9 +50,16 @@ export default function CampaignSelector({
         {Object.entries(grouped).map(([strategy, items]) => {
           const label = STRATEGY_LABELS[strategy as Campaign["strategy_type"]];
           if (COLLAPSED_STRATEGIES.includes(strategy as Campaign["strategy_type"])) {
+            // El value normalmente es la primera campaña del grupo (el resto
+            // de la selección de país/edición/ángulo vive dentro del módulo),
+            // pero si ya estamos viendo otra campaña de este mismo grupo (ej.
+            // llegamos por un link directo a un ángulo de VSL que no es el
+            // primero), respetamos esa para que el <select> no muestre una
+            // opción distinta a la que realmente está activa.
+            const activa = items.find((c) => c.id === selectedId);
             return (
               <optgroup key={strategy} label={label}>
-                <option value={items[0].id}>{label}</option>
+                <option value={(activa ?? items[0]).id}>{label}</option>
               </optgroup>
             );
           }

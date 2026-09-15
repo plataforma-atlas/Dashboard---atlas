@@ -72,7 +72,7 @@ export default function ControlCenterPage() {
   function handleCampanaChange(v: string) {
     if (v.startsWith("otra:")) {
       const campaignId = v.slice("otra:".length);
-      router.push(`/?vista=clasica&campaign_id=${campaignId}`);
+      router.push(`/?vista=clasica&cliente_id=${clienteId}&campaign_id=${campaignId}`);
       return;
     }
     setCampanaSeleccionada(v);
