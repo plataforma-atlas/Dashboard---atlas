@@ -23,6 +23,7 @@ export default function ControlCenterPage() {
   const router = useRouter();
   const { mode, toggleMode, setActiveTheme } = useThemeMode();
 
+  const [isAdmin, setIsAdmin] = useState(false);
   const [clienteName, setClienteName] = useState(clienteId);
   const [campanas, setCampanas] = useState<CampanaCartera[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +40,13 @@ export default function ControlCenterPage() {
   useEffect(() => {
     setActiveTheme(themeForClient(clienteId));
   }, [clienteId, setActiveTheme]);
+
+  useEffect(() => {
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setIsAdmin(data?.role === "admin"))
+      .catch(() => setIsAdmin(false));
+  }, []);
 
   useEffect(() => {
     fetch("/api/clientes", { cache: "no-store" })
@@ -131,7 +139,7 @@ export default function ControlCenterPage() {
 
   return (
     <div className="webinar-os-scope wcc-page min-h-screen flex flex-col md:flex-row" data-wos-theme={mode}>
-      <aside className="bg-[#111218] md:w-[240px] md:min-h-screen md:sticky md:top-0 p-4 md:p-5 flex flex-col gap-4">
+      <aside className="wcc-no-print bg-[#111218] md:w-[240px] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto">
         <div className="flex items-center gap-2.5 pb-4 border-b border-white/10">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--wos-primary)] to-[var(--wos-primary)]/70 grid place-items-center text-sm font-bold text-[var(--wos-on-primary)]">
             {clienteName.charAt(0).toUpperCase()}
@@ -142,9 +150,44 @@ export default function ControlCenterPage() {
           </div>
         </div>
         <WccSidebarNav />
+
+        <div className="flex flex-col gap-1.5 pt-4 border-t border-white/10">
+          <a
+            href="/?vista=clasica"
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition"
+          >
+            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px]">▦</span>
+            <span>Dashboard clásico</span>
+          </a>
+          {isAdmin && (
+            <a
+              href="/admin/cartera"
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition"
+            >
+              <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px]">←</span>
+              <span>Cartera</span>
+            </a>
+          )}
+        </div>
+
+        <div className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
+          {isAdmin ? <ThemeModeToggle mode={mode} onToggle={toggleMode} /> : <span />}
+          <button
+            onClick={handleLogout}
+            title="Salir"
+            aria-label="Salir"
+            className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/15 grid place-items-center text-white/70 hover:text-white transition shrink-0"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </button>
+        </div>
       </aside>
 
-      <main className="flex-1 min-w-0 p-4 md:p-8 flex flex-col gap-6 bg-[var(--wcc-page-bg)]">
+      <main className="flex-1 min-w-0 md:ml-[240px] p-4 md:p-8 flex flex-col gap-6 bg-[var(--wcc-page-bg)]">
         <div className="hidden print:block mb-2">
           <div className="text-lg font-bold text-[var(--wos-ink)]">{clienteName} · Webinar Control Center</div>
           <div className="text-xs text-[var(--wos-ink-muted)]">
@@ -182,18 +225,6 @@ export default function ControlCenterPage() {
                 cargar(fi, ff);
               }}
             />
-            <div className="wcc-no-print flex items-center gap-2 flex-wrap">
-              <ThemeModeToggle mode={mode} onToggle={toggleMode} />
-              <a href="/?vista=clasica" className="text-xs text-[var(--wos-ink-muted)] hover:text-[var(--wos-ink)] border border-[var(--wos-border)] rounded-full px-3 py-1.5 transition">
-                Dashboard clásico
-              </a>
-              <a href="/admin/cartera" className="text-xs text-[var(--wos-ink-muted)] hover:text-[var(--wos-ink)] border border-[var(--wos-border)] rounded-full px-3 py-1.5 transition">
-                ← Cartera
-              </a>
-              <button onClick={handleLogout} className="text-xs text-[var(--wos-ink-muted)] hover:text-[var(--wos-ink)] border border-[var(--wos-border)] rounded-full px-3 py-1.5 transition">
-                Salir
-              </button>
-            </div>
           </div>
         </div>
 
