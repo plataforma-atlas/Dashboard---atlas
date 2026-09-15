@@ -1,6 +1,6 @@
 # Documentación técnica — Panel Vermetricas
 
-> Este documento complementa al [`README.md`](./README.md) (quick-start) con el detalle completo del proyecto: arquitectura, autenticación, modelo de datos, inventario de rutas/APIs, integración con n8n, y los flujos de onboarding de clientes. Generado a partir de una lectura completa del código el 2026-09-14 — todo lo que dice acá está verificado contra archivos reales del repo, no es una descripción genérica.
+> Este documento complementa al [`README.md`](./README.md) (quick-start) con el detalle completo del proyecto: arquitectura, autenticación, modelo de datos, inventario de rutas/APIs, integración con n8n, y los flujos de onboarding de clientes. Generado a partir de una lectura completa del código el 2026-09-14 — todo lo que dice acá está verificado contra archivos reales del repo, no es una descripción genérica. Actualizado el 2026-09-15 con el sidebar compartido/colapsable y los cambios de navegación del Control Center (secciones 7, 8 y 16).
 
 ## 1. Qué es este proyecto
 
@@ -130,6 +130,9 @@ app/
 
 components/
   (raíz)                           UI compartida: selectors, KPI cards, theming, LoginGridCanvas, loader de marca
+  AppSidebar.tsx                   Sidebar fijo genérico (admin/cartera, admin/clientes, admin/usuarios, panel/conexiones) — el dashboard clásico (app/page.tsx) y el Control Center tienen su propio <aside> con el mismo look porque necesitan el selector de cliente/campaña, que no aplica acá
+  SidebarCollapseButton.tsx        Botón de colapsar/expandir, ícono junto al logo (desktop-only, hidden md:grid)
+  useSidebarCollapse.ts            Hook: estado de colapso (siempre arranca expandido, no se persiste) + escribe --sidebar-w en :root para que el <aside>/<main> de cada página lo lean
   vsl/, evento/, webinar-os/       Widgets específicos de cada módulo
   webinar-os/cartera/              Vista de portafolio (admin)
   webinar-os/control-center/       Control Center por cliente
@@ -149,16 +152,18 @@ public/brand/                      Los 4 assets de marca que sí se sirven en pr
 
 | Ruta | Acceso | Qué hace |
 |---|---|---|
-| `/` | Cualquier rol excepto `checkin` (redirige a `/checkin`) | SPA principal: carga sesión + lista de clientes + campañas, y renderiza el módulo según `strategy_type` (Webinar OS / VSL / Evento presencial / genérico). Admin sin cliente seleccionado ve un selector de cliente. |
+| `/` | Cualquier rol excepto `checkin` (redirige a `/checkin`) | SPA principal: carga sesión + lista de clientes + campañas, y renderiza el módulo según `strategy_type` (Webinar OS / VSL / Evento presencial / genérico). Admin sin cliente seleccionado cae directo en el primer cliente de la lista (o el de `?cliente_id=`). Si el cliente tiene **alguna** campaña `webinar_automatizado` (activa o no — las ediciones pasadas suelen quedar `archived`), redirige automáticamente a su Control Center; `?vista=clasica` es la salida de emergencia para quedarse en este dashboard. |
 | `/login` | Público | Login por email/contraseña. |
 | `/registro` | Público | Alta de cuenta sin acceso a ningún cliente todavía (lo asigna un admin después). |
 | `/invitacion/[token]` | Público | Signup pre-vinculado a un cliente vía token de invitación. |
 | `/checkin` | Admin/checkin/cliente `atlas`, o público si `EVENTO_CHECKIN_PUBLICO=true` | Consola de check-in del evento: buscar, marcar/deshacer entrada, editar datos, registrar walk-ins, marcar VIP. |
-| `/panel/conexiones` | Cualquier rol autenticado | Estado de integraciones del cliente (GHL con credencial; ClaseEspecial muestra un webhook para pegar en su plataforma; Meta Ads/Whop son placeholders "Próximamente"). |
-| `/webinar-os/control-center/[clienteId]` | Autenticado, scoped al cliente | Vista semanal agregada entre campañas de webinar de un cliente: ranking, embudo, filtros, recomendaciones. |
+| `/panel/conexiones` | Cualquier rol autenticado | Estado de integraciones del cliente (GHL con credencial; ClaseEspecial muestra un webhook para pegar en su plataforma; Meta Ads/Whop son placeholders "Próximamente"). Un admin que entra sin `?cliente_id=` (y sin cliente propio) ve, en vez de un error, la lista de clientes con integraciones pendientes — cruza `/api/clientes` con `/api/onboarding/estado` por cliente y arma links directos a `?cliente_id=`. |
+| `/webinar-os/control-center/[clienteId]` | Autenticado, scoped al cliente | Vista semanal agregada entre campañas de webinar de un cliente: ranking, embudo, filtros, recomendaciones. El selector de "Campaña/Edición" es único para todas las estrategias del cliente — elegir una edición de Webinar Automático filtra ahí mismo; elegir VSL/Evento/Lanzamiento ("Otras estrategias" en el `<optgroup>`) navega a `/?vista=clasica&cliente_id=<id>&campaign_id=<id>` (el `cliente_id` es obligatorio, si no el dashboard clásico se queda con el cliente que ya tenía seleccionado y no encuentra la campaña ahí). El periodo por defecto es **"Todo el periodo"** (sin filtro de fecha, igual que Cartera) — antes era "Últimas 4 semanas" y mostraba el resumen en cero para cualquier cliente cuya actividad real cayera fuera de esa ventana (ediciones archivadas). |
 | `/admin/cartera` | **Admin** | Portafolio cruzado entre TODOS los clientes (Webinar OS). |
 | `/admin/clientes` | **Admin** | Alta/archivado de clientes, generación de invitaciones. |
 | `/admin/usuarios` | **Admin** | Gestión de usuarios: rol, acceso por cliente, borrado. |
+
+**Sidebar**: `/admin/cartera`, `/admin/clientes`, `/admin/usuarios` y `/panel/conexiones` comparten `components/AppSidebar.tsx` (fijo a la izquierda en desktop, apilado arriba del contenido en mobile); `/` y el Control Center tienen su propio `<aside>` con el mismo look porque necesitan el selector de cliente/campaña. Los tres traen un botón de colapsar (ícono junto al logo, mismo estilo que "Salir") que reduce el sidebar a solo íconos en desktop — en mobile el botón no se muestra (colapsar no libera espacio cuando el sidebar ya está apilado, no al costado).
 
 ## 9. Inventario de API routes (`app/api/`)
 
@@ -279,6 +284,9 @@ Cada API route **vuelve a verificar** sesión y permisos por su cuenta — el mi
 - Los assets de marca "fuente" en `design/` **no se sirven** a producción — solo lo que está en `public/brand/` llega al bundle.
 - No hay `.env.example` — esta documentación (sección 6) es la lista de referencia; mantenerla actualizada si se agrega una variable nueva.
 - El token de invitación de cliente no tiene enforcement de un solo uso (sección 12).
+- **Links a `/?vista=clasica&campaign_id=...` siempre necesitan `cliente_id`.** El dashboard clásico (`app/page.tsx`) resuelve el cliente activo por su propio estado (`selectedClientId`, default admin = primer cliente de la lista); sin `cliente_id` en la URL, el `campaign_id` se busca en el cliente equivocado, no matchea nada, y cae en el default de ESE cliente sin avisar — visto en el selector del Control Center, ver sección 8.
+- **`CampaignSelector` (dashboard clásico) colapsa `webinar_automatizado`/`vsl`/`evento_presencial` en una sola entrada del `<select>`** (el resto de la selección de país/edición/ángulo vive dentro del módulo). El `value` de esa entrada tiene que ser la campaña realmente activa del grupo si hay una (no siempre `items[0].id`), o un link directo a la 2ª/3ª campaña de esa estrategia muestra el contenido correcto pero la etiqueta equivocada en el dropdown.
+- **Cambiar de cliente en `app/page.tsx` puede mostrar un instante mezclado** (nombre del cliente nuevo + campaña del cliente anterior) si el fetch de campañas nuevas no se trackea contra qué cliente pertenece — el efecto que lo reemplaza corre después del render, así que el frame intermedio es real, no solo teórico. El fix (`campaignsClientId` comparado en cada render + un id de request para ignorar respuestas tardías de un cliente del que ya se salió) es el patrón a seguir si se agrega otro fetch "por cliente seleccionado" en este archivo.
 
 ## 17. Deploy
 

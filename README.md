@@ -46,6 +46,9 @@ app/
   api/                      → proxies server-side hacia los webhooks de n8n (auth + permisos)
   admin/usuarios/           → gestión de usuarios y accesos por cliente
   admin/clientes/           → crear / desactivar clientes
+  admin/cartera/            → portafolio cruzado entre todos los clientes (Webinar OS)
+  panel/conexiones/         → estado de integraciones del cliente (GHL, ClaseEspecial)
+  webinar-os/control-center/[clienteId]/ → vista semanal agregada de campañas de webinar por cliente
   checkin/                  → pantalla de check-in para el evento presencial
 components/
   webinar-os/, vsl/, evento/ → componentes de cada módulo dedicado
