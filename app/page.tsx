@@ -187,8 +187,12 @@ function Home() {
         // elección en vez de la preferida automática.
         const campaignIdParam = searchParams.get("campaign_id");
         const fromParam = campaignIdParam ? list.find((c) => String(c.id) === campaignIdParam) : null;
+        // Si el cliente tiene una campaña de Webinar Automático activa, esa
+        // manda siempre — es la que lo lleva al Control Center — sin
+        // importar en qué orden vengan las campañas desde el backend.
+        const activeWebinar = list.find((c) => c.status === "active" && c.strategy_type === "webinar_automatizado");
         // Preferimos seleccionar automáticamente una campaña "active"; si no hay, la primera disponible
-        const preferred = fromParam ?? list.find((c) => c.status === "active") ?? list[0];
+        const preferred = fromParam ?? activeWebinar ?? list.find((c) => c.status === "active") ?? list[0];
         if (preferred) setSelectedCampaignId(preferred.id);
       })
       .catch(() => setCampaigns([]))
@@ -532,6 +536,20 @@ function Home() {
           </button>
         </div>
       </main>
+    );
+  }
+
+  // Si llegamos con ?cliente_id= (ej. desde el selector de clientes del
+  // Control Center), esperamos a que la lista de clientes cargue y ese
+  // parámetro se resuelva antes de decidir si mostrar el selector — si no,
+  // el selector "¿Qué cliente quieres revisar?" parpadea un instante de
+  // más mientras carga, incluso cuando ya sabemos a qué cliente vamos.
+  const resolvingClienteIdParam = !!searchParams.get("cliente_id") && visibleClients.length === 0;
+  if (resolvingClienteIdParam) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <VermetricasLoader />
+      </div>
     );
   }
 
