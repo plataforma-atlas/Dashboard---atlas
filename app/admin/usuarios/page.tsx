@@ -119,7 +119,7 @@ export default function AdminUsuariosPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       <AppSidebar active="usuarios" isAdmin mode={mode} onToggleMode={toggleMode} onLogout={handleLogout} />
-      <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[240px] max-w-5xl flex flex-col gap-6 bg-background">
+      <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[var(--sidebar-w,240px)] max-w-5xl flex flex-col gap-6 bg-background transition-[margin] duration-200">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">Panel de Administración</span>

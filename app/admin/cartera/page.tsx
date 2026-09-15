@@ -39,7 +39,7 @@ export default function AdminCarteraPage() {
   return (
     <div className="webinar-os-scope min-h-screen flex flex-col md:flex-row bg-[var(--wos-surface-alt)]" data-wos-theme={mode}>
       <AppSidebar active="cartera" isAdmin mode={mode} onToggleMode={toggleMode} onLogout={handleLogout} />
-      <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[240px] max-w-7xl flex flex-col gap-6">
+      <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[var(--sidebar-w,240px)] max-w-7xl flex flex-col gap-6 transition-[margin] duration-200">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-[0.14em] text-[var(--wos-primary)] font-mono">Webinar Control Center</span>

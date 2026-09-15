@@ -43,15 +43,47 @@ function PanelConexionesContent() {
   const [webhookCopiado, setWebhookCopiado] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  const [clientesPendientes, setClientesPendientes] = useState<{ id: string; name: string; faltantes: string[] }[] | null>(null);
+  const [cargandoPendientes, setCargandoPendientes] = useState(false);
+
+  async function cargarClientesPendientes() {
+    setCargandoPendientes(true);
+    try {
+      const res = await fetch("/api/clientes", { cache: "no-store" });
+      const data = await res.json().catch(() => null);
+      const clientes: { id: string; name: string }[] = data?.clientes ?? [];
+      const conEstado = await Promise.all(
+        clientes.map(async (c) => {
+          const r = await fetch(`/api/onboarding/estado?cliente_id=${encodeURIComponent(c.id)}`, { cache: "no-store" }).catch(() => null);
+          const est: EstadoConexion[] = r && r.ok ? await r.json().catch(() => []) : [];
+          const conectada = (tipo: string) => est.some((e) => e.integration_type === tipo && e.status === "active" && e.tiene_credencial);
+          const faltantes = INTEGRACIONES.filter((i) => i.disponible && !conectada(i.tipo)).map((i) => i.label);
+          return { id: c.id, name: c.name, faltantes };
+        })
+      );
+      setClientesPendientes(conEstado.filter((c) => c.faltantes.length > 0));
+    } catch {
+      setClientesPendientes([]);
+    } finally {
+      setCargandoPendientes(false);
+    }
+  }
+
   useEffect(() => {
     (async () => {
       const meRes = await fetch("/api/auth/me", { cache: "no-store" }).catch(() => null);
       const me = meRes && meRes.ok ? await meRes.json().catch(() => null) : null;
-      setIsAdmin(me?.role === "admin");
+      const esAdmin = me?.role === "admin";
+      setIsAdmin(esAdmin);
       const fromQuery = searchParams.get("cliente_id");
       const propio = me?.clientes?.[0] ?? null;
       const id = fromQuery || propio;
       if (!id) {
+        if (esAdmin) {
+          setLoading(false);
+          await cargarClientesPendientes();
+          return;
+        }
         setError("Tu cuenta no tiene un cliente asignado todavía.");
         setLoading(false);
         return;
@@ -142,7 +174,7 @@ function PanelConexionesContent() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       <AppSidebar active="conexiones" isAdmin={isAdmin} mode={mode} onToggleMode={toggleMode} onLogout={handleLogout} />
-      <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[240px] max-w-3xl flex flex-col gap-6 bg-background">
+      <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[var(--sidebar-w,240px)] max-w-3xl flex flex-col gap-6 bg-background transition-[margin] duration-200">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">Onboarding</span>
@@ -268,6 +300,33 @@ function PanelConexionesContent() {
                 </button>
               </div>
             </form>
+          )}
+        </div>
+      ) : isAdmin ? (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-on-surface-variant">
+            Elegí un cliente para ver o completar sus conexiones. Solo se muestran los clientes con integraciones pendientes.
+          </p>
+          {cargandoPendientes ? (
+            <p className="text-sm text-on-surface-variant">Revisando conexiones de cada cliente…</p>
+          ) : clientesPendientes && clientesPendientes.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {clientesPendientes.map((c) => (
+                <a
+                  key={c.id}
+                  href={`/panel/conexiones?cliente_id=${c.id}`}
+                  className="rounded-lg border border-outline bg-surface p-4 flex items-center justify-between gap-4 hover:border-primary transition"
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium text-on-surface">{c.name}</span>
+                    <span className="text-xs text-on-surface-variant">Falta conectar: {c.faltantes.join(", ")}</span>
+                  </div>
+                  <span className="text-xs px-3 py-1.5 rounded-full border border-outline text-on-surface-variant shrink-0">Revisar →</span>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-on-surface-variant">Todos los clientes tienen sus conexiones al día. 🎉</p>
           )}
         </div>
       ) : null}

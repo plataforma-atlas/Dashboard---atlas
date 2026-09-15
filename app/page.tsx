@@ -32,6 +32,8 @@ import SourceTable from "@/components/SourceTable";
 import FiltersBar from "@/components/FiltersBar";
 import CampaignSelector from "@/components/CampaignSelector";
 import { useThemeMode } from "@/components/ThemeModeProvider";
+import SidebarCollapseButton from "@/components/SidebarCollapseButton";
+import { useSidebarCollapse } from "@/components/useSidebarCollapse";
 import ExecutiveFunnel from "@/components/webinar-os/ExecutiveFunnel";
 import ExecutiveSummaryKpis from "@/components/webinar-os/ExecutiveSummaryKpis";
 import ModuleShell from "@/components/webinar-os/ModuleShell";
@@ -95,6 +97,7 @@ function Home() {
   // haga clic en uno — nunca cae en un cliente fijo por defecto.
   const [selectedClientId, setSelectedClientId] = useState("");
   const [selectorClienteAbierto, setSelectorClienteAbierto] = useState(false);
+  const { collapsed: sidebarCollapsed, toggleCollapsed: toggleSidebarCollapsed } = useSidebarCollapse();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignsLoading, setCampaignsLoading] = useState(false);
   const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
@@ -676,38 +679,47 @@ function Home() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      <aside className="bg-[#111218] md:w-[240px] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto">
+      <aside className="bg-[#111218] md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto transition-[width] duration-200">
         <div className="relative pb-4 border-b border-white/10">
-          <button
-            onClick={() => setSelectorClienteAbierto((v) => !v)}
-            disabled={visibleClients.length <= 1}
-            className="w-full flex items-center gap-2.5 rounded-lg hover:bg-white/5 transition p-1 -m-1 disabled:hover:bg-transparent"
-          >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-secondary grid place-items-center text-sm font-bold text-on-primary shrink-0">
-              {selectedClient.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0 text-left flex-1">
-              <div className="text-[13px] font-semibold text-white truncate">{selectedClient.name}</div>
-              <div className="text-[10px] text-white/50">Panel de lanzamiento</div>
-            </div>
-            {visibleClients.length > 1 && (
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={`text-white/40 shrink-0 transition-transform ${selectorClienteAbierto ? "rotate-180" : ""}`}
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            )}
-          </button>
+          <div className={`flex ${sidebarCollapsed ? "flex-col items-center gap-2" : "items-center gap-2"}`}>
+            <button
+              onClick={() => setSelectorClienteAbierto((v) => !v)}
+              disabled={sidebarCollapsed || visibleClients.length <= 1}
+              className={`flex items-center gap-2.5 rounded-lg hover:bg-white/5 transition p-1 -m-1 disabled:hover:bg-transparent min-w-0 ${
+                sidebarCollapsed ? "" : "flex-1"
+              }`}
+            >
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-secondary grid place-items-center text-sm font-bold text-on-primary shrink-0">
+                {selectedClient.name.charAt(0).toUpperCase()}
+              </div>
+              {!sidebarCollapsed && (
+                <>
+                  <div className="min-w-0 text-left flex-1">
+                    <div className="text-[13px] font-semibold text-white truncate">{selectedClient.name}</div>
+                    <div className="text-[10px] text-white/50">Panel de lanzamiento</div>
+                  </div>
+                  {visibleClients.length > 1 && (
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`text-white/40 shrink-0 transition-transform ${selectorClienteAbierto ? "rotate-180" : ""}`}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  )}
+                </>
+              )}
+            </button>
+            <SidebarCollapseButton collapsed={sidebarCollapsed} onToggle={toggleSidebarCollapsed} />
+          </div>
 
-          {selectorClienteAbierto && visibleClients.length > 1 && (
+          {!sidebarCollapsed && selectorClienteAbierto && visibleClients.length > 1 && (
             <div className="mt-2 flex flex-col gap-0.5 max-h-64 overflow-y-auto">
               {visibleClients
                 .filter((c) => c.id !== selectedClient.id)
@@ -730,40 +742,53 @@ function Home() {
           )}
         </div>
 
-        <div className="flex flex-col gap-1">
-          <CampaignSelector campaigns={campaigns} selectedId={selectedCampaignId} onSelect={setSelectedCampaignId} loading={campaignsLoading} />
-        </div>
+        {!sidebarCollapsed && (
+          <div className="flex flex-col gap-1">
+            <CampaignSelector campaigns={campaigns} selectedId={selectedCampaignId} onSelect={setSelectedCampaignId} loading={campaignsLoading} />
+          </div>
+        )}
 
         <div className="flex flex-col gap-1.5 pt-4 border-t border-white/10">
           <a
             href={session.role === "admin" ? `/panel/conexiones?cliente_id=${selectedClient.id}` : "/panel/conexiones"}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition"
+            title="Conexiones"
+            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
           >
-            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px]">⇄</span>
-            <span>Conexiones</span>
+            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">⇄</span>
+            {!sidebarCollapsed && <span>Conexiones</span>}
           </a>
           {session.role === "admin" && (
             <>
               <a
                 href="/admin/cartera"
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition"
+                title="Cartera"
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px]">▦</span>
-                <span>Cartera</span>
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">▦</span>
+                {!sidebarCollapsed && <span>Cartera</span>}
+              </a>
+              <a
+                href="/admin/clientes"
+                title="Clientes"
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
+              >
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">◎</span>
+                {!sidebarCollapsed && <span>Clientes</span>}
               </a>
               <a
                 href="/admin/usuarios"
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition"
+                title="Usuarios"
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px]">◈</span>
-                <span>Usuarios</span>
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">◈</span>
+                {!sidebarCollapsed && <span>Usuarios</span>}
               </a>
             </>
           )}
         </div>
 
-        <div className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
-          <ThemeModeToggle mode={mode} onToggle={toggleMode} />
+        <div className={`mt-auto pt-4 border-t border-white/10 flex items-center ${sidebarCollapsed ? "flex-col gap-2" : "justify-between"}`}>
+          {!sidebarCollapsed && <ThemeModeToggle mode={mode} onToggle={toggleMode} />}
           <button
             onClick={handleLogout}
             title="Salir"
@@ -779,7 +804,7 @@ function Home() {
         </div>
       </aside>
 
-    <main className="min-h-screen px-4 py-6 md:px-8 md:py-8 md:ml-[240px] max-w-7xl flex flex-col gap-5">
+    <main className="min-h-screen px-4 py-6 md:px-8 md:py-8 md:ml-[var(--sidebar-w,240px)] max-w-7xl flex flex-col gap-5 transition-[margin] duration-200">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -1,6 +1,8 @@
 "use client";
 
 import ThemeModeToggle from "@/components/ThemeModeToggle";
+import SidebarCollapseButton from "@/components/SidebarCollapseButton";
+import { useSidebarCollapse } from "@/components/useSidebarCollapse";
 
 type NavKey = "dashboard" | "conexiones" | "cartera" | "clientes" | "usuarios";
 
@@ -32,15 +34,26 @@ export default function AppSidebar({
   onLogout: () => void;
   conexionesHref?: string;
 }) {
+  const { collapsed, toggleCollapsed } = useSidebarCollapse();
+
   return (
-    <aside className="wcc-no-print bg-[#111218] md:w-[240px] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto">
-      <div className="flex items-center gap-2.5 pb-4 border-b border-white/10">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/vermetricas-icon.png" alt="" className="w-9 h-9 rounded-xl" />
-        <div className="min-w-0">
-          <div className="text-[13px] font-semibold text-white truncate">Vermetricas</div>
-          <div className="text-[10px] text-white/50">Panel de administración</div>
+    <aside className="wcc-no-print bg-[#111218] md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto transition-[width] duration-200">
+      <div
+        className={`pb-4 border-b border-white/10 flex ${
+          collapsed ? "flex-col items-center gap-2" : "items-center justify-between gap-2.5"
+        }`}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/vermetricas-icon.png" alt="" className="w-9 h-9 rounded-xl shrink-0" />
+          {!collapsed && (
+            <div className="min-w-0">
+              <div className="text-[13px] font-semibold text-white truncate">Vermetricas</div>
+              <div className="text-[10px] text-white/50">Panel de administración</div>
+            </div>
+          )}
         </div>
+        <SidebarCollapseButton collapsed={collapsed} onToggle={toggleCollapsed} />
       </div>
 
       <nav className="flex flex-col gap-1">
@@ -48,18 +61,19 @@ export default function AppSidebar({
           <a
             key={item.key}
             href={item.key === "conexiones" && conexionesHref ? conexionesHref : item.href}
+            title={item.label}
             className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap transition ${
-              active === item.key ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"
-            }`}
+              collapsed ? "justify-center" : ""
+            } ${active === item.key ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"}`}
           >
-            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px]">{item.icon}</span>
-            <span>{item.label}</span>
+            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">{item.icon}</span>
+            {!collapsed && <span>{item.label}</span>}
           </a>
         ))}
       </nav>
 
-      <div className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
-        <ThemeModeToggle mode={mode} onToggle={onToggleMode} />
+      <div className={`mt-auto pt-4 border-t border-white/10 flex items-center ${collapsed ? "flex-col gap-2" : "justify-between"}`}>
+        {!collapsed && <ThemeModeToggle mode={mode} onToggle={onToggleMode} />}
         <button
           onClick={onLogout}
           title="Salir"

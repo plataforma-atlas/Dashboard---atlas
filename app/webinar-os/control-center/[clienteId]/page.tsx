@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
+import SidebarCollapseButton from "@/components/SidebarCollapseButton";
+import { useSidebarCollapse } from "@/components/useSidebarCollapse";
 import { themeForClient } from "@/lib/clients";
 import { Campaign } from "@/lib/types";
 import { CampanaCartera } from "@/lib/webinar-os/control-center/types";
@@ -28,6 +30,7 @@ export default function ControlCenterPage() {
   const [clienteName, setClienteName] = useState(clienteId);
   const [todosLosClientes, setTodosLosClientes] = useState<{ id: string; name: string }[]>([]);
   const [selectorClienteAbierto, setSelectorClienteAbierto] = useState(false);
+  const { collapsed: sidebarCollapsed, toggleCollapsed: toggleSidebarCollapsed } = useSidebarCollapse();
   const [campanas, setCampanas] = useState<CampanaCartera[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -167,37 +170,47 @@ export default function ControlCenterPage() {
 
   return (
     <div className="webinar-os-scope wcc-page min-h-screen flex flex-col md:flex-row" data-wos-theme={mode}>
-      <aside className="wcc-no-print bg-[#111218] md:w-[240px] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto">
+      <aside className="wcc-no-print bg-[#111218] md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto transition-[width] duration-200">
         <div className="relative pb-4 border-b border-white/10">
-          <button
-            onClick={() => setSelectorClienteAbierto((v) => !v)}
-            className="w-full flex items-center gap-2.5 rounded-lg hover:bg-white/5 transition p-1 -m-1"
-          >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--wos-primary)] to-[var(--wos-primary)]/70 grid place-items-center text-sm font-bold text-[var(--wos-on-primary)] shrink-0">
-              {clienteName.charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0 text-left flex-1">
-              <div className="text-[13px] font-semibold text-white truncate">{clienteName}</div>
-              <div className="text-[10px] text-white/50">Webinar Control Center</div>
-            </div>
-            {todosLosClientes.length > 1 && (
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={`text-white/40 shrink-0 transition-transform ${selectorClienteAbierto ? "rotate-180" : ""}`}
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            )}
-          </button>
+          <div className={`flex ${sidebarCollapsed ? "flex-col items-center gap-2" : "items-center gap-2"}`}>
+            <button
+              onClick={() => setSelectorClienteAbierto((v) => !v)}
+              disabled={sidebarCollapsed}
+              className={`flex items-center gap-2.5 rounded-lg hover:bg-white/5 transition p-1 -m-1 disabled:hover:bg-transparent min-w-0 ${
+                sidebarCollapsed ? "" : "flex-1"
+              }`}
+            >
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--wos-primary)] to-[var(--wos-primary)]/70 grid place-items-center text-sm font-bold text-[var(--wos-on-primary)] shrink-0">
+                {clienteName.charAt(0).toUpperCase()}
+              </div>
+              {!sidebarCollapsed && (
+                <>
+                  <div className="min-w-0 text-left flex-1">
+                    <div className="text-[13px] font-semibold text-white truncate">{clienteName}</div>
+                    <div className="text-[10px] text-white/50">Webinar Control Center</div>
+                  </div>
+                  {todosLosClientes.length > 1 && (
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`text-white/40 shrink-0 transition-transform ${selectorClienteAbierto ? "rotate-180" : ""}`}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  )}
+                </>
+              )}
+            </button>
+            <SidebarCollapseButton collapsed={sidebarCollapsed} onToggle={toggleSidebarCollapsed} />
+          </div>
 
-          {selectorClienteAbierto && todosLosClientes.length > 1 && (
+          {!sidebarCollapsed && selectorClienteAbierto && todosLosClientes.length > 1 && (
             <div className="mt-2 flex flex-col gap-0.5 max-h-64 overflow-y-auto">
               {todosLosClientes
                 .filter((c) => c.id !== clienteId)
@@ -216,29 +229,50 @@ export default function ControlCenterPage() {
             </div>
           )}
         </div>
-        <WccSidebarNav />
+
+        <WccSidebarNav collapsed={sidebarCollapsed} />
 
         <div className="flex flex-col gap-1.5 pt-4 border-t border-white/10">
           <a
             href="/?vista=clasica"
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition"
+            title="Dashboard clásico"
+            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
           >
-            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px]">▦</span>
-            <span>Dashboard clásico</span>
+            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">▦</span>
+            {!sidebarCollapsed && <span>Dashboard clásico</span>}
           </a>
           {isAdmin && (
-            <a
-              href="/admin/cartera"
-              className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition"
-            >
-              <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px]">←</span>
-              <span>Cartera</span>
-            </a>
+            <>
+              <a
+                href="/admin/cartera"
+                title="Cartera"
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
+              >
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">←</span>
+                {!sidebarCollapsed && <span>Cartera</span>}
+              </a>
+              <a
+                href="/admin/clientes"
+                title="Clientes"
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
+              >
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">◎</span>
+                {!sidebarCollapsed && <span>Clientes</span>}
+              </a>
+              <a
+                href="/admin/usuarios"
+                title="Usuarios"
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
+              >
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">◈</span>
+                {!sidebarCollapsed && <span>Usuarios</span>}
+              </a>
+            </>
           )}
         </div>
 
-        <div className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
-          {isAdmin ? <ThemeModeToggle mode={mode} onToggle={toggleMode} /> : <span />}
+        <div className={`mt-auto pt-4 border-t border-white/10 flex items-center ${sidebarCollapsed ? "flex-col gap-2" : "justify-between"}`}>
+          {isAdmin && !sidebarCollapsed ? <ThemeModeToggle mode={mode} onToggle={toggleMode} /> : <span />}
           <button
             onClick={handleLogout}
             title="Salir"
@@ -254,7 +288,7 @@ export default function ControlCenterPage() {
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0 md:ml-[240px] p-4 md:p-8 flex flex-col gap-6 bg-[var(--wcc-page-bg)]">
+      <main className="flex-1 min-w-0 md:ml-[var(--sidebar-w,240px)] p-4 md:p-8 flex flex-col gap-6 bg-[var(--wcc-page-bg)] transition-[margin] duration-200">
         <div className="hidden print:block mb-2">
           <div className="text-lg font-bold text-[var(--wos-ink)]">{clienteName} · Webinar Control Center</div>
           <div className="text-xs text-[var(--wos-ink-muted)]">
