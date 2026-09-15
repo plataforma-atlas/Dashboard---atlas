@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import { themeForClient } from "@/lib/clients";
+import { Campaign } from "@/lib/types";
 import { CampanaCartera } from "@/lib/webinar-os/control-center/types";
 import { aggregateCampanas, pickRecomendaciones, pickBalance } from "@/lib/webinar-os/control-center/insights";
 import { rangoRapido } from "@/lib/webinar-os/control-center/dateRanges";
@@ -29,6 +30,7 @@ export default function ControlCenterPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [campanaSeleccionada, setCampanaSeleccionada] = useState<string>("all");
+  const [otrasCampanas, setOtrasCampanas] = useState<Campaign[]>([]);
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
 
@@ -47,6 +49,29 @@ export default function ControlCenterPage() {
       .then((data) => setIsAdmin(data?.role === "admin"))
       .catch(() => setIsAdmin(false));
   }, []);
+
+  // Campañas de OTRAS estrategias (VSL, Evento presencial, Lanzamiento) de
+  // este cliente — el Control Center solo sabe mostrar Webinar Automático,
+  // así que estas se ofrecen en el mismo selector pero eligiendo una te
+  // manda al dashboard clásico (único lugar que sabe renderizarlas).
+  useEffect(() => {
+    fetch(`/api/campanas?cliente_id=${clienteId}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        const list: Campaign[] = data.campanas ?? [];
+        setOtrasCampanas(list.filter((c) => c.strategy_type !== "webinar_automatizado"));
+      })
+      .catch(() => setOtrasCampanas([]));
+  }, [clienteId]);
+
+  function handleCampanaChange(v: string) {
+    if (v.startsWith("otra:")) {
+      const campaignId = v.slice("otra:".length);
+      router.push(`/?vista=clasica&campaign_id=${campaignId}`);
+      return;
+    }
+    setCampanaSeleccionada(v);
+  }
 
   useEffect(() => {
     fetch("/api/clientes", { cache: "no-store" })
@@ -217,8 +242,9 @@ export default function ControlCenterPage() {
           <div className="flex flex-col items-end gap-2">
             <WccFilterBar
               campanas={campanas}
+              otrasCampanas={otrasCampanas}
               campanaSeleccionada={campanaSeleccionada}
-              onCampanaChange={setCampanaSeleccionada}
+              onCampanaChange={handleCampanaChange}
               onAplicar={(fi, ff) => {
                 setFechaInicio(fi);
                 setFechaFin(ff);

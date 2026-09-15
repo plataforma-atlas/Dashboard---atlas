@@ -172,8 +172,13 @@ function Home() {
       .then((data) => {
         const list: Campaign[] = data.campanas ?? [];
         setCampaigns(list);
+        // Si llegamos con ?campaign_id= (ej. desde el selector del Control
+        // Center para una campaña de otra estrategia), respetamos esa
+        // elección en vez de la preferida automática.
+        const campaignIdParam = searchParams.get("campaign_id");
+        const fromParam = campaignIdParam ? list.find((c) => String(c.id) === campaignIdParam) : null;
         // Preferimos seleccionar automáticamente una campaña "active"; si no hay, la primera disponible
-        const preferred = list.find((c) => c.status === "active") ?? list[0];
+        const preferred = fromParam ?? list.find((c) => c.status === "active") ?? list[0];
         if (preferred) setSelectedCampaignId(preferred.id);
       })
       .catch(() => setCampaigns([]))

@@ -1,18 +1,26 @@
 "use client";
 
 import { useState } from "react";
+import { Campaign } from "@/lib/types";
 import { CampanaCartera } from "@/lib/webinar-os/control-center/types";
 import { rangoRapido, semanasEspecificas, RangoRapido } from "@/lib/webinar-os/control-center/dateRanges";
 import PrintButton from "./PrintButton";
 
+const ESTRATEGIA_LABEL: Record<string, string> = {
+  vsl: "VSL",
+  evento_presencial: "Evento presencial",
+  lanzamiento: "Lanzamiento",
+};
+
 type Props = {
   campanas: CampanaCartera[];
+  otrasCampanas?: Campaign[];
   campanaSeleccionada: string;
   onCampanaChange: (v: string) => void;
   onAplicar: (fechaInicio: string, fechaFin: string) => void;
 };
 
-export default function WccFilterBar({ campanas, campanaSeleccionada, onCampanaChange, onAplicar }: Props) {
+export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSeleccionada, onCampanaChange, onAplicar }: Props) {
   const [periodo, setPeriodo] = useState<RangoRapido>("4weeks");
   const [panelAbierto, setPanelAbierto] = useState(false);
   const [semanaSeleccionada, setSemanaSeleccionada] = useState(semanasEspecificas()[0]?.value ?? "");
@@ -44,6 +52,15 @@ export default function WccFilterBar({ campanas, campanaSeleccionada, onCampanaC
             {c.campaign_name}
           </option>
         ))}
+        {otrasCampanas.length > 0 && (
+          <optgroup label="Otras estrategias">
+            {otrasCampanas.map((c) => (
+              <option key={c.id} value={`otra:${c.id}`}>
+                {c.name} — {ESTRATEGIA_LABEL[c.strategy_type] ?? c.strategy_type}
+              </option>
+            ))}
+          </optgroup>
+        )}
       </select>
 
       <select
