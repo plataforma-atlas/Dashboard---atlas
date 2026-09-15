@@ -30,7 +30,6 @@ import LaunchFunnel from "@/components/LaunchFunnel";
 import CountryBarChart from "@/components/CountryBarChart";
 import SourceTable from "@/components/SourceTable";
 import FiltersBar from "@/components/FiltersBar";
-import ClientSelector from "@/components/ClientSelector";
 import CampaignSelector from "@/components/CampaignSelector";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ExecutiveFunnel from "@/components/webinar-os/ExecutiveFunnel";
@@ -95,6 +94,7 @@ function Home() {
   // a sí mismo abajo; un admin ve la pantalla de "elige un cliente" hasta que
   // haga clic en uno — nunca cae en un cliente fijo por defecto.
   const [selectedClientId, setSelectedClientId] = useState("");
+  const [selectorClienteAbierto, setSelectorClienteAbierto] = useState(false);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignsLoading, setCampaignsLoading] = useState(false);
   const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
@@ -671,7 +671,111 @@ function Home() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-6 md:px-8 md:py-8 max-w-7xl mx-auto flex flex-col gap-5">
+    <div className="min-h-screen flex flex-col md:flex-row">
+      <aside className="bg-[#111218] md:w-[240px] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto">
+        <div className="relative pb-4 border-b border-white/10">
+          <button
+            onClick={() => setSelectorClienteAbierto((v) => !v)}
+            disabled={visibleClients.length <= 1}
+            className="w-full flex items-center gap-2.5 rounded-lg hover:bg-white/5 transition p-1 -m-1 disabled:hover:bg-transparent"
+          >
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-secondary grid place-items-center text-sm font-bold text-on-primary shrink-0">
+              {selectedClient.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 text-left flex-1">
+              <div className="text-[13px] font-semibold text-white truncate">{selectedClient.name}</div>
+              <div className="text-[10px] text-white/50">Panel de lanzamiento</div>
+            </div>
+            {visibleClients.length > 1 && (
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`text-white/40 shrink-0 transition-transform ${selectorClienteAbierto ? "rotate-180" : ""}`}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            )}
+          </button>
+
+          {selectorClienteAbierto && visibleClients.length > 1 && (
+            <div className="mt-2 flex flex-col gap-0.5 max-h-64 overflow-y-auto">
+              {visibleClients
+                .filter((c) => c.id !== selectedClient.id)
+                .map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      setSelectedClientId(c.id);
+                      setSelectorClienteAbierto(false);
+                    }}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] text-white/60 hover:text-white hover:bg-white/5 transition"
+                  >
+                    <span className="w-5 h-5 rounded-md bg-white/10 grid place-items-center text-[10px] font-semibold shrink-0">
+                      {c.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="truncate">{c.name}</span>
+                  </button>
+                ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <CampaignSelector campaigns={campaigns} selectedId={selectedCampaignId} onSelect={setSelectedCampaignId} loading={campaignsLoading} />
+        </div>
+
+        <div className="flex flex-col gap-1.5 pt-4 border-t border-white/10">
+          <a
+            href={session.role === "admin" ? `/panel/conexiones?cliente_id=${selectedClient.id}` : "/panel/conexiones"}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition"
+          >
+            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px]">⇄</span>
+            <span>Conexiones</span>
+          </a>
+          {session.role === "admin" && (
+            <>
+              <a
+                href="/admin/cartera"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition"
+              >
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px]">▦</span>
+                <span>Cartera</span>
+              </a>
+              <a
+                href="/admin/usuarios"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition"
+              >
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px]">◈</span>
+                <span>Usuarios</span>
+              </a>
+            </>
+          )}
+        </div>
+
+        <div className="mt-auto pt-4 border-t border-white/10 flex items-center justify-between">
+          <ThemeModeToggle mode={mode} onToggle={toggleMode} />
+          <button
+            onClick={handleLogout}
+            title="Salir"
+            aria-label="Salir"
+            className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/15 grid place-items-center text-white/70 hover:text-white transition shrink-0"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </button>
+        </div>
+      </aside>
+
+    <main className="min-h-screen px-4 py-6 md:px-8 md:py-8 md:ml-[240px] max-w-7xl flex flex-col gap-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -685,31 +789,6 @@ function Home() {
           <p className="text-sm text-on-surface-variant">
             {selectedCampaign ? selectedCampaign.name : "Telemetría del embudo de marketing"}
           </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {visibleClients.length > 1 && <ClientSelector clients={visibleClients} selectedId={selectedClient.id} onSelect={setSelectedClientId} />}
-          <CampaignSelector campaigns={campaigns} selectedId={selectedCampaignId} onSelect={setSelectedCampaignId} loading={campaignsLoading} />
-          <ThemeModeToggle mode={mode} onToggle={toggleMode} />
-          <a
-            href={session.role === "admin" ? `/panel/conexiones?cliente_id=${selectedClient.id}` : "/panel/conexiones"}
-            className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition"
-          >
-            Conexiones
-          </a>
-          {session.role === "admin" && (
-            <>
-              <a href="/admin/cartera" className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition">
-                Cartera
-              </a>
-              <a href="/admin/usuarios" className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition">
-                Usuarios
-              </a>
-            </>
-          )}
-          <button onClick={handleLogout} className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition">
-            Salir
-          </button>
         </div>
       </header>
 
@@ -1045,6 +1124,7 @@ function Home() {
         </>
       )}
     </main>
+    </div>
   );
 }
 
