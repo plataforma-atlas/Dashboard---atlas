@@ -11,7 +11,7 @@ function mondayOf(d: Date): Date {
   return date;
 }
 
-export type RangoRapido = "current" | "previous" | "4weeks";
+export type RangoRapido = "all" | "current" | "previous" | "4weeks";
 
 /** Rangos de fecha REALES (lunes–hoy/domingo) para los presets rápidos — no son
  * comparativas "vs. periodo anterior" (eso necesitaría snapshots históricos que no
@@ -20,6 +20,14 @@ export function rangoRapido(preset: RangoRapido): { fecha_inicio: string; fecha_
   const hoy = new Date();
   const lunesActual = mondayOf(hoy);
 
+  // "all": sin fecha_inicio/fecha_fin — el backend no filtra por periodo y
+  // devuelve el acumulado histórico completo (mismo comportamiento que
+  // Cartera). Es el default porque las ediciones de muchos clientes quedan
+  // "archived" y su actividad real cae fuera de cualquier ventana reciente
+  // — con "Últimas 4 semanas" como default el resumen se veía vacío.
+  if (preset === "all") {
+    return { fecha_inicio: "", fecha_fin: "" };
+  }
   if (preset === "current") {
     return { fecha_inicio: toISODate(lunesActual), fecha_fin: toISODate(hoy) };
   }

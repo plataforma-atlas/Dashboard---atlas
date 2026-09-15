@@ -21,7 +21,7 @@ type Props = {
 };
 
 export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSeleccionada, onCampanaChange, onAplicar }: Props) {
-  const [periodo, setPeriodo] = useState<RangoRapido>("4weeks");
+  const [periodo, setPeriodo] = useState<RangoRapido>("all");
   const [panelAbierto, setPanelAbierto] = useState(false);
   const [semanaSeleccionada, setSemanaSeleccionada] = useState(semanasEspecificas()[0]?.value ?? "");
 
@@ -40,11 +40,11 @@ export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSele
   const semanas = semanasEspecificas();
 
   return (
-    <div className="wcc-no-print relative flex items-center gap-2 flex-wrap">
+    <div className="wcc-no-print relative flex items-center gap-2 flex-wrap w-full min-w-0 md:w-auto">
       <select
         value={campanaSeleccionada}
         onChange={(e) => onCampanaChange(e.target.value)}
-        className="border border-[var(--wos-border)] bg-[var(--wos-surface)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px]"
+        className="w-full sm:w-auto max-w-full border border-[var(--wos-border)] bg-[var(--wos-surface)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px]"
       >
         <option value="all">Todas las campañas</option>
         {campanas.map((c) => (
@@ -68,6 +68,7 @@ export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSele
         onChange={(e) => aplicarPeriodoRapido(e.target.value as RangoRapido)}
         className="border border-[var(--wos-border)] bg-[var(--wos-surface)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px]"
       >
+        <option value="all">Todo el periodo</option>
         <option value="current">Esta semana</option>
         <option value="previous">Semana anterior</option>
         <option value="4weeks">Últimas 4 semanas</option>

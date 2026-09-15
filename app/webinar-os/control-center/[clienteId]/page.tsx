@@ -118,7 +118,7 @@ export default function ControlCenterPage() {
   }
 
   useEffect(() => {
-    const { fecha_inicio, fecha_fin } = rangoRapido("4weeks");
+    const { fecha_inicio, fecha_fin } = rangoRapido("all");
     setFechaInicio(fecha_inicio);
     setFechaFin(fecha_fin);
     cargar(fecha_inicio, fecha_fin);
@@ -315,7 +315,7 @@ export default function ControlCenterPage() {
               )}
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-col items-start md:items-end gap-2 w-full min-w-0 md:w-auto">
             <WccFilterBar
               campanas={campanas}
               otrasCampanas={otrasCampanas}
