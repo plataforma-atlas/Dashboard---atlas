@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Campaign, FunnelRow } from "@/lib/types";
 import { toCountryBreakdown, toKpis, toSourceBreakdown, toStageSummary } from "@/lib/aggregate";
@@ -100,6 +100,12 @@ function Home() {
   const { collapsed: sidebarCollapsed, toggleCollapsed: toggleSidebarCollapsed } = useSidebarCollapse();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignsLoading, setCampaignsLoading] = useState(false);
+  // A qué cliente pertenece lo que hay hoy en `campaigns` — se compara contra
+  // selectedClient en cada render (no depende de que el efecto de abajo ya
+  // haya corrido) para poder detectar datos del cliente anterior todavía sin
+  // reemplazar y no mostrarlos ni un instante bajo el nombre del nuevo.
+  const [campaignsClientId, setCampaignsClientId] = useState<string | null>(null);
+  const campaignsRequestRef = useRef(0);
   const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
 
   const [webinarsList, setWebinarsList] = useState<WebinarSummary[]>([]);
@@ -180,6 +186,10 @@ function Home() {
   // 2. Campañas del cliente seleccionado
   useEffect(() => {
     if (!session?.authenticated || !selectedClient) return;
+    // Si el usuario cambia de cliente rápido, una respuesta vieja (del
+    // cliente anterior) puede llegar después de la nueva — este id evita que
+    // esa respuesta tardía pise los datos del cliente que sí está activo.
+    const requestId = ++campaignsRequestRef.current;
     setCampaignsLoading(true);
     setSelectedCampaignId(null);
     setRows([]);
@@ -188,8 +198,10 @@ function Home() {
     fetch(`/api/campanas?cliente_id=${selectedClient.id}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
+        if (campaignsRequestRef.current !== requestId) return;
         const list: Campaign[] = data.campanas ?? [];
         setCampaigns(list);
+        setCampaignsClientId(selectedClient.id);
         // Si llegamos con ?campaign_id= (ej. desde el selector del Control
         // Center para una campaña de otra estrategia), respetamos esa
         // elección en vez de la preferida automática.
@@ -207,8 +219,15 @@ function Home() {
         const preferred = fromParam ?? anyWebinar ?? list.find((c) => c.status === "active") ?? list[0];
         if (preferred) setSelectedCampaignId(preferred.id);
       })
-      .catch(() => setCampaigns([]))
-      .finally(() => setCampaignsLoading(false));
+      .catch(() => {
+        if (campaignsRequestRef.current !== requestId) return;
+        setCampaigns([]);
+        setCampaignsClientId(selectedClient.id);
+      })
+      .finally(() => {
+        if (campaignsRequestRef.current !== requestId) return;
+        setCampaignsLoading(false);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClient?.id, session?.authenticated]);
 
@@ -679,6 +698,27 @@ function Home() {
       return <WebinarRetentionChart key={key} metrics={metrics.webinar} />;
     }
     return null;
+  }
+
+  // `campaigns` puede seguir siendo la lista del cliente ANTERIOR un
+  // instante — el efecto que la reemplaza corre después del render, así que
+  // compararlo acá (no solo confiar en `campaignsLoading`) es lo que
+  // garantiza que nunca se pinte, ni un frame, el nombre del cliente nuevo
+  // con la campaña/estrategia del cliente viejo todavía puesta.
+  const campaignsStale = !!selectedClient && campaignsClientId !== selectedClient.id;
+  // Mientras cambian las campañas del cliente recién seleccionado, o justo
+  // cuando ya sabemos que este cliente redirige al Control Center, no
+  // renderizamos este dashboard clásico — evita el "flash" del dashboard
+  // clásico (con datos del cliente anterior, o del nuevo un instante antes
+  // de que el efecto de arriba dispare el redirect) que se veía al cambiar
+  // de cliente en el sidebar.
+  const goingToControlCenter = isWebinarAutomatizado && searchParams.get("vista") !== "clasica";
+  if (selectedClientId && (campaignsLoading || campaignsStale || goingToControlCenter)) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <VermetricasLoader />
+      </div>
+    );
   }
 
   return (
