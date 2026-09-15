@@ -155,8 +155,18 @@ function Home() {
       .then((data) => {
         const list: { id: string; name: string }[] = data.clientes ?? [];
         setVisibleClients(list.map((c) => ({ id: c.id, name: c.name, theme: themeForClient(c.id) })));
+        // Admin llegando con ?cliente_id= (ej. desde el selector de clientes
+        // del Control Center) — respeta esa elección en vez de mostrar el
+        // selector "¿Qué cliente quieres revisar?".
+        if (session.role === "admin") {
+          const clienteIdParam = searchParams.get("cliente_id");
+          if (clienteIdParam && list.some((c) => c.id === clienteIdParam)) {
+            setSelectedClientId(clienteIdParam);
+          }
+        }
       })
       .catch(() => setVisibleClients([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.authenticated]);
 
   // 2. Campañas del cliente seleccionado
