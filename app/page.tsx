@@ -195,12 +195,16 @@ function Home() {
         // elección en vez de la preferida automática.
         const campaignIdParam = searchParams.get("campaign_id");
         const fromParam = campaignIdParam ? list.find((c) => String(c.id) === campaignIdParam) : null;
-        // Si el cliente tiene una campaña de Webinar Automático activa, esa
-        // manda siempre — es la que lo lleva al Control Center — sin
-        // importar en qué orden vengan las campañas desde el backend.
-        const activeWebinar = list.find((c) => c.status === "active" && c.strategy_type === "webinar_automatizado");
+        // Si el cliente tiene alguna campaña de Webinar Automático, esa manda
+        // siempre — es la que lo lleva al Control Center — sin importar su
+        // status individual (las ediciones pasadas suelen quedar
+        // "archived") ni en qué orden vengan las campañas desde el backend.
+        // Antes esto exigía status==="active" y, si ninguna edición lo
+        // tenía, el cliente caía por defecto en otra estrategia (ej. VSL)
+        // en vez de ir al Control Center.
+        const anyWebinar = list.find((c) => c.strategy_type === "webinar_automatizado");
         // Preferimos seleccionar automáticamente una campaña "active"; si no hay, la primera disponible
-        const preferred = fromParam ?? activeWebinar ?? list.find((c) => c.status === "active") ?? list[0];
+        const preferred = fromParam ?? anyWebinar ?? list.find((c) => c.status === "active") ?? list[0];
         if (preferred) setSelectedCampaignId(preferred.id);
       })
       .catch(() => setCampaigns([]))
