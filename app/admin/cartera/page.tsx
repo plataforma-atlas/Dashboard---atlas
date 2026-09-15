@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useThemeMode } from "@/components/ThemeModeProvider";
-import ThemeModeToggle from "@/components/ThemeModeToggle";
+import AppSidebar from "@/components/AppSidebar";
 import CarteraGrid from "@/components/webinar-os/cartera/CarteraGrid";
 import { CarteraCliente } from "@/lib/webinar-os/cartera";
 
@@ -37,21 +37,14 @@ export default function AdminCarteraPage() {
   }, []);
 
   return (
-    <main className="webinar-os-scope min-h-screen px-4 py-8 md:px-8 max-w-7xl mx-auto flex flex-col gap-6 bg-[var(--wos-surface-alt)]" data-wos-theme={mode}>
+    <div className="webinar-os-scope min-h-screen flex flex-col md:flex-row bg-[var(--wos-surface-alt)]" data-wos-theme={mode}>
+      <AppSidebar active="cartera" isAdmin mode={mode} onToggleMode={toggleMode} onLogout={handleLogout} />
+      <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[240px] max-w-7xl flex flex-col gap-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-[0.14em] text-[var(--wos-primary)] font-mono">Webinar Control Center</span>
           <h1 className="font-display text-2xl text-[var(--wos-ink)] font-semibold">Cartera de clientes</h1>
           <p className="text-sm text-[var(--wos-ink-muted)]">Webinar automático — quién necesita atención, quién puede escalar.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <ThemeModeToggle mode={mode} onToggle={toggleMode} />
-          <a href="/" className="text-xs text-[var(--wos-ink-muted)] hover:text-[var(--wos-ink)] border border-[var(--wos-border)] rounded-full px-3 py-1.5 transition">
-            ← Volver al dashboard
-          </a>
-          <button onClick={handleLogout} className="text-xs text-[var(--wos-ink-muted)] hover:text-[var(--wos-ink)] border border-[var(--wos-border)] rounded-full px-3 py-1.5 transition">
-            Salir
-          </button>
         </div>
       </header>
 
@@ -63,5 +56,6 @@ export default function AdminCarteraPage() {
         <CarteraGrid cartera={cartera} />
       )}
     </main>
+    </div>
   );
 }

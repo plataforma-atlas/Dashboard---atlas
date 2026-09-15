@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useThemeMode } from "@/components/ThemeModeProvider";
-import ThemeModeToggle from "@/components/ThemeModeToggle";
+import AppSidebar from "@/components/AppSidebar";
 
 type Usuario = {
   id: number;
@@ -117,24 +117,14 @@ export default function AdminUsuariosPage() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-8 md:px-8 max-w-5xl mx-auto flex flex-col gap-6 bg-background">
+    <div className="min-h-screen flex flex-col md:flex-row bg-background">
+      <AppSidebar active="usuarios" isAdmin mode={mode} onToggleMode={toggleMode} onLogout={handleLogout} />
+      <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[240px] max-w-5xl flex flex-col gap-6 bg-background">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">Panel de Administración</span>
           <h1 className="font-display text-2xl text-on-surface font-semibold">Usuarios</h1>
           <p className="text-sm text-on-surface-variant">Cambia roles y asigna qué clientes puede ver cada usuario.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <ThemeModeToggle mode={mode} onToggle={toggleMode} />
-          <a href="/admin/clientes" className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition">
-            Clientes →
-          </a>
-          <a href="/" className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition">
-            ← Volver al dashboard
-          </a>
-          <button onClick={handleLogout} className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition">
-            Salir
-          </button>
         </div>
       </header>
 
@@ -223,5 +213,6 @@ export default function AdminUsuariosPage() {
         </div>
       )}
     </main>
+    </div>
   );
 }

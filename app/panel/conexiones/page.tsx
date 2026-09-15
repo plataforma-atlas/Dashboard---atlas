@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useThemeMode } from "@/components/ThemeModeProvider";
-import ThemeModeToggle from "@/components/ThemeModeToggle";
+import AppSidebar from "@/components/AppSidebar";
 
 type EstadoConexion = { integration_type: string; status: string; updated_at: string; tiene_credencial: boolean };
 
@@ -41,11 +41,13 @@ function PanelConexionesContent() {
 
   const [webhookAbierto, setWebhookAbierto] = useState(false);
   const [webhookCopiado, setWebhookCopiado] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     (async () => {
       const meRes = await fetch("/api/auth/me", { cache: "no-store" }).catch(() => null);
       const me = meRes && meRes.ok ? await meRes.json().catch(() => null) : null;
+      setIsAdmin(me?.role === "admin");
       const fromQuery = searchParams.get("cliente_id");
       const propio = me?.clientes?.[0] ?? null;
       const id = fromQuery || propio;
@@ -58,6 +60,12 @@ function PanelConexionesContent() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
 
   async function cargarEstado(id: string) {
     setLoading(true);
@@ -132,24 +140,14 @@ function PanelConexionesContent() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-8 md:px-8 max-w-3xl mx-auto flex flex-col gap-6 bg-background">
+    <div className="min-h-screen flex flex-col md:flex-row bg-background">
+      <AppSidebar active="conexiones" isAdmin={isAdmin} mode={mode} onToggleMode={toggleMode} onLogout={handleLogout} />
+      <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[240px] max-w-3xl flex flex-col gap-6 bg-background">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={mode === "dark" ? "/brand/vermetricas-horizontal-dark.png" : "/brand/vermetricas-horizontal-light.png"}
-            alt="Vermetricas"
-            className="h-7 w-auto self-start mb-1"
-          />
           <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">Onboarding</span>
           <h1 className="font-display text-2xl text-on-surface font-semibold">Tus conexiones</h1>
           <p className="text-sm text-on-surface-variant">Conecta tus cuentas para que empecemos a traer tus datos automáticamente.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <ThemeModeToggle mode={mode} onToggle={toggleMode} />
-          <a href="/" className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition">
-            ← Volver al dashboard
-          </a>
         </div>
       </header>
 
@@ -274,6 +272,7 @@ function PanelConexionesContent() {
         </div>
       ) : null}
     </main>
+    </div>
   );
 }
 
