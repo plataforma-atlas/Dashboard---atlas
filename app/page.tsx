@@ -122,6 +122,7 @@ function Home() {
   const [eventoAdPerformance, setEventoAdPerformance] = useState<EventoAdPerformanceRow[]>([]);
 
   const [visibleClients, setVisibleClients] = useState<ClientConfig[]>([]);
+  const [clientsLoaded, setClientsLoaded] = useState(false);
 
   const selectedClient = useMemo(
     () => visibleClients.find((c) => c.id === selectedClientId) ?? visibleClients[0] ?? defaultClient,
@@ -155,17 +156,21 @@ function Home() {
       .then((data) => {
         const list: { id: string; name: string }[] = data.clientes ?? [];
         setVisibleClients(list.map((c) => ({ id: c.id, name: c.name, theme: themeForClient(c.id) })));
-        // Admin llegando con ?cliente_id= (ej. desde el selector de clientes
-        // del Control Center) — respeta esa elección en vez de mostrar el
-        // selector "¿Qué cliente quieres revisar?".
-        if (session.role === "admin") {
+        // El admin ya no ve el selector "¿Qué cliente quieres revisar?" —
+        // cae directo en un cliente por defecto (el primero de la lista, o
+        // el que venga en ?cliente_id= si llegó desde el menú lateral de
+        // otra pantalla) y cambia de cliente desde el sidebar.
+        if (session.role === "admin" && list.length > 0) {
           const clienteIdParam = searchParams.get("cliente_id");
-          if (clienteIdParam && list.some((c) => c.id === clienteIdParam)) {
-            setSelectedClientId(clienteIdParam);
-          }
+          const fromParam = clienteIdParam && list.some((c) => c.id === clienteIdParam) ? clienteIdParam : null;
+          setSelectedClientId(fromParam ?? list[0].id);
         }
+        setClientsLoaded(true);
       })
-      .catch(() => setVisibleClients([]));
+      .catch(() => {
+        setVisibleClients([]);
+        setClientsLoaded(true);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.authenticated]);
 
@@ -539,13 +544,12 @@ function Home() {
     );
   }
 
-  // Si llegamos con ?cliente_id= (ej. desde el selector de clientes del
-  // Control Center), esperamos a que la lista de clientes cargue y ese
-  // parámetro se resuelva antes de decidir si mostrar el selector — si no,
-  // el selector "¿Qué cliente quieres revisar?" parpadea un instante de
-  // más mientras carga, incluso cuando ya sabemos a qué cliente vamos.
-  const resolvingClienteIdParam = !!searchParams.get("cliente_id") && visibleClients.length === 0;
-  if (resolvingClienteIdParam) {
+  // Un admin siempre cae en un cliente por defecto apenas la lista carga
+  // (ver el efecto de arriba) — mientras esa lista todavía no llegó,
+  // mostramos el logo de carga en vez de dejar que el selector "¿Qué
+  // cliente quieres revisar?" parpadee un instante antes de redirigir.
+  const resolvingDefaultClient = session.role === "admin" && !selectedClientId && !clientsLoaded;
+  if (resolvingDefaultClient) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <VermetricasLoader />
