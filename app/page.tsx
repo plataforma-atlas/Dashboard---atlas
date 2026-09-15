@@ -681,39 +681,35 @@ function Home() {
     <div className="min-h-screen flex flex-col md:flex-row">
       <aside className="bg-[#111218] md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto transition-[width] duration-200">
         <div className="relative pb-4 border-b border-white/10">
-          <div className={`flex ${sidebarCollapsed ? "flex-col items-center gap-2" : "items-center gap-2"}`}>
+          <div className={`flex items-center gap-2 ${sidebarCollapsed ? "md:flex-col md:items-center" : ""}`}>
             <button
-              onClick={() => setSelectorClienteAbierto((v) => !v)}
-              disabled={sidebarCollapsed || visibleClients.length <= 1}
-              className={`flex items-center gap-2.5 rounded-lg hover:bg-white/5 transition p-1 -m-1 disabled:hover:bg-transparent min-w-0 ${
-                sidebarCollapsed ? "" : "flex-1"
-              }`}
+              onClick={() => (sidebarCollapsed ? toggleSidebarCollapsed() : setSelectorClienteAbierto((v) => !v))}
+              disabled={!sidebarCollapsed && visibleClients.length <= 1}
+              className="flex items-center gap-2.5 rounded-lg hover:bg-white/5 transition p-1 -m-1 disabled:hover:bg-transparent min-w-0 flex-1"
             >
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-secondary grid place-items-center text-sm font-bold text-on-primary shrink-0">
                 {selectedClient.name.charAt(0).toUpperCase()}
               </div>
-              {!sidebarCollapsed && (
-                <>
-                  <div className="min-w-0 text-left flex-1">
-                    <div className="text-[13px] font-semibold text-white truncate">{selectedClient.name}</div>
-                    <div className="text-[10px] text-white/50">Panel de lanzamiento</div>
-                  </div>
-                  {visibleClients.length > 1 && (
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className={`text-white/40 shrink-0 transition-transform ${selectorClienteAbierto ? "rotate-180" : ""}`}
-                    >
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  )}
-                </>
+              <div className={`min-w-0 text-left flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>
+                <div className="text-[13px] font-semibold text-white truncate">{selectedClient.name}</div>
+                <div className="text-[10px] text-white/50">Panel de lanzamiento</div>
+              </div>
+              {visibleClients.length > 1 && (
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`text-white/40 shrink-0 transition-transform ${selectorClienteAbierto ? "rotate-180" : ""} ${
+                    sidebarCollapsed ? "md:hidden" : ""
+                  }`}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               )}
             </button>
             <SidebarCollapseButton collapsed={sidebarCollapsed} onToggle={toggleSidebarCollapsed} />
