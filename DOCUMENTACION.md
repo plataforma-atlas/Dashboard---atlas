@@ -1,6 +1,6 @@
 # Documentación técnica — Panel Vermetricas
 
-> Este documento complementa al [`README.md`](./README.md) (quick-start) con el detalle completo del proyecto: arquitectura, autenticación, modelo de datos, inventario de rutas/APIs, integración con n8n, y los flujos de onboarding de clientes. Generado a partir de una lectura completa del código el 2026-09-14 — todo lo que dice acá está verificado contra archivos reales del repo, no es una descripción genérica. Actualizado el 2026-09-15 con el sidebar compartido/colapsable y los cambios de navegación del Control Center (secciones 7, 8 y 16).
+> Este documento complementa al [`README.md`](./README.md) (quick-start) con el detalle completo del proyecto: arquitectura, autenticación, modelo de datos, inventario de rutas/APIs, integración con n8n, y los flujos de onboarding de clientes. Generado a partir de una lectura completa del código el 2026-09-14 — todo lo que dice acá está verificado contra archivos reales del repo, no es una descripción genérica. Actualizado el 2026-09-15 con el sidebar compartido/colapsable y los cambios de navegación del Control Center (secciones 7, 8 y 16). Actualizado el 2026-09-16 con el flujo de recuperación de contraseña self-service vía Resend (sección 18) y sus variables de entorno (sección 6).
 
 ## 1. Qué es este proyecto
 
@@ -13,6 +13,7 @@ Panel multi-cliente (multi-tenant) en Next.js para la agencia **Vermetricas**. M
 - **jose 5.6.3** — firma/verificación de JWT (sesión y tokens de invitación).
 - **recharts** — gráficos.
 - **jspdf** + **jspdf-autotable** — export de reportes a PDF (Webinar OS).
+- **Resend** — envío de correos transaccionales (recuperación de contraseña); se llama directo a su API REST vía `fetch` en `lib/email.ts`, sin SDK.
 - Sin ORM, sin cliente de base de datos, sin backend propio: es un frontend/BFF puro que proxea todo a n8n.
 
 Scripts (`package.json`): `npm run dev` / `build` / `start` / `lint`.
@@ -98,6 +99,9 @@ Solo nombres — nunca se deben pegar valores reales en documentación ni en el 
 **Auth**
 `N8N_LOGIN_URL`, `N8N_REGISTRO_URL`, `N8N_REGISTRO_INVITADO_URL`
 
+**Recuperación de contraseña (self-service)**
+`RESEND_API_KEY`, `N8N_ADMIN_RESETEAR_PASSWORD_URL` — este último es el mismo webhook de n8n que usaría un futuro reset manual de admin desde `/admin/usuarios` (no construido todavía); ver sección 18.
+
 **Admin / gestión de usuarios y clientes**
 `N8N_ADMIN_USUARIOS_URL`, `N8N_ADMIN_CLIENTE_USUARIO_URL`, `N8N_ADMIN_ELIMINAR_USUARIO_URL`, `N8N_ADMIN_CAMBIAR_ROL_URL`, `N8N_CREAR_CLIENTE_URL`, `N8N_ESTADO_CLIENTE_URL`, `N8N_CLIENTES_URL`, `N8N_CAMPANAS_URL`
 
@@ -121,6 +125,8 @@ app/
   page.tsx                        SPA principal — selector de cliente/campaña + routing por strategy_type
   layout.tsx                      Layout raíz: fuentes, CSS global/tema, ThemeModeProvider
   login/, registro/                Páginas públicas de auth
+  olvide-password/                 Pide el correo y dispara el envío del enlace de recuperación
+  restablecer-password/[token]/    Crear contraseña nueva a partir del enlace del correo
   invitacion/[token]/              Signup vía invitación
   checkin/                         Consola de check-in del evento presencial
   panel/conexiones/                Panel de integraciones del cliente (hoy: solo GHL)
@@ -139,6 +145,8 @@ components/
 
 lib/
   auth.ts, invite.ts                Sesión JWT y tokens de invitación
+  password-reset.ts                 Token JWT local de recuperación de contraseña (1h, purpose "password_reset")
+  email.ts                          Envío de correo transaccional vía Resend (template del reset de contraseña)
   clients.ts                        Theming por cliente (fallback: tema genérico)
   types.ts, aggregate.ts            Tipos y transforms del dashboard genérico ("lanzamiento")
   vsl/, evento/, webinar-os/        Tipos + agregaciones específicas de cada módulo
@@ -153,7 +161,9 @@ public/brand/                      Los 4 assets de marca que sí se sirven en pr
 | Ruta | Acceso | Qué hace |
 |---|---|---|
 | `/` | Cualquier rol excepto `checkin` (redirige a `/checkin`) | SPA principal: carga sesión + lista de clientes + campañas, y renderiza el módulo según `strategy_type` (Webinar OS / VSL / Evento presencial / genérico). Admin sin cliente seleccionado cae directo en el primer cliente de la lista (o el de `?cliente_id=`). Si el cliente tiene **alguna** campaña `webinar_automatizado` (activa o no — las ediciones pasadas suelen quedar `archived`), redirige automáticamente a su Control Center; `?vista=clasica` es la salida de emergencia para quedarse en este dashboard. |
-| `/login` | Público | Login por email/contraseña. |
+| `/login` | Público | Login por email/contraseña. Sin toggle de modo claro/oscuro (se quitó para simplificar la pantalla a un solo look; `/registro` e `/invitacion/[token]` sí lo conservan). |
+| `/olvide-password` | Público | Pide el correo y dispara el envío del enlace de recuperación — siempre responde igual, exista o no la cuenta (no revela si el correo está registrado). |
+| `/restablecer-password/[token]` | Público (protegido por el token firmado, expira en 1h) | Formulario para crear la contraseña nueva; ver sección 18. |
 | `/registro` | Público | Alta de cuenta sin acceso a ningún cliente todavía (lo asigna un admin después). |
 | `/invitacion/[token]` | Público | Signup pre-vinculado a un cliente vía token de invitación. |
 | `/checkin` | Admin/checkin/cliente `atlas`, o público si `EVENTO_CHECKIN_PUBLICO=true` | Consola de check-in del evento: buscar, marcar/deshacer entrada, editar datos, registrar walk-ins, marcar VIP. |
@@ -169,7 +179,7 @@ public/brand/                      Los 4 assets de marca que sí se sirven en pr
 
 Patrón repetido en **todas** las rutas (ver sección 11 para el detalle): verificar cookie de sesión → verificar rol/acceso al `cliente_id` → verificar que la variable `N8N_*_URL` exista → proxear el fetch → normalizar errores.
 
-**Auth** — `login`, `logout`, `me`, `registro`, `registro-invitado`
+**Auth** — `login`, `logout`, `me`, `registro`, `registro-invitado`, `olvide-password` (pública), `restablecer-password` (pública, protegida por token firmado)
 **Invitación** — `invitacion/verificar` (pública)
 **Datos core** — `clientes`, `campanas`, `funnel` (embudo genérico, usado por varios módulos)
 **Onboarding** — `onboarding/conectar-ghl`, `onboarding/estado`
@@ -275,7 +285,8 @@ Cada API route **vuelve a verificar** sesión y permisos por su cuenta — el mi
 
 - Paleta Vermetricas (morado): `#5B5BF7` (primary), `#7C7CFB`, `#8B86FF`, `#A5A0FF` (secondary/hot), sobre fondos oscuros `#0E1015` / `#181A22` / `#1F222C`. Tokens Tailwind: `background`, `surface`, `surface-high`, `outline`, `primary`, `secondary`, `on-surface*`, más `error`/`success`/`warning` con variantes `-container`/`outline-*`.
 - `lib/clients.ts` resuelve un tema por cliente en runtime (fallback: tema genérico Vermetricas) — light/dark vía `ThemeModeProvider`/`ThemeSwitch`.
-- `components/LoginGridCanvas.tsx` — fondo animado de las pantallas de auth (login/registro/invitación): grid de rectángulos verticales con una luz que viaja y ilumina direccionalmente, afinado a mano durante esta sesión de trabajo. Hay una versión standalone (HTML/CSS/JS puro, sin dependencias) de referencia en `design/login-bg-vanilla/index.html`.
+- `components/LoginGridCanvas.tsx` — fondo animado de las pantallas de auth (login/registro/invitación/recuperación de contraseña): grid de rectángulos verticales con una luz que viaja y ilumina direccionalmente, afinado a mano durante esta sesión de trabajo. Hay una versión standalone (HTML/CSS/JS puro, sin dependencias) de referencia en `design/login-bg-vanilla/index.html`.
+- `public/brand/vermetricas-horizontal-light.png` — versión del logo para fondos claros (texto oscuro), usada en el correo de recuperación de contraseña; las variantes `-dark` están pensadas para fondos oscuros (texto casi invisible sobre blanco).
 
 ## 16. Gotchas / cosas a tener presente
 
@@ -297,3 +308,13 @@ vercel
 ```
 
 Configurar todas las variables de la sección 6 en Vercel → Settings → Environment Variables, para Production, Preview y Development.
+
+## 18. Recuperación de contraseña (self-service)
+
+Fuente: `lib/password-reset.ts`, `lib/email.ts`, `app/api/auth/olvide-password`, `app/api/auth/restablecer-password`, `app/olvide-password/page.tsx`, `app/restablecer-password/[token]/page.tsx`.
+
+1. **Usuario pide el enlace** (`POST /api/auth/olvide-password`, público): firma un JWT local (mismo `JWT_SECRET` que el resto de la app, `purpose: "password_reset"`, expira en **1 hora**) y manda un correo brandeado vía Resend con el link `<origin>/restablecer-password/<token>`. **Siempre responde `{ ok: true }`**, exista o no una cuenta con ese correo — no revela si el correo está registrado; si el envío falla, el error solo se loguea en el servidor.
+2. **Usuario abre el link y escribe la contraseña nueva** (`POST /api/auth/restablecer-password`, público): verifica el JWT localmente (firma + `purpose` + expiración); si es inválido o expiró, 400. Si es válido, llama al **mismo** webhook de n8n `admin/resetear-password` (`N8N_ADMIN_RESETEAR_PASSWORD_URL`) con `{ email, nueva_password }` — el mismo que usaría, si se llega a construir, un botón de reset manual desde `/admin/usuarios` (ver sección 6). n8n hashea con bcrypt (`crypt(..., gen_salt('bf'))`) directo en Postgres y devuelve 404 si el correo no corresponde a ningún usuario.
+3. **Correo**: armado en `lib/email.ts` con tabla HTML + estilos inline (compatibilidad de clientes de correo). El logo se sirve desde una URL pública de GitHub raw (`raw.githubusercontent.com/plataforma-atlas/Dashboard---atlas/main/public/brand/vermetricas-horizontal-light.png`), **no como `data:` URI** — Gmail (y otros clientes) bloquea imágenes embebidas en base64 en el HTML del correo. Pendiente: cambiar a la URL de `/brand/` del propio dominio de producción una vez esté más consolidado, en vez de depender de GitHub.
+
+**Gotcha para el equipo**: el botón de administrador para resetear la contraseña de otro usuario desde `/admin/usuarios` **no está construido** — solo existe el flujo self-service desde `/login`. De construirse, reutilizaría el mismo webhook de n8n (`N8N_ADMIN_RESETEAR_PASSWORD_URL`), solo cambia quién está autorizado a llamarlo (sesión de admin vs. token de reset firmado).
