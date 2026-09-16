@@ -3,15 +3,12 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useThemeMode } from "@/components/ThemeModeProvider";
-import ThemeModeToggle from "@/components/ThemeModeToggle";
 import PasswordInput from "@/components/PasswordInput";
 import LoginGridCanvas from "@/components/LoginGridCanvas";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { mode, toggleMode } = useThemeMode();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -44,10 +41,7 @@ function LoginForm() {
   return (
     <div className="relative min-h-screen flex flex-col bg-background overflow-hidden">
       <LoginGridCanvas />
-      <div className="relative z-10 flex justify-end px-4 pt-4">
-        <ThemeModeToggle mode={mode} onToggle={toggleMode} />
-      </div>
-      <div className="relative z-10 flex-1 flex items-center justify-center px-4 pb-16">
+      <div className="relative z-10 flex-1 flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center gap-1 mb-8">
           {/* Colores fijos (no tokens de tema): este bloque vive sobre el fondo del
@@ -79,6 +73,9 @@ function LoginForm() {
               autoComplete="current-password"
               placeholder="••••••••"
             />
+            <Link href="/olvide-password" className="self-end text-xs text-primary hover:underline">
+              ¿Olvidaste tu contraseña?
+            </Link>
           </div>
 
           {error && <p className="text-sm text-error">{error}</p>}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { COOKIE_NAME, verifySession } from "@/lib/auth";
 
-const PUBLIC_PATHS = ["/login", "/registro", "/invitacion"];
+const PUBLIC_PATHS = ["/login", "/registro", "/invitacion", "/olvide-password", "/restablecer-password"];
 
 // Interruptor de emergencia: cuando el equipo de check-in no ha podido crear/usar
 // cuentas todavía, esto permite que CUALQUIERA entre a /checkin sin sesión.
