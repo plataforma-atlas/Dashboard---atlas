@@ -43,6 +43,10 @@ export default function PeriodCalendar({ selected, onSelect, defaultMonth }: Pro
       style={RDP_VARS}
       className="text-[13px] text-[color:var(--wos-ink)]"
       classNames={{
+        // Por defecto react-day-picker pone las dos flechas juntas arriba a
+        // la derecha de todo el calendario. Las separamos: una pegada al
+        // borde izquierdo y otra al borde derecho de los dos meses juntos.
+        nav: "!absolute !inset-x-0 !top-0.5 flex items-center justify-between px-0.5",
         month_caption: "flex items-center justify-center font-semibold text-[13px] text-[color:var(--wos-ink)] mb-1 capitalize",
         weekday: "text-[11px] font-medium text-[color:var(--wos-ink-muted)]",
         button_previous: "rounded-full text-[color:var(--wos-ink-muted)] hover:bg-[var(--wos-surface-alt)]",
