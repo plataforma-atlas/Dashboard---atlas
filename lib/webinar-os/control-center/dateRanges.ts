@@ -11,37 +11,42 @@ function mondayOf(d: Date): Date {
   return date;
 }
 
-export type RangoRapido = "all" | "current" | "previous" | "4weeks";
+export type RangoRapido = "all" | "today" | "7days" | "1month" | "custom";
 
-/** Rangos de fecha REALES (lunes–hoy/domingo) para los presets rápidos — no son
+export const RANGO_RAPIDO_LABEL: Record<Exclude<RangoRapido, "custom">, string> = {
+  all: "Todo el período",
+  today: "Hoy",
+  "7days": "Últimos 7 días",
+  "1month": "Último mes",
+};
+
+/** Rangos de fecha REALES (hasta hoy) para los presets rápidos — no son
  * comparativas "vs. periodo anterior" (eso necesitaría snapshots históricos que no
  * existen), solo una forma cómoda de fijar fecha_inicio/fecha_fin reales. */
-export function rangoRapido(preset: RangoRapido): { fecha_inicio: string; fecha_fin: string } {
+export function rangoRapido(preset: Exclude<RangoRapido, "custom">): { fecha_inicio: string; fecha_fin: string } {
   const hoy = new Date();
-  const lunesActual = mondayOf(hoy);
+  hoy.setHours(0, 0, 0, 0);
 
   // "all": sin fecha_inicio/fecha_fin — el backend no filtra por periodo y
   // devuelve el acumulado histórico completo (mismo comportamiento que
   // Cartera). Es el default porque las ediciones de muchos clientes quedan
   // "archived" y su actividad real cae fuera de cualquier ventana reciente
-  // — con "Últimas 4 semanas" como default el resumen se veía vacío.
+  // — con un periodo reciente como default el resumen se veía vacío.
   if (preset === "all") {
     return { fecha_inicio: "", fecha_fin: "" };
   }
-  if (preset === "current") {
-    return { fecha_inicio: toISODate(lunesActual), fecha_fin: toISODate(hoy) };
+  if (preset === "today") {
+    return { fecha_inicio: toISODate(hoy), fecha_fin: toISODate(hoy) };
   }
-  if (preset === "previous") {
-    const lunesAnterior = new Date(lunesActual);
-    lunesAnterior.setDate(lunesAnterior.getDate() - 7);
-    const domingoAnterior = new Date(lunesActual);
-    domingoAnterior.setDate(domingoAnterior.getDate() - 1);
-    return { fecha_inicio: toISODate(lunesAnterior), fecha_fin: toISODate(domingoAnterior) };
+  if (preset === "7days") {
+    const inicio = new Date(hoy);
+    inicio.setDate(inicio.getDate() - 6);
+    return { fecha_inicio: toISODate(inicio), fecha_fin: toISODate(hoy) };
   }
-  // "4weeks": últimas 4 semanas completas hasta hoy
-  const inicio4Semanas = new Date(lunesActual);
-  inicio4Semanas.setDate(inicio4Semanas.getDate() - 21);
-  return { fecha_inicio: toISODate(inicio4Semanas), fecha_fin: toISODate(hoy) };
+  // "1month"
+  const inicioMes = new Date(hoy);
+  inicioMes.setMonth(inicioMes.getMonth() - 1);
+  return { fecha_inicio: toISODate(inicioMes), fecha_fin: toISODate(hoy) };
 }
 
 export type SemanaEspecifica = { value: string; label: string; fecha_inicio: string; fecha_fin: string };
