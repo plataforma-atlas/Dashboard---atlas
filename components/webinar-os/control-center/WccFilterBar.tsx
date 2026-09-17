@@ -113,59 +113,61 @@ export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSele
         )}
       </select>
 
-      <div className="relative">
-        <button
-          onClick={abrirPanelPeriodo}
-          className="flex items-center gap-1.5 border border-[var(--wos-border)] bg-[var(--wos-surface)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px] hover:bg-[var(--wos-surface-alt)]"
-        >
-          {etiquetaPeriodo}
-          <ChevronDown size={14} className="text-[color:var(--wos-ink-muted)]" />
-        </button>
+      <button
+        onClick={abrirPanelPeriodo}
+        className="flex items-center gap-1.5 border border-[var(--wos-border)] bg-[var(--wos-surface)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px] hover:bg-[var(--wos-surface-alt)]"
+      >
+        {etiquetaPeriodo}
+        <ChevronDown size={14} className="text-[color:var(--wos-ink-muted)]" />
+      </button>
 
-        {panelAbierto === "periodo" && (
-          <div className="absolute left-0 top-[calc(100%+8px)] z-40 w-[min(680px,calc(100vw-32px))] bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-2xl shadow-[var(--wos-shadow-lg)] p-4">
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {PRESETS_RAPIDOS.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => aplicarPeriodoRapido(p)}
-                  className={`rounded-full px-3 py-1.5 text-[12px] font-medium border transition ${
-                    periodo === p
-                      ? "bg-[var(--wos-primary)] text-[var(--wos-on-primary)] border-[var(--wos-primary)]"
-                      : "border-[var(--wos-border)] text-[color:var(--wos-ink-muted)] hover:bg-[var(--wos-surface-alt)]"
-                  }`}
-                >
-                  {RANGO_RAPIDO_LABEL[p]}
-                </button>
-              ))}
-            </div>
+      {panelAbierto === "periodo" && (
+        // Anclado al contenedor del toolbar completo (no al botón) — el botón
+        // no siempre está pegado al borde izquierdo, y con 2 meses el panel es
+        // ancho: anclarlo al botón lo hacía salirse de la ventana en pantallas
+        // medianas.
+        <div className="absolute left-0 top-[calc(100%+8px)] z-40 w-[min(680px,calc(100vw-32px))] bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-2xl shadow-[var(--wos-shadow-lg)] p-4">
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {PRESETS_RAPIDOS.map((p) => (
+              <button
+                key={p}
+                onClick={() => aplicarPeriodoRapido(p)}
+                className={`rounded-full px-3 py-1.5 text-[12px] font-medium border transition ${
+                  periodo === p
+                    ? "bg-[var(--wos-primary)] text-[var(--wos-on-primary)] border-[var(--wos-primary)]"
+                    : "border-[var(--wos-border)] text-[color:var(--wos-ink-muted)] hover:bg-[var(--wos-surface-alt)]"
+                }`}
+              >
+                {RANGO_RAPIDO_LABEL[p]}
+              </button>
+            ))}
+          </div>
 
-            <div className="flex justify-center overflow-x-auto">
-              <PeriodCalendar selected={rangoBorrador} onSelect={setRangoBorrador} />
-            </div>
+          <div className="flex justify-center overflow-x-auto">
+            <PeriodCalendar selected={rangoBorrador} onSelect={setRangoBorrador} />
+          </div>
 
-            <div className="flex items-center justify-between gap-2 mt-2 pt-3 border-t border-[var(--wos-border)]">
-              <p className="text-[12px] text-[color:var(--wos-ink-muted)]">
-                {rangoBorrador?.from && rangoBorrador?.to
-                  ? `${fechaLarga(isoDeDate(rangoBorrador.from))} → ${fechaLarga(isoDeDate(rangoBorrador.to))}`
-                  : "Elige la fecha de inicio y de fin"}
-              </p>
-              <div className="flex gap-2 shrink-0">
-                <button onClick={() => setPanelAbierto(null)} className="text-[13px] text-[color:var(--wos-ink-muted)] px-3 py-2">
-                  Cancelar
-                </button>
-                <button
-                  onClick={aplicarRangoPersonalizado}
-                  disabled={!rangoBorrador?.from || !rangoBorrador?.to}
-                  className="bg-[var(--wos-primary)] text-[var(--wos-on-primary)] rounded-lg px-4 py-2 text-[13px] font-semibold disabled:opacity-40"
-                >
-                  Aplicar
-                </button>
-              </div>
+          <div className="flex items-center justify-between gap-2 mt-2 pt-3 border-t border-[var(--wos-border)]">
+            <p className="text-[12px] text-[color:var(--wos-ink-muted)]">
+              {rangoBorrador?.from && rangoBorrador?.to
+                ? `${fechaLarga(isoDeDate(rangoBorrador.from))} → ${fechaLarga(isoDeDate(rangoBorrador.to))}`
+                : "Elige la fecha de inicio y de fin"}
+            </p>
+            <div className="flex gap-2 shrink-0">
+              <button onClick={() => setPanelAbierto(null)} className="text-[13px] text-[color:var(--wos-ink-muted)] px-3 py-2">
+                Cancelar
+              </button>
+              <button
+                onClick={aplicarRangoPersonalizado}
+                disabled={!rangoBorrador?.from || !rangoBorrador?.to}
+                className="bg-[var(--wos-primary)] text-[var(--wos-on-primary)] rounded-lg px-4 py-2 text-[13px] font-semibold disabled:opacity-40"
+              >
+                Aplicar
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <button
         onClick={() => setPanelAbierto((v) => (v === "avanzado" ? null : "avanzado"))}
