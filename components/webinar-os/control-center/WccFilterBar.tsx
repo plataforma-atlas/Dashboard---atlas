@@ -18,6 +18,12 @@ function fechaCorta(iso: string): string {
   return new Date(y, m - 1, d).toLocaleDateString("es-CO", { day: "numeric", month: "short" });
 }
 
+function fechaLarga(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const txt = new Date(y, m - 1, d).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
+  return txt.replace(/^\p{L}/u, (c) => c.toUpperCase());
+}
+
 function isoDeDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -117,7 +123,7 @@ export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSele
         </button>
 
         {panelAbierto === "periodo" && (
-          <div className="absolute left-0 top-[calc(100%+8px)] z-40 w-[min(320px,calc(100vw-32px))] bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-2xl shadow-[var(--wos-shadow-lg)] p-4">
+          <div className="absolute left-0 top-[calc(100%+8px)] z-40 w-[min(680px,calc(100vw-32px))] bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-2xl shadow-[var(--wos-shadow-lg)] p-4">
             <div className="flex flex-wrap gap-1.5 mb-3">
               {PRESETS_RAPIDOS.map((p) => (
                 <button
@@ -134,22 +140,28 @@ export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSele
               ))}
             </div>
 
-            <p className="text-[11px] text-[color:var(--wos-ink-muted)] mb-2">O elige un rango personalizado:</p>
-            <div className="flex justify-center">
+            <div className="flex justify-center overflow-x-auto">
               <PeriodCalendar selected={rangoBorrador} onSelect={setRangoBorrador} />
             </div>
 
-            <div className="flex justify-end gap-2 mt-2 pt-3 border-t border-[var(--wos-border)]">
-              <button onClick={() => setPanelAbierto(null)} className="text-[13px] text-[color:var(--wos-ink-muted)] px-3 py-2">
-                Cancelar
-              </button>
-              <button
-                onClick={aplicarRangoPersonalizado}
-                disabled={!rangoBorrador?.from || !rangoBorrador?.to}
-                className="bg-[var(--wos-primary)] text-[var(--wos-on-primary)] rounded-lg px-4 py-2 text-[13px] font-semibold disabled:opacity-40"
-              >
-                Aplicar rango
-              </button>
+            <div className="flex items-center justify-between gap-2 mt-2 pt-3 border-t border-[var(--wos-border)]">
+              <p className="text-[12px] text-[color:var(--wos-ink-muted)]">
+                {rangoBorrador?.from && rangoBorrador?.to
+                  ? `${fechaLarga(isoDeDate(rangoBorrador.from))} → ${fechaLarga(isoDeDate(rangoBorrador.to))}`
+                  : "Elige la fecha de inicio y de fin"}
+              </p>
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => setPanelAbierto(null)} className="text-[13px] text-[color:var(--wos-ink-muted)] px-3 py-2">
+                  Cancelar
+                </button>
+                <button
+                  onClick={aplicarRangoPersonalizado}
+                  disabled={!rangoBorrador?.from || !rangoBorrador?.to}
+                  className="bg-[var(--wos-primary)] text-[var(--wos-on-primary)] rounded-lg px-4 py-2 text-[13px] font-semibold disabled:opacity-40"
+                >
+                  Aplicar
+                </button>
+              </div>
             </div>
           </div>
         )}

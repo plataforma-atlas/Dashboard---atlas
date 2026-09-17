@@ -36,6 +36,7 @@ export default function PeriodCalendar({ selected, onSelect, defaultMonth }: Pro
     <DayPicker
       mode="range"
       locale={es}
+      numberOfMonths={2}
       defaultMonth={defaultMonth ?? selected?.from}
       selected={selected}
       onSelect={onSelect}
