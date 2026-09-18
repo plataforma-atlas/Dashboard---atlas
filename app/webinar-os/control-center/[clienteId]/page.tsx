@@ -171,13 +171,13 @@ export default function ControlCenterPage() {
 
   return (
     <div className="webinar-os-scope wcc-page min-h-screen flex flex-col md:flex-row" data-wos-theme={mode}>
-      <aside className="wcc-no-print bg-[#111218] md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto transition-[width] duration-200">
-        <div className="relative pb-4 border-b border-white/10">
+      <aside className="wcc-no-print bg-surface border-r border-outline md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto transition-[width,background-color,border-color] duration-200">
+        <div className="relative pb-4 border-b border-outline">
           <div className={`flex ${sidebarCollapsed ? "flex-col items-center gap-2" : "items-center gap-2"}`}>
             <button
               onClick={() => setSelectorClienteAbierto((v) => !v)}
               disabled={sidebarCollapsed}
-              className={`press flex items-center gap-2.5 rounded-lg hover:bg-white/5 transition-colors duration-150 p-1 -m-1 disabled:hover:bg-transparent min-w-0 ${
+              className={`press flex items-center gap-2.5 rounded-lg hover:bg-surface-high transition-colors duration-150 p-1 -m-1 disabled:hover:bg-transparent min-w-0 ${
                 sidebarCollapsed ? "" : "flex-1"
               }`}
             >
@@ -187,8 +187,8 @@ export default function ControlCenterPage() {
               {!sidebarCollapsed && (
                 <>
                   <div className="min-w-0 text-left flex-1">
-                    <div className="text-sm font-semibold text-white truncate">{clienteName}</div>
-                    <div className="text-[11px] text-white/50">Webinar Control Center</div>
+                    <div className="text-sm font-semibold text-on-surface truncate">{clienteName}</div>
+                    <div className="text-[11px] text-on-surface-faint">Webinar Control Center</div>
                   </div>
                   {todosLosClientes.length > 1 && (
                     <svg
@@ -200,7 +200,7 @@ export default function ControlCenterPage() {
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className={`text-white/40 shrink-0 transition-transform duration-200 ease-out ${selectorClienteAbierto ? "rotate-180" : ""}`}
+                      className={`text-on-surface-faint shrink-0 transition-transform duration-200 ease-out ${selectorClienteAbierto ? "rotate-180" : ""}`}
                     >
                       <polyline points="6 9 12 15 18 9" />
                     </svg>
@@ -219,9 +219,9 @@ export default function ControlCenterPage() {
                   <a
                     key={c.id}
                     href={`/?cliente_id=${c.id}`}
-                    className="press flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px] text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150"
+                    className="press flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px] text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150"
                   >
-                    <span className="w-5 h-5 rounded-md bg-white/10 grid place-items-center text-xs font-semibold shrink-0">
+                    <span className="w-5 h-5 rounded-md bg-surface-high grid place-items-center text-xs font-semibold shrink-0">
                       {c.name.charAt(0).toUpperCase()}
                     </span>
                     <span className="truncate">{c.name}</span>
@@ -233,13 +233,13 @@ export default function ControlCenterPage() {
 
         <WccSidebarNav collapsed={sidebarCollapsed} />
 
-        <div className="flex flex-col gap-1.5 pt-4 border-t border-white/10">
+        <div className="flex flex-col gap-1.5 pt-4 border-t border-outline">
           <a
             href="/?vista=clasica"
             title="Dashboard clásico"
-            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
           >
-            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+            <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
               <LayoutGrid size={13} strokeWidth={2} />
             </span>
             {!sidebarCollapsed && <span>Dashboard clásico</span>}
@@ -249,9 +249,9 @@ export default function ControlCenterPage() {
               <a
                 href="/admin/cartera"
                 title="Cartera"
-                className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
+                className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+                <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
                   <Briefcase size={13} strokeWidth={2} />
                 </span>
                 {!sidebarCollapsed && <span>Cartera</span>}
@@ -259,9 +259,9 @@ export default function ControlCenterPage() {
               <a
                 href="/admin/clientes"
                 title="Clientes"
-                className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
+                className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+                <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
                   <Users size={13} strokeWidth={2} />
                 </span>
                 {!sidebarCollapsed && <span>Clientes</span>}
@@ -269,9 +269,9 @@ export default function ControlCenterPage() {
               <a
                 href="/admin/usuarios"
                 title="Usuarios"
-                className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
+                className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+                <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
                   <UserCog size={13} strokeWidth={2} />
                 </span>
                 {!sidebarCollapsed && <span>Usuarios</span>}
@@ -280,13 +280,13 @@ export default function ControlCenterPage() {
           )}
         </div>
 
-        <div className={`mt-auto pt-4 border-t border-white/10 flex items-center ${sidebarCollapsed ? "flex-col gap-2" : "justify-between"}`}>
+        <div className={`mt-auto pt-4 border-t border-outline flex items-center ${sidebarCollapsed ? "flex-col gap-2" : "justify-between"}`}>
           {isAdmin && !sidebarCollapsed ? <ThemeModeToggle mode={mode} onToggle={toggleMode} /> : <span />}
           <button
             onClick={handleLogout}
             title="Salir"
             aria-label="Salir"
-            className="press w-9 h-9 rounded-lg bg-white/10 hover:bg-white/15 grid place-items-center text-white/70 hover:text-white transition-colors duration-150 shrink-0"
+            className="press w-9 h-9 rounded-lg bg-surface-high hover:bg-outline grid place-items-center text-on-surface-variant hover:text-on-surface transition-colors duration-150 shrink-0"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

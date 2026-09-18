@@ -38,9 +38,9 @@ export default function AppSidebar({
   const { collapsed, toggleCollapsed } = useSidebarCollapse();
 
   return (
-    <aside className="wcc-no-print bg-[#111218] md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto transition-[width] duration-200">
+    <aside className="wcc-no-print bg-surface border-r border-outline md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto transition-[width,background-color,border-color] duration-200">
       <div
-        className={`pb-4 border-b border-white/10 flex items-center justify-between gap-2.5 ${
+        className={`pb-4 border-b border-outline flex items-center justify-between gap-2.5 ${
           collapsed ? "md:flex-col md:items-center md:gap-2" : ""
         }`}
       >
@@ -48,8 +48,8 @@ export default function AppSidebar({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/vermetricas-icon.png" alt="" className="w-9 h-9 rounded-xl shrink-0" />
           <div className={`min-w-0 ${collapsed ? "md:hidden" : ""}`}>
-            <div className="text-sm font-semibold text-white truncate">Vermetricas</div>
-            <div className="text-[11px] text-white/50">Panel de administración</div>
+            <div className="text-sm font-semibold text-on-surface truncate">Vermetricas</div>
+            <div className="text-[11px] text-on-surface-faint">Panel de administración</div>
           </div>
         </div>
         <SidebarCollapseButton collapsed={collapsed} onToggle={toggleCollapsed} />
@@ -63,9 +63,9 @@ export default function AppSidebar({
             title={item.label}
             className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 ${
               collapsed ? "md:justify-center" : ""
-            } ${active === item.key ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"}`}
+            } ${active === item.key ? "bg-surface-high text-on-surface" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"}`}
           >
-            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+            <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
               <item.Icon size={13} strokeWidth={2} />
             </span>
             <span className={collapsed ? "md:hidden" : ""}>{item.label}</span>
@@ -74,7 +74,7 @@ export default function AppSidebar({
       </nav>
 
       <div
-        className={`mt-auto pt-4 border-t border-white/10 flex items-center justify-between ${
+        className={`mt-auto pt-4 border-t border-outline flex items-center justify-between ${
           collapsed ? "md:flex-col md:items-center md:gap-2" : ""
         }`}
       >
@@ -85,7 +85,7 @@ export default function AppSidebar({
           onClick={onLogout}
           title="Salir"
           aria-label="Salir"
-          className="press w-9 h-9 rounded-lg bg-white/10 hover:bg-white/15 grid place-items-center text-white/70 hover:text-white transition-colors duration-150 shrink-0"
+          className="press w-9 h-9 rounded-lg bg-surface-high hover:bg-outline grid place-items-center text-on-surface-variant hover:text-on-surface transition-colors duration-150 shrink-0"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

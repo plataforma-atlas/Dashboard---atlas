@@ -39,9 +39,9 @@ export default function WccSidebarNav({ collapsed = false }: { collapsed?: boole
           title={s.label}
           className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 ${
             collapsed ? "justify-center" : ""
-          } ${active === s.id ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"}`}
+          } ${active === s.id ? "bg-surface-high text-on-surface" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"}`}
         >
-          <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+          <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
             <s.Icon size={13} strokeWidth={2} />
           </span>
           {!collapsed && <span>{s.label}</span>}
