@@ -1,6 +1,6 @@
 # Documentación técnica — Panel Vermetricas
 
-> Este documento complementa al [`README.md`](./README.md) (quick-start) con el detalle completo del proyecto: arquitectura, autenticación, modelo de datos, inventario de rutas/APIs, integración con n8n, y los flujos de onboarding de clientes. Generado a partir de una lectura completa del código el 2026-09-14 — todo lo que dice acá está verificado contra archivos reales del repo, no es una descripción genérica. Actualizado el 2026-09-15 con el sidebar compartido/colapsable y los cambios de navegación del Control Center (secciones 7, 8 y 16). Actualizado el 2026-09-16 con el flujo de recuperación de contraseña self-service vía Resend (sección 18) y sus variables de entorno (sección 6).
+> Este documento complementa al [`README.md`](./README.md) (quick-start) con el detalle completo del proyecto: arquitectura, autenticación, modelo de datos, inventario de rutas/APIs, integración con n8n, y los flujos de onboarding de clientes. Generado a partir de una lectura completa del código el 2026-09-14 — todo lo que dice acá está verificado contra archivos reales del repo, no es una descripción genérica. Actualizado el 2026-09-15 con el sidebar compartido/colapsable y los cambios de navegación del Control Center (secciones 7, 8 y 16). Actualizado el 2026-09-16 con el flujo de recuperación de contraseña self-service vía Resend (sección 18) y sus variables de entorno (sección 6). Actualizado el 2026-09-18 con el rediseño del selector de periodo del Control Center, el reemplazo de íconos del sidebar, el sidebar theme-aware + nuevo switch claro/oscuro, y el sistema de animación/tipografía aplicado a todo el dashboard (secciones 15 y 19).
 
 ## 1. Qué es este proyecto
 
@@ -14,6 +14,8 @@ Panel multi-cliente (multi-tenant) en Next.js para la agencia **Vermetricas**. M
 - **recharts** — gráficos.
 - **jspdf** + **jspdf-autotable** — export de reportes a PDF (Webinar OS).
 - **Resend** — envío de correos transaccionales (recuperación de contraseña); se llama directo a su API REST vía `fetch` en `lib/email.ts`, sin SDK.
+- **react-day-picker** — calendario de rango del selector de periodo del Control Center (ver sección 19).
+- **lucide-react** — set de íconos usado en los sidebars y en el switch de tema (ver sección 19).
 - Sin ORM, sin cliente de base de datos, sin backend propio: es un frontend/BFF puro que proxea todo a n8n.
 
 Scripts (`package.json`): `npm run dev` / `build` / `start` / `lint`.
@@ -168,7 +170,7 @@ public/brand/                      Los 4 assets de marca que sí se sirven en pr
 | `/invitacion/[token]` | Público | Signup pre-vinculado a un cliente vía token de invitación. |
 | `/checkin` | Admin/checkin/cliente `atlas`, o público si `EVENTO_CHECKIN_PUBLICO=true` | Consola de check-in del evento: buscar, marcar/deshacer entrada, editar datos, registrar walk-ins, marcar VIP. |
 | `/panel/conexiones` | Cualquier rol autenticado | Estado de integraciones del cliente (GHL con credencial; ClaseEspecial muestra un webhook para pegar en su plataforma; Meta Ads/Whop son placeholders "Próximamente"). Un admin que entra sin `?cliente_id=` (y sin cliente propio) ve, en vez de un error, la lista de clientes con integraciones pendientes — cruza `/api/clientes` con `/api/onboarding/estado` por cliente y arma links directos a `?cliente_id=`. |
-| `/webinar-os/control-center/[clienteId]` | Autenticado, scoped al cliente | Vista semanal agregada entre campañas de webinar de un cliente: ranking, embudo, filtros, recomendaciones. El selector de "Campaña/Edición" es único para todas las estrategias del cliente — elegir una edición de Webinar Automático filtra ahí mismo; elegir VSL/Evento/Lanzamiento ("Otras estrategias" en el `<optgroup>`) navega a `/?vista=clasica&cliente_id=<id>&campaign_id=<id>` (el `cliente_id` es obligatorio, si no el dashboard clásico se queda con el cliente que ya tenía seleccionado y no encuentra la campaña ahí). El periodo por defecto es **"Todo el periodo"** (sin filtro de fecha, igual que Cartera) — antes era "Últimas 4 semanas" y mostraba el resumen en cero para cualquier cliente cuya actividad real cayera fuera de esa ventana (ediciones archivadas). |
+| `/webinar-os/control-center/[clienteId]` | Autenticado, scoped al cliente | Vista semanal agregada entre campañas de webinar de un cliente: ranking, embudo, filtros, recomendaciones. El selector de "Campaña/Edición" es único para todas las estrategias del cliente — elegir una edición de Webinar Automático filtra ahí mismo; elegir VSL/Evento/Lanzamiento ("Otras estrategias" en el `<optgroup>`) navega a `/?vista=clasica&cliente_id=<id>&campaign_id=<id>` (el `cliente_id` es obligatorio, si no el dashboard clásico se queda con el cliente que ya tenía seleccionado y no encuentra la campaña ahí). El periodo por defecto es **"Todo el periodo"** (sin filtro de fecha, igual que Cartera) — antes era "Últimas 4 semanas" y mostraba el resumen en cero para cualquier cliente cuya actividad real cayera fuera de esa ventana (ediciones archivadas). El filtro de fecha es un popover con presets ("Todo", "Hoy", "7 días", "1 mes") + un calendario de rango personalizado (ver sección 19); el antiguo selector de "semana específica" ("Filtro avanzado") se quitó por redundante una vez que el calendario permite elegir cualquier rango. |
 | `/admin/cartera` | **Admin** | Portafolio cruzado entre TODOS los clientes (Webinar OS). |
 | `/admin/clientes` | **Admin** | Alta/archivado de clientes, generación de invitaciones. |
 | `/admin/usuarios` | **Admin** | Gestión de usuarios: rol, acceso por cliente, borrado. |
@@ -287,6 +289,8 @@ Cada API route **vuelve a verificar** sesión y permisos por su cuenta — el mi
 - `lib/clients.ts` resuelve un tema por cliente en runtime (fallback: tema genérico Vermetricas) — light/dark vía `ThemeModeProvider`/`ThemeSwitch`.
 - `components/LoginGridCanvas.tsx` — fondo animado de las pantallas de auth (login/registro/invitación/recuperación de contraseña): grid de rectángulos verticales con una luz que viaja y ilumina direccionalmente, afinado a mano durante esta sesión de trabajo. Hay una versión standalone (HTML/CSS/JS puro, sin dependencias) de referencia en `design/login-bg-vanilla/index.html`.
 - `public/brand/vermetricas-horizontal-light.png` — versión del logo para fondos claros (texto oscuro), usada en el correo de recuperación de contraseña; las variantes `-dark` están pensadas para fondos oscuros (texto casi invisible sobre blanco).
+- **Sidebars ahora son theme-aware.** `AppSidebar.tsx`, `SidebarCollapseButton.tsx`, el `<aside>` inline de `app/page.tsx` y del Control Center, y `WccSidebarNav.tsx` tenían clases oscuras hardcodeadas (`bg-[#111218]`, `border-white/10`, `text-white`, `bg-white/NN`) que se veían rotas en modo claro — se reemplazaron por los tokens de theming (`bg-surface`, `bg-surface-high`, `border-outline`, `text-on-surface`, `text-on-surface-variant`, `text-on-surface-faint`, `hover:bg-outline`), así que ahora reaccionan al mismo `ThemeModeProvider` que el resto de la app. Excepción intencional: el fondo decorativo de `app/invitacion/[token]/page.tsx` se dejó con `text-white/70` fijo — es un fondo oscuro fijo por diseño, no un bug.
+- **`ThemeModeToggle.tsx`** — el switch de claro/oscuro se rediseñó como un slider (círculo que se desplaza `translate-x-0`/`translate-x-8`) con íconos `Moon`/`Sun` de `lucide-react`, usando los tokens de marca (`bg-surface-high`, `border-outline`, `bg-primary`, `text-on-primary`) en vez de los grises genéricos de un boilerplate shadcn. Misma interfaz de props (`{ mode, onToggle }`) que antes.
 
 ## 16. Gotchas / cosas a tener presente
 
@@ -318,3 +322,29 @@ Fuente: `lib/password-reset.ts`, `lib/email.ts`, `app/api/auth/olvide-password`,
 3. **Correo**: armado en `lib/email.ts` con tabla HTML + estilos inline (compatibilidad de clientes de correo). El logo se sirve desde una URL pública de GitHub raw (`raw.githubusercontent.com/plataforma-atlas/Dashboard---atlas/main/public/brand/vermetricas-horizontal-light.png`), **no como `data:` URI** — Gmail (y otros clientes) bloquea imágenes embebidas en base64 en el HTML del correo. Pendiente: cambiar a la URL de `/brand/` del propio dominio de producción una vez esté más consolidado, en vez de depender de GitHub.
 
 **Gotcha para el equipo**: el botón de administrador para resetear la contraseña de otro usuario desde `/admin/usuarios` **no está construido** — solo existe el flujo self-service desde `/login`. De construirse, reutilizaría el mismo webhook de n8n (`N8N_ADMIN_RESETEAR_PASSWORD_URL`), solo cambia quién está autorizado a llamarlo (sesión de admin vs. token de reset firmado).
+
+## 19. Sistema de animación/tipografía y selector de periodo
+
+Pase de diseño aplicado a **todo el dashboard** (auth, admin, cartera, Webinar OS, Control Center, VSL, Evento presencial, check-in), basado en los principios de "design engineering" de Emil Kowalski (animar solo `transform`/`opacity`, curvas de easing propias, feedback de presión, nunca animar desde `scale(0)`, menos animación en acciones de alta frecuencia) y en una revisión de escala tipográfica (textos de 9-11px subidos a 12-15px donde se leían demasiado pequeños).
+
+**`app/globals.css`** — utilidades nuevas, reusadas en todo el proyecto:
+```css
+--ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+--ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+.press { transition: transform 160ms var(--ease-out); }
+.press:active { transform: scale(0.97); }
+
+.animate-fade-in-up { animation: fade-in-up 420ms var(--ease-out) both; }
+.animate-pop-in { animation: pop-in 160ms var(--ease-out) both; }
+```
+- `.press` es el feedback estándar de cualquier botón/tarjeta clickeable del proyecto.
+- `.animate-fade-in-up` / `.animate-pop-in` son para entradas de contenido (tarjetas, paneles) — nunca para elementos de alta frecuencia.
+- Cualquier `transition: all` que quedara en el código se reemplazó por propiedades explícitas (`transition-colors`, `transition-transform`, o `transition-[width|height]`) con duraciones cortas (150ms para color/transform, 500ms para layout).
+- **`/checkin` recibió la tipografía nueva pero deliberadamente casi ninguna animación de entrada** — es una pantalla operativa de alta frecuencia el día del evento (staff marcando entradas una tras otra), así que el framework de "¿cuántas veces al día se ve esto?" del skill dice que no debe animar.
+
+**Selector de periodo del Control Center** (`components/webinar-os/control-center/WccFilterBar.tsx` + `components/webinar-os/control-center/PeriodCalendar.tsx`): reemplaza el antiguo `<select>` de semana fija por un popover con presets ("Todo", "Hoy", "7 días", "1 mes", "Personalizado") y un calendario de rango (dos meses lado a lado, `react-day-picker`) para elegir cualquier fecha de inicio/fin. El botón/panel de "Filtro avanzado" (semana específica) se eliminó por completo junto con el código muerto asociado (`mondayOf()`, `semanasEspecificas()`, tipo `SemanaEspecifica` en `lib/webinar-os/control-center/dateRanges.ts`); `RangoRapido` ahora es `"all" | "today" | "7days" | "1month" | "custom"`.
+
+**Gotcha de `react-day-picker` (v10)**: su prop `classNames` **reemplaza** (no combina) la clase por defecto de cada elemento (`{ ...getDefaultClassNames(), ...props.classNames }` internamente) — si un override custom no vuelve a incluir la clase base `rdp-*`, el estilo de selección/relleno de rango se rompe silenciosamente (los extremos del rango se veían "huecos" en vez de rellenos por este motivo). Cualquier `classNames` nuevo en `PeriodCalendar.tsx` tiene que re-incluir la clase `rdp-*` correspondiente.
+
+**Íconos**: se reemplazaron los glifos unicode del sidebar (`WccSidebarNav.tsx`, `AppSidebar.tsx`, `app/page.tsx`, el `<aside>` del Control Center) por íconos de `lucide-react` (ahora dependencia del proyecto) — `Home`, `DollarSign`, `MessageCircle`, `TrendingUp`, `Filter`, `LayoutList`, `LayoutDashboard`, `ArrowLeftRight`, `Briefcase`, `Users`, `UserCog`, `LayoutGrid`, más `Moon`/`Sun` en el nuevo `ThemeModeToggle` (sección 15).
