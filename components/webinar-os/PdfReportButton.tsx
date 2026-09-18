@@ -25,7 +25,7 @@ export default function PdfReportButton({ detail }: { detail: WebinarDetail }) {
       <button
         onClick={handleClick}
         disabled={loading}
-        className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-[#F59E0B] to-[#EA580C] transition disabled:opacity-60"
+        className="press flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-[#F59E0B] to-[#EA580C] transition-transform duration-150 disabled:opacity-60 disabled:active:scale-100"
       >
         {loading ? "Generando…" : "Descargar reporte PDF"}
       </button>

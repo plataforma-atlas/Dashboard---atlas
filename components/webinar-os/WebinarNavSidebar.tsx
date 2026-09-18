@@ -38,13 +38,13 @@ export default function WebinarNavSidebar({ active, onSelect }: { active: NavSec
       <button
         key={key}
         onClick={() => onSelect(key)}
-        className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition ${
+        className={`press flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors duration-150 ${
           isActive
             ? "bg-[var(--wos-primary-soft)] text-[var(--wos-primary)] font-medium"
             : "text-[var(--wos-ink-muted)] hover:bg-[var(--wos-surface-alt)]"
         }`}
       >
-        {index !== undefined && <span className="text-[11px] font-mono w-4 text-[var(--wos-ink-faint)]">{index}.</span>}
+        {index !== undefined && <span className="text-xs font-mono w-4 text-[var(--wos-ink-faint)]">{index}.</span>}
         <span className="leading-none">{icon}</span>
         <span className="truncate">{label}</span>
       </button>
@@ -53,7 +53,7 @@ export default function WebinarNavSidebar({ active, onSelect }: { active: NavSec
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="text-[11px] uppercase tracking-[0.1em] text-[var(--wos-ink-faint)] font-medium mb-1 px-1">Navegación</div>
+      <div className="text-xs uppercase tracking-[0.1em] text-[var(--wos-ink-faint)] font-medium mb-1 px-1">Navegación</div>
       {item("resumen", "🏆", "Resumen ejecutivo")}
       {MODULE_ORDER.map((key, i) => item(key, MODULE_ICON[key], MODULE_LABEL[key], i + 1))}
     </div>

@@ -36,11 +36,11 @@ export default function WccSidebarNav({ collapsed = false }: { collapsed?: boole
           key={s.id}
           href={`#${s.id}`}
           title={s.label}
-          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap transition ${
+          className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 ${
             collapsed ? "justify-center" : ""
           } ${active === s.id ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"}`}
         >
-          <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">{s.icon}</span>
+          <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">{s.icon}</span>
           {!collapsed && <span>{s.label}</span>}
         </a>
       ))}

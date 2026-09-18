@@ -176,7 +176,7 @@ export default function ControlCenterPage() {
             <button
               onClick={() => setSelectorClienteAbierto((v) => !v)}
               disabled={sidebarCollapsed}
-              className={`flex items-center gap-2.5 rounded-lg hover:bg-white/5 transition p-1 -m-1 disabled:hover:bg-transparent min-w-0 ${
+              className={`press flex items-center gap-2.5 rounded-lg hover:bg-white/5 transition-colors duration-150 p-1 -m-1 disabled:hover:bg-transparent min-w-0 ${
                 sidebarCollapsed ? "" : "flex-1"
               }`}
             >
@@ -186,8 +186,8 @@ export default function ControlCenterPage() {
               {!sidebarCollapsed && (
                 <>
                   <div className="min-w-0 text-left flex-1">
-                    <div className="text-[13px] font-semibold text-white truncate">{clienteName}</div>
-                    <div className="text-[10px] text-white/50">Webinar Control Center</div>
+                    <div className="text-sm font-semibold text-white truncate">{clienteName}</div>
+                    <div className="text-[11px] text-white/50">Webinar Control Center</div>
                   </div>
                   {todosLosClientes.length > 1 && (
                     <svg
@@ -199,7 +199,7 @@ export default function ControlCenterPage() {
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className={`text-white/40 shrink-0 transition-transform ${selectorClienteAbierto ? "rotate-180" : ""}`}
+                      className={`text-white/40 shrink-0 transition-transform duration-200 ease-out ${selectorClienteAbierto ? "rotate-180" : ""}`}
                     >
                       <polyline points="6 9 12 15 18 9" />
                     </svg>
@@ -211,16 +211,16 @@ export default function ControlCenterPage() {
           </div>
 
           {!sidebarCollapsed && selectorClienteAbierto && todosLosClientes.length > 1 && (
-            <div className="mt-2 flex flex-col gap-0.5 max-h-64 overflow-y-auto">
+            <div className="animate-fade-in-up mt-2 flex flex-col gap-0.5 max-h-64 overflow-y-auto">
               {todosLosClientes
                 .filter((c) => c.id !== clienteId)
                 .map((c) => (
                   <a
                     key={c.id}
                     href={`/?cliente_id=${c.id}`}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] text-white/60 hover:text-white hover:bg-white/5 transition"
+                    className="press flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px] text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150"
                   >
-                    <span className="w-5 h-5 rounded-md bg-white/10 grid place-items-center text-[10px] font-semibold shrink-0">
+                    <span className="w-5 h-5 rounded-md bg-white/10 grid place-items-center text-xs font-semibold shrink-0">
                       {c.name.charAt(0).toUpperCase()}
                     </span>
                     <span className="truncate">{c.name}</span>
@@ -236,9 +236,9 @@ export default function ControlCenterPage() {
           <a
             href="/?vista=clasica"
             title="Dashboard clásico"
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
           >
-            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">▦</span>
+            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">▦</span>
             {!sidebarCollapsed && <span>Dashboard clásico</span>}
           </a>
           {isAdmin && (
@@ -246,25 +246,25 @@ export default function ControlCenterPage() {
               <a
                 href="/admin/cartera"
                 title="Cartera"
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
+                className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">←</span>
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">←</span>
                 {!sidebarCollapsed && <span>Cartera</span>}
               </a>
               <a
                 href="/admin/clientes"
                 title="Clientes"
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
+                className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">◎</span>
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">◎</span>
                 {!sidebarCollapsed && <span>Clientes</span>}
               </a>
               <a
                 href="/admin/usuarios"
                 title="Usuarios"
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
+                className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">◈</span>
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">◈</span>
                 {!sidebarCollapsed && <span>Usuarios</span>}
               </a>
             </>
@@ -277,7 +277,7 @@ export default function ControlCenterPage() {
             onClick={handleLogout}
             title="Salir"
             aria-label="Salir"
-            className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/15 grid place-items-center text-white/70 hover:text-white transition shrink-0"
+            className="press w-9 h-9 rounded-lg bg-white/10 hover:bg-white/15 grid place-items-center text-white/70 hover:text-white transition-colors duration-150 shrink-0"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -297,19 +297,19 @@ export default function ControlCenterPage() {
         </div>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--wos-primary)]">Dashboard semanal</div>
+            <div className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--wos-primary)]">Dashboard semanal</div>
             <h1 className="font-display text-2xl md:text-[28px] text-[var(--wos-ink)] font-semibold mt-1">
               {isAll ? "Centro de control del negocio" : campanaActiva?.campaign_name ?? "Centro de control"}
             </h1>
-            <p className="text-sm text-[var(--wos-ink-muted)] mt-1">
+            <p className="text-[15px] text-[var(--wos-ink-muted)] mt-1">
               {isAll ? "Vista consolidada de todas las campañas activas." : "Resultados de la campaña seleccionada."}
             </p>
             <div className="wcc-no-print flex gap-2 flex-wrap mt-2.5">
-              <span className="text-[11px] text-[var(--wos-ink-muted)] bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-full px-2.5 py-1">
+              <span className="text-[13px] text-[var(--wos-ink-muted)] bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-full px-2.5 py-1">
                 {isAll ? "Todas las campañas" : campanaActiva?.campaign_name}
               </span>
               {fechaInicio && fechaFin && (
-                <span className="text-[11px] text-[var(--wos-ink-muted)] bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-full px-2.5 py-1">
+                <span className="text-[13px] text-[var(--wos-ink-muted)] bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-full px-2.5 py-1">
                   Periodo: {fechaInicio} – {fechaFin}
                 </span>
               )}

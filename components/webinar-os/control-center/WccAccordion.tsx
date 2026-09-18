@@ -15,13 +15,13 @@ export default function WccAccordion({ items }: { items: WccAccordionItem[] }) {
           open={item.defaultOpen}
           className="group rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] overflow-hidden"
         >
-          <summary className="list-none grid grid-cols-[auto_1fr_auto_auto] items-center gap-2.5 min-h-[46px] px-3 py-2.5 cursor-pointer text-[var(--wos-ink)] [&::-webkit-details-marker]:hidden">
-            <span className="w-[26px] h-[26px] rounded-lg grid place-items-center bg-[var(--wos-primary-soft)] text-[var(--wos-primary)] text-[10px] font-bold shrink-0">
+          <summary className="press list-none grid grid-cols-[auto_1fr_auto_auto] items-center gap-2.5 min-h-[46px] px-3 py-2.5 cursor-pointer text-[var(--wos-ink)] hover:bg-[var(--wos-surface-alt)] transition-colors duration-150 [&::-webkit-details-marker]:hidden">
+            <span className="w-[26px] h-[26px] rounded-lg grid place-items-center bg-[var(--wos-primary-soft)] text-[var(--wos-primary)] text-xs font-bold shrink-0">
               {item.index}
             </span>
-            <span className="min-w-0 text-xs font-bold leading-tight">{item.title}</span>
+            <span className="min-w-0 text-[13px] font-bold leading-tight">{item.title}</span>
             {item.metric && (
-              <span className="text-[9px] font-bold rounded-full px-1.5 py-1 whitespace-nowrap bg-[var(--wos-surface-alt)] text-[var(--wos-ink-muted)]">
+              <span className="text-[11px] font-bold rounded-full px-1.5 py-1 whitespace-nowrap bg-[var(--wos-surface-alt)] text-[var(--wos-ink-muted)]">
                 {item.metric}
               </span>
             )}
@@ -30,7 +30,7 @@ export default function WccAccordion({ items }: { items: WccAccordionItem[] }) {
               <span className="hidden group-open:inline">−</span>
             </span>
           </summary>
-          <div className="px-3 pb-3 pl-[47px] text-[11px] leading-relaxed text-[var(--wos-ink-muted)]">{item.body}</div>
+          <div className="animate-fade-in-up px-3 pb-3 pl-[47px] text-xs leading-relaxed text-[var(--wos-ink-muted)]">{item.body}</div>
         </details>
       ))}
     </div>

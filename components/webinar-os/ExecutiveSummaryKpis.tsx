@@ -29,11 +29,11 @@ export default function ExecutiveSummaryKpis({
           className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] px-4 py-3.5"
         >
           <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--wos-ink-muted)] font-medium truncate">{kpi.label}</span>
+            <span className="text-xs uppercase tracking-[0.08em] text-[var(--wos-ink-muted)] font-medium truncate">{kpi.label}</span>
             <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${MODULE_DOT_COLOR[kpi.module] ?? "bg-[var(--wos-ink-faint)]"}`} />
           </div>
           <div className="text-xl font-semibold text-[var(--wos-ink)] tabular-nums mb-0.5">{kpi.value}</div>
-          <div className="text-[11px] text-[var(--wos-ink-faint)]">{kpi.sublabel}</div>
+          <div className="text-xs text-[var(--wos-ink-faint)]">{kpi.sublabel}</div>
         </div>
       ))}
     </div>

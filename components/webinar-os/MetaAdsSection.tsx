@@ -35,7 +35,7 @@ export default function MetaAdsSection({ entries }: { entries: MetaAdsEntry[] })
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-[11px] uppercase tracking-[0.06em] text-[var(--wos-ink-muted)] border-b border-[var(--wos-border)]">
+                <tr className="text-left text-xs uppercase tracking-[0.06em] text-[var(--wos-ink-muted)] border-b border-[var(--wos-border)]">
                   <th className="py-2 pr-3 font-medium">Fecha</th>
                   <th className="py-2 px-3 font-medium text-right">Inversión</th>
                   <th className="py-2 px-3 font-medium text-right">Scroll Stop</th>

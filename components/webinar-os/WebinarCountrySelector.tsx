@@ -28,7 +28,7 @@ export default function WebinarCountrySelector({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <div className="text-[11px] uppercase tracking-[0.1em] text-[var(--wos-ink-faint)] font-medium mb-2 px-1">
+        <div className="text-xs uppercase tracking-[0.1em] text-[var(--wos-ink-faint)] font-medium mb-2 px-1">
           Selecciona país
         </div>
         <div className="flex flex-col gap-1.5">
@@ -39,7 +39,7 @@ export default function WebinarCountrySelector({
               <button
                 key={country}
                 onClick={() => onSelectCountry(country)}
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition ${
+                className={`press flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition-colors duration-150 ${
                   active
                     ? "bg-[var(--wos-primary)] text-[var(--wos-on-primary)]"
                     : "bg-[var(--wos-surface)] border border-[var(--wos-border)] text-[var(--wos-ink)] hover:border-[var(--wos-primary)]"
@@ -47,7 +47,7 @@ export default function WebinarCountrySelector({
               >
                 <span className="text-lg leading-none">{countryFlagEmoji(country)}</span>
                 <span className="flex-1 text-sm font-medium">{country}</span>
-                <span className={`text-[11px] font-mono ${active ? "text-[var(--wos-on-primary)] opacity-80" : "text-[var(--wos-ink-faint)]"}`}>
+                <span className={`text-xs font-mono ${active ? "text-[var(--wos-on-primary)] opacity-80" : "text-[var(--wos-ink-faint)]"}`}>
                   {count} ed.
                 </span>
               </button>
@@ -61,13 +61,13 @@ export default function WebinarCountrySelector({
 
       {selectedCountry && editions.length > 0 && (
         <div>
-          <label className="text-[11px] uppercase tracking-[0.1em] text-[var(--wos-ink-faint)] font-medium mb-2 px-1 block">
+          <label className="text-xs uppercase tracking-[0.1em] text-[var(--wos-ink-faint)] font-medium mb-2 px-1 block">
             Edición
           </label>
           <select
             value={selectedWebinarId ?? ""}
             onChange={(e) => onSelectWebinar(Number(e.target.value))}
-            className="w-full bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2.5 py-2 text-sm text-[var(--wos-ink)] focus:border-[var(--wos-primary)] outline-none"
+            className="w-full bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2.5 py-2 text-sm text-[var(--wos-ink)] focus:border-[var(--wos-primary)] outline-none transition-colors duration-150"
           >
             {editions.map((w) => (
               <option key={w.id} value={w.id}>

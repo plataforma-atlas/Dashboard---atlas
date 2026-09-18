@@ -23,7 +23,7 @@ export default function FunnelBars({ stages }: { stages: FunnelBarStage[] }) {
                 </div>
               </div>
               <div className="h-2.5 rounded-full bg-[var(--wos-surface-alt)] border border-[var(--wos-border)] overflow-hidden">
-                <div className="h-full rounded-full bg-[var(--wos-primary)] transition-all" style={{ width: `${widthPct}%` }} />
+                <div className="h-full rounded-full bg-[var(--wos-primary)] transition-[width] duration-500 ease-out" style={{ width: `${widthPct}%` }} />
               </div>
             </div>
           </div>

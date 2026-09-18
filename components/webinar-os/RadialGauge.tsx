@@ -16,7 +16,7 @@ export default function RadialGauge({ label, value, max, formatted }: { label: s
         </ResponsiveContainer>
       </div>
       <div>
-        <div className="text-[11px] uppercase tracking-[0.08em] text-[var(--wos-ink-muted)] font-medium mb-1">{label}</div>
+        <div className="text-xs uppercase tracking-[0.08em] text-[var(--wos-ink-muted)] font-medium mb-1">{label}</div>
         <div className="text-lg font-semibold text-[var(--wos-ink)] tabular-nums">{formatted}</div>
       </div>
     </div>
