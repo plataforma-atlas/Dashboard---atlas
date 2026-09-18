@@ -115,7 +115,7 @@ export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSele
 
       <button
         onClick={abrirPanelPeriodo}
-        className="flex items-center gap-1.5 border border-[var(--wos-border)] bg-[var(--wos-surface)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px] hover:bg-[var(--wos-surface-alt)]"
+        className="press flex items-center gap-1.5 border border-[var(--wos-border)] bg-[var(--wos-surface)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px] hover:bg-[var(--wos-surface-alt)] transition-colors duration-150"
       >
         {etiquetaPeriodo}
         <ChevronDown size={14} className="text-[color:var(--wos-ink-muted)]" />
@@ -125,14 +125,14 @@ export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSele
         // Anclado al contenedor del toolbar completo (no al botón) — el botón
         // no siempre está pegado al borde izquierdo, y con 2 meses el panel es
         // ancho: anclarlo al botón lo hacía salirse de la ventana en pantallas
-        // medianas.
-        <div className="absolute left-0 top-[calc(100%+8px)] z-40 w-[min(680px,calc(100vw-32px))] bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-2xl shadow-[var(--wos-shadow-lg)] p-4">
+        // medianas. transform-origin arriba-izquierda porque nace desde ahí.
+        <div className="animate-pop-in absolute left-0 top-[calc(100%+8px)] z-40 w-[min(680px,calc(100vw-32px))] origin-top-left bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-2xl shadow-[var(--wos-shadow-lg)] p-4">
           <div className="flex flex-wrap gap-1.5 mb-3">
             {PRESETS_RAPIDOS.map((p) => (
               <button
                 key={p}
                 onClick={() => aplicarPeriodoRapido(p)}
-                className={`rounded-full px-3 py-1.5 text-[12px] font-medium border transition ${
+                className={`press rounded-full px-3 py-1.5 text-[13px] font-medium border transition-colors duration-150 ${
                   periodo === p
                     ? "bg-[var(--wos-primary)] text-[var(--wos-on-primary)] border-[var(--wos-primary)]"
                     : "border-[var(--wos-border)] text-[color:var(--wos-ink-muted)] hover:bg-[var(--wos-surface-alt)]"
@@ -148,19 +148,22 @@ export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSele
           </div>
 
           <div className="flex items-center justify-between gap-2 mt-2 pt-3 border-t border-[var(--wos-border)]">
-            <p className="text-[12px] text-[color:var(--wos-ink-muted)]">
+            <p className="text-[13px] text-[color:var(--wos-ink-muted)]">
               {rangoBorrador?.from && rangoBorrador?.to
                 ? `${fechaLarga(isoDeDate(rangoBorrador.from))} → ${fechaLarga(isoDeDate(rangoBorrador.to))}`
                 : "Elige la fecha de inicio y de fin"}
             </p>
             <div className="flex gap-2 shrink-0">
-              <button onClick={() => setPanelAbierto(null)} className="text-[13px] text-[color:var(--wos-ink-muted)] px-3 py-2">
+              <button
+                onClick={() => setPanelAbierto(null)}
+                className="press text-[13px] text-[color:var(--wos-ink-muted)] px-3 py-2"
+              >
                 Cancelar
               </button>
               <button
                 onClick={aplicarRangoPersonalizado}
                 disabled={!rangoBorrador?.from || !rangoBorrador?.to}
-                className="bg-[var(--wos-primary)] text-[var(--wos-on-primary)] rounded-lg px-4 py-2 text-[13px] font-semibold disabled:opacity-40"
+                className="press bg-[var(--wos-primary)] text-[var(--wos-on-primary)] rounded-lg px-4 py-2 text-[13px] font-semibold disabled:opacity-40 disabled:active:scale-100 transition-[transform,opacity] duration-150"
               >
                 Aplicar
               </button>
@@ -171,7 +174,7 @@ export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSele
 
       <button
         onClick={() => setPanelAbierto((v) => (v === "avanzado" ? null : "avanzado"))}
-        className="border border-[var(--wos-border)] bg-[var(--wos-surface)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px] hover:bg-[var(--wos-surface-alt)]"
+        className="press border border-[var(--wos-border)] bg-[var(--wos-surface)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px] hover:bg-[var(--wos-surface-alt)] transition-colors duration-150"
       >
         ⚙ Filtro
       </button>
@@ -179,12 +182,12 @@ export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSele
       <PrintButton />
 
       {panelAbierto === "avanzado" && (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-40 w-[min(360px,calc(100vw-32px))] bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-2xl shadow-[var(--wos-shadow-lg)] p-4">
-          <h3 className="text-sm font-semibold text-[var(--wos-ink)] mb-1">Filtro avanzado</h3>
-          <p className="text-[11px] text-[var(--wos-ink-muted)] mb-3">
+        <div className="animate-pop-in absolute right-0 top-[calc(100%+8px)] z-40 w-[min(360px,calc(100vw-32px))] origin-top-right bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-2xl shadow-[var(--wos-shadow-lg)] p-4">
+          <h3 className="text-[15px] font-semibold text-[var(--wos-ink)] mb-1">Filtro avanzado</h3>
+          <p className="text-[12px] text-[var(--wos-ink-muted)] mb-3">
             Úsalo para consultar una semana específica distinta de los periodos rápidos de arriba.
           </p>
-          <label className="block text-[11px] font-bold text-[var(--wos-ink-muted)] mb-1.5">Semana específica</label>
+          <label className="block text-[12px] font-bold text-[var(--wos-ink-muted)] mb-1.5">Semana específica</label>
           <select
             value={semanaSeleccionada}
             onChange={(e) => setSemanaSeleccionada(e.target.value)}
@@ -197,12 +200,12 @@ export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSele
             ))}
           </select>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setPanelAbierto(null)} className="text-[13px] text-[var(--wos-ink-muted)] px-3 py-2">
+            <button onClick={() => setPanelAbierto(null)} className="press text-[13px] text-[var(--wos-ink-muted)] px-3 py-2">
               Cancelar
             </button>
             <button
               onClick={aplicarSemanaEspecifica}
-              className="bg-[var(--wos-primary)] text-[var(--wos-on-primary)] rounded-lg px-4 py-2 text-[13px] font-semibold"
+              className="press bg-[var(--wos-primary)] text-[var(--wos-on-primary)] rounded-lg px-4 py-2 text-[13px] font-semibold"
             >
               Ver resultados
             </button>

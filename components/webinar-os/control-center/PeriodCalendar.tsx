@@ -23,10 +23,10 @@ const RDP_VARS = {
   "--rdp-range_start-color": "var(--wos-on-primary)",
   "--rdp-range_end-color": "var(--wos-on-primary)",
   "--rdp-today-color": "var(--wos-primary)",
-  "--rdp-day-width": "34px",
-  "--rdp-day-height": "34px",
-  "--rdp-day_button-width": "32px",
-  "--rdp-day_button-height": "32px",
+  "--rdp-day-width": "36px",
+  "--rdp-day-height": "36px",
+  "--rdp-day_button-width": "34px",
+  "--rdp-day_button-height": "34px",
   "--rdp-nav_button-width": "28px",
   "--rdp-nav_button-height": "28px",
 } as React.CSSProperties;
@@ -41,7 +41,7 @@ export default function PeriodCalendar({ selected, onSelect, defaultMonth }: Pro
       selected={selected}
       onSelect={onSelect}
       style={RDP_VARS}
-      className="text-[13px] text-[color:var(--wos-ink)]"
+      className="text-[14px] text-[color:var(--wos-ink)]"
       classNames={{
         // OJO: el prop `classNames` de react-day-picker REEMPLAZA la clase
         // base de cada elemento (p.ej. "rdp-day_button") en vez de sumarse a
@@ -55,11 +55,11 @@ export default function PeriodCalendar({ selected, onSelect, defaultMonth }: Pro
         // arriba a la derecha de todo el calendario — las separamos: una
         // pegada al borde izquierdo y otra al derecho de los dos meses.
         nav: "rdp-nav !absolute !inset-x-0 !top-0.5 flex items-center justify-between px-0.5",
-        month_caption: "rdp-month_caption flex items-center justify-center font-semibold text-[13px] text-[color:var(--wos-ink)] mb-1 capitalize",
-        weekday: "rdp-weekday text-[11px] font-medium text-[color:var(--wos-ink-muted)]",
-        button_previous: "rdp-button_previous rounded-full text-[color:var(--wos-ink-muted)] hover:bg-[var(--wos-surface-alt)]",
-        button_next: "rdp-button_next rounded-full text-[color:var(--wos-ink-muted)] hover:bg-[var(--wos-surface-alt)]",
-        day_button: "rdp-day_button rounded-full hover:bg-[var(--wos-surface-alt)]",
+        month_caption: "rdp-month_caption flex items-center justify-center font-semibold text-[14px] text-[color:var(--wos-ink)] mb-1 capitalize",
+        weekday: "rdp-weekday text-[12px] font-medium text-[color:var(--wos-ink-muted)]",
+        button_previous: "rdp-button_previous press rounded-full text-[color:var(--wos-ink-muted)] hover:bg-[var(--wos-surface-alt)] transition-colors duration-150",
+        button_next: "rdp-button_next press rounded-full text-[color:var(--wos-ink-muted)] hover:bg-[var(--wos-surface-alt)] transition-colors duration-150",
+        day_button: "rdp-day_button press rounded-full hover:bg-[var(--wos-surface-alt)] transition-colors duration-150",
       }}
       components={{
         Chevron: ({ orientation, ...props }) =>

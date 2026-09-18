@@ -27,7 +27,7 @@ export default function PasswordInput({ value, onChange, placeholder, required, 
         placeholder={placeholder}
         className={
           className ??
-          "w-full bg-background border border-outline rounded-md px-3 py-2 pr-10 text-sm text-on-surface focus:border-primary outline-none"
+          "w-full bg-background border border-outline rounded-md px-3 py-2.5 pr-10 text-[15px] text-on-surface focus:border-primary outline-none transition-colors duration-150"
         }
       />
       <button
@@ -35,7 +35,7 @@ export default function PasswordInput({ value, onChange, placeholder, required, 
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
         tabIndex={-1}
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-faint hover:text-on-surface text-sm"
+        className="press absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-faint hover:text-on-surface text-sm"
       >
         {visible ? "🙈" : "👁"}
       </button>

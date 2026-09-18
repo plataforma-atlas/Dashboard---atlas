@@ -6,3 +6,9 @@ node_modules
 *.log
 .DS_Store
 tsconfig.tsbuildinfo
+
+# Skills instaladas localmente via `npx skills add` (config de herramientas de
+# desarrollo, no del producto) - cada dev las reinstala si las necesita.
+.agents/
+.claude/skills/
+skills-lock.json

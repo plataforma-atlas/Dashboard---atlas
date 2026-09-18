@@ -24,6 +24,11 @@ html {
      medio-oscuro en ambos modos, así que blanco fijo es lo que mejor contrasta
      (mismo criterio que --wos-on-primary en webinar-os-theme.css). */
   --color-on-primary: #FFFFFF;
+
+  /* Curvas de animacion (ver skill de design engineering): las de CSS por
+     defecto son debiles y no dan la sensacion de intencionalidad. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 body {
@@ -38,6 +43,44 @@ body {
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* Feedback de "presionado" para botones/pastillas clicables en toda la app. */
+.press {
+  transition: transform 160ms var(--ease-out);
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* Entrada suave para tarjetas/paneles que aparecen al montar (login, forms,
+   popovers) — nunca desde scale/opacity 0 puro, siempre con un origen visible. */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 420ms var(--ease-out) both;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-pop-in {
+  animation: pop-in 160ms var(--ease-out) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
