@@ -702,7 +702,7 @@ export default function CheckinPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-on-surface font-medium truncate">{r.name || "(sin nombre)"}</p>
-                    <span className={`shrink-0 text-[10px] font-semibold uppercase tracking-[0.06em] rounded-full px-2 py-0.5 border whitespace-nowrap ${tierBadgeClass(r.tier)}`}>
+                    <span className={`shrink-0 text-xs font-semibold uppercase tracking-[0.06em] rounded-full px-2 py-0.5 border whitespace-nowrap ${tierBadgeClass(r.tier)}`}>
                       {tierLabel(r.tier)}
                     </span>
                   </div>
