@@ -16,7 +16,7 @@ export default function VslDailyTable({ rows }: { rows: VslDailyRow[] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm border-separate border-spacing-y-1.5 min-w-[640px]">
         <thead>
-          <tr className="text-[10px] uppercase tracking-[0.06em] text-[var(--wos-ink-faint)]">
+          <tr className="text-xs uppercase tracking-[0.06em] text-[var(--wos-ink-faint)]">
             <th className="text-left px-2 pb-1">Día</th>
             <th className="text-right px-2 pb-1">Registros</th>
             <th className="text-right px-2 pb-1">Depósitos</th>

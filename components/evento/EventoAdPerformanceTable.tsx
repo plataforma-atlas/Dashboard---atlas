@@ -56,17 +56,17 @@ export default function EventoAdPerformanceTable({ rows }: { rows: EventoAdPerfo
                   <details key={adName} className="group/ad rounded-md border border-[var(--wos-border)]/70">
                     <summary className="cursor-pointer select-none list-none px-3 py-1.5 flex items-center justify-between gap-3">
                       <span className="flex items-center gap-2 min-w-0">
-                        <span className="text-[var(--wos-ink-faint)] text-[10px] transition-transform duration-150 group-open/ad:rotate-90 shrink-0">▶</span>
+                        <span className="text-[var(--wos-ink-faint)] text-xs transition-transform duration-150 group-open/ad:rotate-90 shrink-0">▶</span>
                         <span className="text-xs font-medium text-[var(--wos-ink-muted)] truncate">{adName}</span>
                       </span>
-                      <span className="text-[11px] text-[var(--wos-ink-faint)] tabular-nums shrink-0">
+                      <span className="text-xs text-[var(--wos-ink-faint)] tabular-nums shrink-0">
                         {formatMoney(adTotals.spend)} · {adTotals.leads} leads
                       </span>
                     </summary>
                     <div className="px-3 pb-2 pt-1 overflow-x-auto">
                       <table className="w-full text-sm border-separate border-spacing-y-1.5 min-w-[640px]">
                         <thead>
-                          <tr className="text-[10px] uppercase tracking-[0.06em] text-[var(--wos-ink-faint)]">
+                          <tr className="text-xs uppercase tracking-[0.06em] text-[var(--wos-ink-faint)]">
                             <th className="text-left px-2 pb-1">Fecha</th>
                             <th className="text-right px-2 pb-1">Importe gastado</th>
                             <th className="text-right px-2 pb-1">Leads</th>

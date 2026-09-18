@@ -31,18 +31,18 @@ export default function VslDailyChart({ rows }: { rows: VslDailyRow[] }) {
                 title={`Capital depositado: ${formatMoney(r.capitalDepositado)}`}
               />
             </div>
-            {r.depositos > 0 && <span className="text-[9px] font-semibold text-amber-500">{r.depositos} dep.</span>}
+            {r.depositos > 0 && <span className="text-[10px] font-semibold text-amber-500">{r.depositos} dep.</span>}
           </div>
         ))}
       </div>
       <div className="flex gap-2 mt-1.5">
         {rows.map((r) => (
-          <div key={r.date} className="flex-1 min-w-0 text-center text-[9px] text-[var(--wos-ink-faint)]">
+          <div key={r.date} className="flex-1 min-w-0 text-center text-[10px] text-[var(--wos-ink-faint)]">
             {formatDayLabel(r.date)}
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-4 mt-3 text-[11px] text-[var(--wos-ink-muted)]">
+      <div className="flex items-center gap-4 mt-3 text-xs text-[var(--wos-ink-muted)]">
         <span className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-sm bg-[var(--wos-primary)]" /> Registros
         </span>

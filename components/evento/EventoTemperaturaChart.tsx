@@ -31,7 +31,7 @@ export default function EventoTemperaturaChart({ rows }: { rows: EventoTemperatu
             </div>
             <div className="h-3 rounded-full bg-[var(--wos-surface-alt)] border border-[var(--wos-border)] overflow-hidden">
               <div
-                className="h-full rounded-full transition-all"
+                className="h-full rounded-full transition-[width] duration-500 ease-out"
                 style={{ width: `${widthPct}%`, background: COLORS[r.temperatura] ?? "var(--wos-primary)" }}
               />
             </div>
