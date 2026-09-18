@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
+import { LayoutGrid, Briefcase, Users, UserCog } from "lucide-react";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
 import { themeForClient } from "@/lib/clients";
 import { Campaign } from "@/lib/types";
@@ -238,7 +239,9 @@ export default function ControlCenterPage() {
             title="Dashboard clásico"
             className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
           >
-            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">▦</span>
+            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+              <LayoutGrid size={13} strokeWidth={2} />
+            </span>
             {!sidebarCollapsed && <span>Dashboard clásico</span>}
           </a>
           {isAdmin && (
@@ -248,7 +251,9 @@ export default function ControlCenterPage() {
                 title="Cartera"
                 className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">←</span>
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+                  <Briefcase size={13} strokeWidth={2} />
+                </span>
                 {!sidebarCollapsed && <span>Cartera</span>}
               </a>
               <a
@@ -256,7 +261,9 @@ export default function ControlCenterPage() {
                 title="Clientes"
                 className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">◎</span>
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+                  <Users size={13} strokeWidth={2} />
+                </span>
                 {!sidebarCollapsed && <span>Clientes</span>}
               </a>
               <a
@@ -264,7 +271,9 @@ export default function ControlCenterPage() {
                 title="Usuarios"
                 className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">◈</span>
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+                  <UserCog size={13} strokeWidth={2} />
+                </span>
                 {!sidebarCollapsed && <span>Usuarios</span>}
               </a>
             </>

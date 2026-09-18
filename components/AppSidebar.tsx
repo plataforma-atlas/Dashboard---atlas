@@ -1,17 +1,18 @@
 "use client";
 
+import { LayoutDashboard, ArrowLeftRight, Briefcase, Users, UserCog, type LucideIcon } from "lucide-react";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
 
 type NavKey = "dashboard" | "conexiones" | "cartera" | "clientes" | "usuarios";
 
-const NAV_ITEMS: { key: NavKey; href: string; label: string; icon: string; adminOnly?: boolean }[] = [
-  { key: "dashboard", href: "/", label: "Dashboard", icon: "⌂" },
-  { key: "conexiones", href: "/panel/conexiones", label: "Conexiones", icon: "⇄" },
-  { key: "cartera", href: "/admin/cartera", label: "Cartera", icon: "▦", adminOnly: true },
-  { key: "clientes", href: "/admin/clientes", label: "Clientes", icon: "◎", adminOnly: true },
-  { key: "usuarios", href: "/admin/usuarios", label: "Usuarios", icon: "◈", adminOnly: true },
+const NAV_ITEMS: { key: NavKey; href: string; label: string; Icon: LucideIcon; adminOnly?: boolean }[] = [
+  { key: "dashboard", href: "/", label: "Dashboard", Icon: LayoutDashboard },
+  { key: "conexiones", href: "/panel/conexiones", label: "Conexiones", Icon: ArrowLeftRight },
+  { key: "cartera", href: "/admin/cartera", label: "Cartera", Icon: Briefcase, adminOnly: true },
+  { key: "clientes", href: "/admin/clientes", label: "Clientes", Icon: Users, adminOnly: true },
+  { key: "usuarios", href: "/admin/usuarios", label: "Usuarios", Icon: UserCog, adminOnly: true },
 ];
 
 // Sidebar fijo genérico para las pantallas que no tienen un cliente propio
@@ -64,7 +65,9 @@ export default function AppSidebar({
               collapsed ? "md:justify-center" : ""
             } ${active === item.key ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"}`}
           >
-            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">{item.icon}</span>
+            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+              <item.Icon size={13} strokeWidth={2} />
+            </span>
             <span className={collapsed ? "md:hidden" : ""}>{item.label}</span>
           </a>
         ))}

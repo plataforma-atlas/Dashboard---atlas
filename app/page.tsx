@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeftRight, Briefcase, Users, UserCog } from "lucide-react";
 import { Campaign, FunnelRow } from "@/lib/types";
 import { toCountryBreakdown, toKpis, toSourceBreakdown, toStageSummary } from "@/lib/aggregate";
 import { defaultClient, themeForClient, ClientConfig } from "@/lib/clients";
@@ -795,7 +796,9 @@ function Home() {
             title="Conexiones"
             className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
           >
-            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">⇄</span>
+            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+              <ArrowLeftRight size={13} strokeWidth={2} />
+            </span>
             {!sidebarCollapsed && <span>Conexiones</span>}
           </a>
           {session.role === "admin" && (
@@ -805,7 +808,9 @@ function Home() {
                 title="Cartera"
                 className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">▦</span>
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+                  <Briefcase size={13} strokeWidth={2} />
+                </span>
                 {!sidebarCollapsed && <span>Cartera</span>}
               </a>
               <a
@@ -813,7 +818,9 @@ function Home() {
                 title="Clientes"
                 className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">◎</span>
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+                  <Users size={13} strokeWidth={2} />
+                </span>
                 {!sidebarCollapsed && <span>Clientes</span>}
               </a>
               <a
@@ -821,7 +828,9 @@ function Home() {
                 title="Usuarios"
                 className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">◈</span>
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+                  <UserCog size={13} strokeWidth={2} />
+                </span>
                 {!sidebarCollapsed && <span>Usuarios</span>}
               </a>
             </>

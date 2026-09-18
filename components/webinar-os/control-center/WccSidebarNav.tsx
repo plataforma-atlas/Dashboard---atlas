@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Home, DollarSign, MessageCircle, TrendingUp, Filter, LayoutList } from "lucide-react";
 
 const SECTIONS = [
-  { id: "resumen", label: "Resumen", icon: "⌂" },
-  { id: "comercial", label: "Comercial", icon: "$" },
-  { id: "chat", label: "Chat 1 a 1", icon: "◌" },
-  { id: "trafico", label: "Tráfico Meta", icon: "↗" },
-  { id: "embudo", label: "Embudo", icon: "⌄" },
-  { id: "detalle", label: "Detalle", icon: "◉" },
+  { id: "resumen", label: "Resumen", Icon: Home },
+  { id: "comercial", label: "Comercial", Icon: DollarSign },
+  { id: "chat", label: "Chat 1 a 1", Icon: MessageCircle },
+  { id: "trafico", label: "Tráfico Meta", Icon: TrendingUp },
+  { id: "embudo", label: "Embudo", Icon: Filter },
+  { id: "detalle", label: "Detalle", Icon: LayoutList },
 ];
 
 export default function WccSidebarNav({ collapsed = false }: { collapsed?: boolean }) {
@@ -40,7 +41,9 @@ export default function WccSidebarNav({ collapsed = false }: { collapsed?: boole
             collapsed ? "justify-center" : ""
           } ${active === s.id ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"}`}
         >
-          <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">{s.icon}</span>
+          <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center shrink-0">
+            <s.Icon size={13} strokeWidth={2} />
+          </span>
           {!collapsed && <span>{s.label}</span>}
         </a>
       ))}
