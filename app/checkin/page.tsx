@@ -411,16 +411,16 @@ export default function CheckinPage() {
         <ThemeModeToggle mode={mode} onToggle={toggleMode} />
         <button
           onClick={handleLogout}
-          className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition"
+          className="press text-sm text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-3 py-1.5 transition-colors duration-150"
         >
           Salir
         </button>
       </div>
       <div className="w-full max-w-lg mx-auto px-4 pb-8">
         <div className="flex flex-col items-center gap-1 mb-6 text-center">
-          <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">The Trading Experience</span>
+          <span className="text-xs uppercase tracking-[0.14em] text-primary font-mono">The Trading Experience</span>
           <h1 className="font-display text-2xl text-on-surface font-semibold">Check-in del evento</h1>
-          <p className="text-sm text-on-surface-faint">Busca al inscrito por nombre, correo o teléfono y confirma su entrada.</p>
+          <p className="text-[15px] text-on-surface-faint">Busca al inscrito por nombre, correo o teléfono y confirma su entrada.</p>
         </div>
 
         {resumen.length > 0 && (
@@ -450,7 +450,7 @@ export default function CheckinPage() {
                   <div key={r.tier} className="flex items-center gap-3">
                     <span className="text-xs text-on-surface-variant w-24 shrink-0 truncate">{tierLabel(r.tier)}</span>
                     <div className="flex-1 h-1.5 rounded-full bg-on-surface-faint/10 overflow-hidden">
-                      <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                      <div className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out" style={{ width: `${pct}%` }} />
                     </div>
                     <span className="text-xs text-on-surface-faint tabular-nums w-14 text-right shrink-0">
                       {checkedIn}/{total}
@@ -490,14 +490,14 @@ export default function CheckinPage() {
           <button
             type="submit"
             disabled={loading || !query.trim()}
-            className="bg-primary text-on-primary font-semibold rounded-md px-5 py-3 text-sm disabled:opacity-50"
+            className="press bg-primary text-on-primary font-semibold rounded-md px-5 py-3 text-[15px] disabled:opacity-50 disabled:active:scale-100 transition-transform duration-150"
           >
             {loading ? "Buscando…" : "Buscar"}
           </button>
         </form>
 
         <div className="flex items-center justify-center gap-2 flex-wrap mb-6">
-          <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Ver quién falta:</span>
+          <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">Ver quién falta:</span>
           {[
             { value: "VIP", label: "VIP" },
             { value: "Platino", label: "Platinum" },
@@ -508,7 +508,7 @@ export default function CheckinPage() {
               key={t.value}
               onClick={() => filtrarPorTier(t.value)}
               disabled={filtroLoading}
-              className={`text-[11px] font-semibold uppercase tracking-[0.04em] rounded-full px-3 py-1.5 border transition disabled:opacity-50 ${
+              className={`press text-xs font-semibold uppercase tracking-[0.04em] rounded-full px-3 py-1.5 border transition-colors duration-150 disabled:opacity-50 ${
                 filtroTier === t.value
                   ? "bg-primary text-on-primary border-primary"
                   : "text-on-surface-variant border-outline hover:border-primary"
@@ -580,12 +580,12 @@ export default function CheckinPage() {
 
         {ponenteFormOpen && (
           <form onSubmit={registrarPonente} className="rounded-lg border border-violet-500/30 bg-violet-500/5 p-4 mb-6 flex flex-col gap-3">
-            <p className="text-[11px] text-on-surface-faint">
+            <p className="text-xs text-on-surface-faint">
               Invitado de un ponente — entra sin pagar, se registra directo como VIP y ocupa cupo VIP.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Nombre</span>
+                <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">Nombre</span>
                 <input
                   value={ponenteForm.name}
                   onChange={(e) => setPonenteForm((f) => ({ ...f, name: e.target.value }))}
@@ -594,7 +594,7 @@ export default function CheckinPage() {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Teléfono</span>
+                <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">Teléfono</span>
                 <input
                   value={ponenteForm.phone}
                   onChange={(e) => setPonenteForm((f) => ({ ...f, phone: e.target.value }))}
@@ -604,7 +604,7 @@ export default function CheckinPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Correo</span>
+                <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">Correo</span>
                 <input
                   value={ponenteForm.email}
                   onChange={(e) => setPonenteForm((f) => ({ ...f, email: e.target.value }))}
@@ -612,7 +612,7 @@ export default function CheckinPage() {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">País *</span>
+                <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">País *</span>
                 <input
                   value={ponenteForm.pais}
                   onChange={(e) => setPonenteForm((f) => ({ ...f, pais: e.target.value }))}
@@ -639,12 +639,12 @@ export default function CheckinPage() {
 
         {generalFormOpen && (
           <form onSubmit={registrarGeneral} className="rounded-lg border border-primary/30 bg-primary/5 p-4 mb-6 flex flex-col gap-3">
-            <p className="text-[11px] text-on-surface-faint">
+            <p className="text-xs text-on-surface-faint">
               Entrada general para alguien que nunca se registró (sin cobro por ahora) — queda con check-in ya hecho.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Nombre</span>
+                <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">Nombre</span>
                 <input
                   value={generalForm.name}
                   onChange={(e) => setGeneralForm((f) => ({ ...f, name: e.target.value }))}
@@ -653,7 +653,7 @@ export default function CheckinPage() {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Teléfono</span>
+                <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">Teléfono</span>
                 <input
                   value={generalForm.phone}
                   onChange={(e) => setGeneralForm((f) => ({ ...f, phone: e.target.value }))}
@@ -663,7 +663,7 @@ export default function CheckinPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Correo</span>
+                <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">Correo</span>
                 <input
                   value={generalForm.email}
                   onChange={(e) => setGeneralForm((f) => ({ ...f, email: e.target.value }))}
@@ -671,7 +671,7 @@ export default function CheckinPage() {
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">País</span>
+                <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">País</span>
                 <input
                   value={generalForm.pais}
                   onChange={(e) => setGeneralForm((f) => ({ ...f, pais: e.target.value }))}
@@ -708,7 +708,7 @@ export default function CheckinPage() {
                   </div>
                   <p className="text-xs text-on-surface-faint truncate">{r.email}</p>
                   {r.phone && <p className="text-xs text-on-surface-faint truncate">{r.phone}</p>}
-                  <p className="text-[11px] uppercase tracking-[0.08em] text-on-surface-variant mt-1">{r.campaign_name}</p>
+                  <p className="text-xs uppercase tracking-[0.08em] text-on-surface-variant mt-1">{r.campaign_name}</p>
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
                   {r.checked_in ? (
@@ -758,7 +758,7 @@ export default function CheckinPage() {
                   )}
                   {r.tier === "VIP" &&
                     (guestByLead[r.lead_id] ? (
-                      <span className="text-[11px] text-on-surface-faint whitespace-nowrap">+1 {guestByLead[r.lead_id].name}</span>
+                      <span className="text-xs text-on-surface-faint whitespace-nowrap">+1 {guestByLead[r.lead_id].name}</span>
                     ) : (
                       <button
                         onClick={() => (guestOpenId === r.lead_id ? cancelarInvitado() : abrirInvitado(r.lead_id))}
@@ -772,10 +772,10 @@ export default function CheckinPage() {
 
               {guestOpenId === r.lead_id && (
                 <div className="mt-4 pt-4 border-t border-outline flex flex-col gap-3">
-                  <p className="text-[11px] text-on-surface-faint">Como entrada VIP, puede traer un invitado. Registra sus datos.</p>
+                  <p className="text-xs text-on-surface-faint">Como entrada VIP, puede traer un invitado. Registra sus datos.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label className="flex flex-col gap-1">
-                      <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Nombre del invitado</span>
+                      <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">Nombre del invitado</span>
                       <input
                         value={guestForm.name}
                         onChange={(e) => setGuestForm((f) => ({ ...f, name: e.target.value }))}
@@ -783,7 +783,7 @@ export default function CheckinPage() {
                       />
                     </label>
                     <label className="flex flex-col gap-1">
-                      <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Teléfono</span>
+                      <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">Teléfono</span>
                       <input
                         value={guestForm.phone}
                         onChange={(e) => setGuestForm((f) => ({ ...f, phone: e.target.value }))}
@@ -792,7 +792,7 @@ export default function CheckinPage() {
                     </label>
                   </div>
                   <label className="flex flex-col gap-1">
-                    <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Correo</span>
+                    <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">Correo</span>
                     <input
                       value={guestForm.email}
                       onChange={(e) => setGuestForm((f) => ({ ...f, email: e.target.value }))}
@@ -822,7 +822,7 @@ export default function CheckinPage() {
                     <>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <label className="flex flex-col gap-1">
-                          <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Nombre</span>
+                          <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">Nombre</span>
                           <input
                             value={editForm.name}
                             onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
@@ -830,7 +830,7 @@ export default function CheckinPage() {
                           />
                         </label>
                         <label className="flex flex-col gap-1">
-                          <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Teléfono</span>
+                          <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">Teléfono</span>
                           <input
                             value={editForm.phone}
                             onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
@@ -839,7 +839,7 @@ export default function CheckinPage() {
                         </label>
                       </div>
                       <label className="flex flex-col gap-1">
-                        <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Correo</span>
+                        <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">Correo</span>
                         <input
                           value={editForm.email}
                           onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
@@ -847,7 +847,7 @@ export default function CheckinPage() {
                         />
                       </label>
                       <label className="flex flex-col gap-1">
-                        <span className="text-[10px] uppercase tracking-[0.06em] text-on-surface-faint">Notas del equipo de acceso</span>
+                        <span className="text-xs uppercase tracking-[0.06em] text-on-surface-faint">Notas del equipo de acceso</span>
                         <textarea
                           value={editForm.notes}
                           onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}

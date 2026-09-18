@@ -177,69 +177,73 @@ function PanelConexionesContent() {
       <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[var(--sidebar-w,240px)] max-w-3xl flex flex-col gap-6 bg-background transition-[margin] duration-200">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">Onboarding</span>
+          <span className="text-xs uppercase tracking-[0.14em] text-primary font-mono">Onboarding</span>
           <h1 className="font-display text-2xl text-on-surface font-semibold">Tus conexiones</h1>
-          <p className="text-sm text-on-surface-variant">Conecta tus cuentas para que empecemos a traer tus datos automáticamente.</p>
+          <p className="text-[15px] text-on-surface-variant">Conecta tus cuentas para que empecemos a traer tus datos automáticamente.</p>
         </div>
       </header>
 
       {error && <div className="rounded-lg border border-outline-error bg-error-container px-4 py-3 text-sm text-error">{error}</div>}
 
       {loading ? (
-        <p className="text-sm text-on-surface-variant">Cargando…</p>
+        <p className="text-[15px] text-on-surface-variant">Cargando…</p>
       ) : clienteId ? (
         <div className="flex flex-col gap-3">
-          {INTEGRACIONES.map((integ) => {
+          {INTEGRACIONES.map((integ, i) => {
             const conectada = estadoDe(integ.tipo);
             return (
-              <div key={integ.tipo} className="rounded-lg border border-outline bg-surface p-5 flex items-center justify-between gap-4">
+              <div
+                key={integ.tipo}
+                style={{ animationDelay: `${i * 40}ms` }}
+                className="animate-fade-in-up rounded-lg border border-outline bg-surface p-5 flex items-center justify-between gap-4"
+              >
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium text-on-surface">{integ.label}</span>
-                  <span className="text-xs text-on-surface-variant">{integ.descripcion}</span>
-                  {!integ.disponible && <span className="text-[11px] text-on-surface-faint mt-0.5">Próximamente</span>}
+                  <span className="text-[14px] font-medium text-on-surface">{integ.label}</span>
+                  <span className="text-[13px] text-on-surface-variant">{integ.descripcion}</span>
+                  {!integ.disponible && <span className="text-xs text-on-surface-faint mt-0.5">Próximamente</span>}
                 </div>
                 {integ.disponible ? (
                   integ.tipo === "webinarkit" ? (
                     <button
                       onClick={() => setWebhookAbierto((v) => !v)}
-                      className="text-xs px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition"
+                      className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150"
                     >
                       {webhookAbierto ? "Ocultar webhook" : "Ver webhook"}
                     </button>
                   ) : conectada ? (
-                    <span className="text-xs px-3 py-1.5 rounded-full border border-primary text-primary shrink-0">Conectado</span>
+                    <span className="text-[13px] px-3 py-1.5 rounded-full border border-primary text-primary shrink-0">Conectado</span>
                   ) : integ.tipo === "ghl" && formAbierto ? null : (
                     <button
                       onClick={() => setFormAbierto(true)}
-                      className="text-xs px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0"
+                      className="press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
                     >
                       Conectar
                     </button>
                   )
                 ) : (
-                  <span className="text-xs px-3 py-1.5 rounded-full border border-outline text-on-surface-faint shrink-0">No disponible</span>
+                  <span className="text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-faint shrink-0">No disponible</span>
                 )}
               </div>
             );
           })}
 
           {webhookAbierto && (
-            <div className="rounded-lg border border-outline bg-surface p-5 flex flex-col gap-3">
+            <div className="animate-pop-in rounded-lg border border-outline bg-surface p-5 flex flex-col gap-3">
               <div className="flex flex-col gap-1">
-                <span className="text-sm font-medium text-on-surface">Webhook de ClaseEspecial</span>
-                <p className="text-xs text-on-surface-variant">
+                <span className="text-[14px] font-medium text-on-surface">Webhook de ClaseEspecial</span>
+                <p className="text-[13px] text-on-surface-variant">
                   Pegá esta URL en la configuración de webhooks de tu plataforma de ClaseEspecial (o WebinarKit) — así nos avisa
                   automáticamente cuando alguien se registra o asiste a tu webinar.
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <code className="flex-1 min-w-0 truncate bg-background border border-outline rounded-md px-3 py-2 text-xs text-on-surface font-mono">
+                <code className="flex-1 min-w-0 truncate bg-background border border-outline rounded-md px-3 py-2 text-[13px] text-on-surface font-mono">
                   {CLASE_ESPECIAL_WEBHOOK_BASE}?cliente_id={clienteId}
                 </code>
                 <button
                   type="button"
                   onClick={() => copiarWebhook(`${CLASE_ESPECIAL_WEBHOOK_BASE}?cliente_id=${clienteId}`)}
-                  className="text-xs px-3 py-2 rounded-md bg-primary text-on-primary font-medium shrink-0"
+                  className="press text-[13px] px-3 py-2 rounded-md bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
                 >
                   {webhookCopiado ? "¡Copiado!" : "Copiar"}
                 </button>
@@ -248,33 +252,33 @@ function PanelConexionesContent() {
           )}
 
           {formAbierto && (
-            <form onSubmit={conectarGhl} className="rounded-lg border border-outline bg-surface p-5 flex flex-col gap-4">
+            <form onSubmit={conectarGhl} className="animate-fade-in-up rounded-lg border border-outline bg-surface p-5 flex flex-col gap-4">
               <div className="flex flex-col gap-1">
-                <span className="text-sm font-medium text-on-surface">Conectar GoHighLevel</span>
-                <p className="text-xs text-on-surface-variant">
+                <span className="text-[14px] font-medium text-on-surface">Conectar GoHighLevel</span>
+                <p className="text-[13px] text-on-surface-variant">
                   Necesitamos el <span className="font-mono">Location ID</span> de tu sub-cuenta y un token de{" "}
                   <span className="font-medium">Integración Privada</span> (Settings → Private Integrations en GHL) con permisos de
                   Contacts y Opportunities.
                 </p>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] uppercase tracking-[0.1em] text-on-surface-faint">Location ID</label>
+                <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Location ID</label>
                 <input
                   type="text"
                   value={locationId}
                   onChange={(e) => setLocationId(e.target.value)}
                   placeholder="Ej. 5MJtQR1kaVBPCbgkiUJS"
-                  className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface font-mono focus:border-primary outline-none"
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] uppercase tracking-[0.1em] text-on-surface-faint">Token de Integración Privada</label>
+                <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Token de Integración Privada</label>
                 <input
                   type="password"
                   value={tokenGhl}
                   onChange={(e) => setTokenGhl(e.target.value)}
                   placeholder="pit-..."
-                  className="bg-background border border-outline rounded-md px-3 py-2 text-sm text-on-surface font-mono focus:border-primary outline-none"
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
                 />
               </div>
 
@@ -284,7 +288,7 @@ function PanelConexionesContent() {
                 <button
                   type="submit"
                   disabled={guardando}
-                  className="rounded-md bg-primary text-on-primary text-sm font-medium px-4 py-2.5 disabled:opacity-50"
+                  className="press rounded-md bg-primary text-on-primary text-[14px] font-medium px-4 py-2.5 disabled:opacity-50 disabled:active:scale-100 transition-transform duration-150"
                 >
                   {guardando ? "Guardando…" : "Guardar conexión"}
                 </button>
@@ -294,7 +298,7 @@ function PanelConexionesContent() {
                     setFormAbierto(false);
                     setFormError(null);
                   }}
-                  className="text-sm text-on-surface-variant hover:text-on-surface"
+                  className="press text-[14px] text-on-surface-variant hover:text-on-surface transition-colors duration-150"
                 >
                   Cancelar
                 </button>
@@ -304,29 +308,30 @@ function PanelConexionesContent() {
         </div>
       ) : isAdmin ? (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-on-surface-variant">
+          <p className="text-[15px] text-on-surface-variant">
             Elegí un cliente para ver o completar sus conexiones. Solo se muestran los clientes con integraciones pendientes.
           </p>
           {cargandoPendientes ? (
-            <p className="text-sm text-on-surface-variant">Revisando conexiones de cada cliente…</p>
+            <p className="text-[15px] text-on-surface-variant">Revisando conexiones de cada cliente…</p>
           ) : clientesPendientes && clientesPendientes.length > 0 ? (
             <div className="flex flex-col gap-2">
-              {clientesPendientes.map((c) => (
+              {clientesPendientes.map((c, i) => (
                 <a
                   key={c.id}
                   href={`/panel/conexiones?cliente_id=${c.id}`}
-                  className="rounded-lg border border-outline bg-surface p-4 flex items-center justify-between gap-4 hover:border-primary transition"
+                  style={{ animationDelay: `${i * 40}ms` }}
+                  className="press animate-fade-in-up rounded-lg border border-outline bg-surface p-4 flex items-center justify-between gap-4 hover:border-primary transition-colors duration-150"
                 >
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-sm font-medium text-on-surface">{c.name}</span>
-                    <span className="text-xs text-on-surface-variant">Falta conectar: {c.faltantes.join(", ")}</span>
+                    <span className="text-[14px] font-medium text-on-surface">{c.name}</span>
+                    <span className="text-[13px] text-on-surface-variant">Falta conectar: {c.faltantes.join(", ")}</span>
                   </div>
-                  <span className="text-xs px-3 py-1.5 rounded-full border border-outline text-on-surface-variant shrink-0">Revisar →</span>
+                  <span className="text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-variant shrink-0">Revisar →</span>
                 </a>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-on-surface-variant">Todos los clientes tienen sus conexiones al día. 🎉</p>
+            <p className="text-[15px] text-on-surface-variant">Todos los clientes tienen sus conexiones al día. 🎉</p>
           )}
         </div>
       ) : null}
