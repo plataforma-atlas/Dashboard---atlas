@@ -2,15 +2,6 @@ function toISODate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function mondayOf(d: Date): Date {
-  const date = new Date(d);
-  const day = date.getDay(); // 0=domingo..6=sábado
-  const diff = day === 0 ? -6 : 1 - day; // retrocede hasta el lunes
-  date.setDate(date.getDate() + diff);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
 export type RangoRapido = "all" | "today" | "7days" | "1month" | "custom";
 
 export const RANGO_RAPIDO_LABEL: Record<Exclude<RangoRapido, "custom">, string> = {
@@ -47,28 +38,4 @@ export function rangoRapido(preset: Exclude<RangoRapido, "custom">): { fecha_ini
   const inicioMes = new Date(hoy);
   inicioMes.setMonth(inicioMes.getMonth() - 1);
   return { fecha_inicio: toISODate(inicioMes), fecha_fin: toISODate(hoy) };
-}
-
-export type SemanaEspecifica = { value: string; label: string; fecha_inicio: string; fecha_fin: string };
-
-/** Últimas N semanas calendario (lunes–domingo) para el selector de "semana específica"
- * del filtro avanzado. */
-export function semanasEspecificas(cantidad = 6): SemanaEspecifica[] {
-  const hoy = new Date();
-  const lunesActual = mondayOf(hoy);
-  const semanas: SemanaEspecifica[] = [];
-  for (let i = 0; i < cantidad; i++) {
-    const inicio = new Date(lunesActual);
-    inicio.setDate(inicio.getDate() - 7 * i);
-    const fin = new Date(inicio);
-    fin.setDate(fin.getDate() + 6);
-    const fmt = (d: Date) => d.toLocaleDateString("es-CO", { day: "numeric", month: "short" });
-    semanas.push({
-      value: `${toISODate(inicio)}|${toISODate(fin)}`,
-      label: `${fmt(inicio)} – ${fmt(fin)}`,
-      fecha_inicio: toISODate(inicio),
-      fecha_fin: toISODate(fin),
-    });
-  }
-  return semanas;
 }

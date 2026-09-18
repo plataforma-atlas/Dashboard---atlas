@@ -5,7 +5,7 @@ import { type DateRange } from "react-day-picker";
 import { ChevronDown } from "lucide-react";
 import { Campaign } from "@/lib/types";
 import { CampanaCartera } from "@/lib/webinar-os/control-center/types";
-import { rangoRapido, semanasEspecificas, RangoRapido, RANGO_RAPIDO_LABEL } from "@/lib/webinar-os/control-center/dateRanges";
+import { rangoRapido, RangoRapido, RANGO_RAPIDO_LABEL } from "@/lib/webinar-os/control-center/dateRanges";
 import PrintButton from "./PrintButton";
 import PeriodCalendar from "./PeriodCalendar";
 
@@ -46,8 +46,7 @@ export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSele
   const [periodo, setPeriodo] = useState<RangoRapido>("all");
   const [rangoPersonalizado, setRangoPersonalizado] = useState<{ fecha_inicio: string; fecha_fin: string } | null>(null);
   const [rangoBorrador, setRangoBorrador] = useState<DateRange | undefined>(undefined);
-  const [panelAbierto, setPanelAbierto] = useState<"periodo" | "avanzado" | null>(null);
-  const [semanaSeleccionada, setSemanaSeleccionada] = useState(semanasEspecificas()[0]?.value ?? "");
+  const [panelAbierto, setPanelAbierto] = useState<"periodo" | null>(null);
 
   function aplicarPeriodoRapido(p: Exclude<RangoRapido, "custom">) {
     setPeriodo(p);
@@ -75,14 +74,6 @@ export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSele
     );
     setPanelAbierto((v) => (v === "periodo" ? null : "periodo"));
   }
-
-  function aplicarSemanaEspecifica() {
-    const semana = semanasEspecificas().find((s) => s.value === semanaSeleccionada);
-    if (semana) onAplicar(semana.fecha_inicio, semana.fecha_fin);
-    setPanelAbierto(null);
-  }
-
-  const semanas = semanasEspecificas();
 
   const etiquetaPeriodo =
     periodo === "custom" && rangoPersonalizado
@@ -172,46 +163,7 @@ export default function WccFilterBar({ campanas, otrasCampanas = [], campanaSele
         </div>
       )}
 
-      <button
-        onClick={() => setPanelAbierto((v) => (v === "avanzado" ? null : "avanzado"))}
-        className="press border border-[var(--wos-border)] bg-[var(--wos-surface)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px] hover:bg-[var(--wos-surface-alt)] transition-colors duration-150"
-      >
-        ⚙ Filtro
-      </button>
-
       <PrintButton />
-
-      {panelAbierto === "avanzado" && (
-        <div className="animate-pop-in absolute right-0 top-[calc(100%+8px)] z-40 w-[min(360px,calc(100vw-32px))] origin-top-right bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-2xl shadow-[var(--wos-shadow-lg)] p-4">
-          <h3 className="text-[15px] font-semibold text-[var(--wos-ink)] mb-1">Filtro avanzado</h3>
-          <p className="text-[12px] text-[var(--wos-ink-muted)] mb-3">
-            Úsalo para consultar una semana específica distinta de los periodos rápidos de arriba.
-          </p>
-          <label className="block text-[12px] font-bold text-[var(--wos-ink-muted)] mb-1.5">Semana específica</label>
-          <select
-            value={semanaSeleccionada}
-            onChange={(e) => setSemanaSeleccionada(e.target.value)}
-            className="w-full border border-[var(--wos-border)] bg-[var(--wcc-page-bg)] text-[var(--wos-ink)] rounded-lg px-3 py-2 text-[13px] mb-3"
-          >
-            {semanas.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setPanelAbierto(null)} className="press text-[13px] text-[var(--wos-ink-muted)] px-3 py-2">
-              Cancelar
-            </button>
-            <button
-              onClick={aplicarSemanaEspecifica}
-              className="press bg-[var(--wos-primary)] text-[var(--wos-on-primary)] rounded-lg px-4 py-2 text-[13px] font-semibold"
-            >
-              Ver resultados
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
