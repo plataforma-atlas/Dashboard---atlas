@@ -43,15 +43,23 @@ export default function PeriodCalendar({ selected, onSelect, defaultMonth }: Pro
       style={RDP_VARS}
       className="text-[13px] text-[color:var(--wos-ink)]"
       classNames={{
-        // Por defecto react-day-picker pone las dos flechas juntas arriba a
-        // la derecha de todo el calendario. Las separamos: una pegada al
-        // borde izquierdo y otra al borde derecho de los dos meses juntos.
-        nav: "!absolute !inset-x-0 !top-0.5 flex items-center justify-between px-0.5",
-        month_caption: "flex items-center justify-center font-semibold text-[13px] text-[color:var(--wos-ink)] mb-1 capitalize",
-        weekday: "text-[11px] font-medium text-[color:var(--wos-ink-muted)]",
-        button_previous: "rounded-full text-[color:var(--wos-ink-muted)] hover:bg-[var(--wos-surface-alt)]",
-        button_next: "rounded-full text-[color:var(--wos-ink-muted)] hover:bg-[var(--wos-surface-alt)]",
-        day_button: "rounded-full hover:bg-[var(--wos-surface-alt)]",
+        // OJO: el prop `classNames` de react-day-picker REEMPLAZA la clase
+        // base de cada elemento (p.ej. "rdp-day_button") en vez de sumarse a
+        // ella — sin agregar esa clase de vuelta, se pierden todas las reglas
+        // del stylesheet base que dependen de ella (selectores como
+        // ".rdp-range_end .rdp-day_button"), que es justo lo que rellena de
+        // color sólido el inicio/fin del rango. Por eso cada valor de abajo
+        // empieza reincorporando su clase "rdp-*" por defecto.
+        //
+        // Además, por defecto pone las dos flechas de navegación juntas
+        // arriba a la derecha de todo el calendario — las separamos: una
+        // pegada al borde izquierdo y otra al derecho de los dos meses.
+        nav: "rdp-nav !absolute !inset-x-0 !top-0.5 flex items-center justify-between px-0.5",
+        month_caption: "rdp-month_caption flex items-center justify-center font-semibold text-[13px] text-[color:var(--wos-ink)] mb-1 capitalize",
+        weekday: "rdp-weekday text-[11px] font-medium text-[color:var(--wos-ink-muted)]",
+        button_previous: "rdp-button_previous rounded-full text-[color:var(--wos-ink-muted)] hover:bg-[var(--wos-surface-alt)]",
+        button_next: "rdp-button_next rounded-full text-[color:var(--wos-ink-muted)] hover:bg-[var(--wos-surface-alt)]",
+        day_button: "rdp-day_button rounded-full hover:bg-[var(--wos-surface-alt)]",
       }}
       components={{
         Chevron: ({ orientation, ...props }) =>
