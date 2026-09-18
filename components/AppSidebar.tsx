@@ -47,8 +47,8 @@ export default function AppSidebar({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/vermetricas-icon.png" alt="" className="w-9 h-9 rounded-xl shrink-0" />
           <div className={`min-w-0 ${collapsed ? "md:hidden" : ""}`}>
-            <div className="text-[13px] font-semibold text-white truncate">Vermetricas</div>
-            <div className="text-[10px] text-white/50">Panel de administración</div>
+            <div className="text-sm font-semibold text-white truncate">Vermetricas</div>
+            <div className="text-[11px] text-white/50">Panel de administración</div>
           </div>
         </div>
         <SidebarCollapseButton collapsed={collapsed} onToggle={toggleCollapsed} />
@@ -60,11 +60,11 @@ export default function AppSidebar({
             key={item.key}
             href={item.key === "conexiones" && conexionesHref ? conexionesHref : item.href}
             title={item.label}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap transition ${
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 ${
               collapsed ? "md:justify-center" : ""
             } ${active === item.key ? "bg-white/10 text-white" : "text-white/60 hover:text-white hover:bg-white/5"}`}
           >
-            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">{item.icon}</span>
+            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">{item.icon}</span>
             <span className={collapsed ? "md:hidden" : ""}>{item.label}</span>
           </a>
         ))}
@@ -82,7 +82,7 @@ export default function AppSidebar({
           onClick={onLogout}
           title="Salir"
           aria-label="Salir"
-          className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/15 grid place-items-center text-white/70 hover:text-white transition shrink-0"
+          className="press w-9 h-9 rounded-lg bg-white/10 hover:bg-white/15 grid place-items-center text-white/70 hover:text-white transition-colors duration-150 shrink-0"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

@@ -39,12 +39,12 @@ export default function CampaignSelector({
 
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[11px] uppercase tracking-[0.1em] text-on-surface-faint">Campaña / Edición</label>
+      <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Campaña / Edición</label>
       <select
         value={selectedId ?? ""}
         disabled={loading || campaigns.length === 0}
         onChange={(e) => onSelect(Number(e.target.value))}
-        className="bg-background border border-outline rounded-md px-2.5 py-1.5 text-sm text-on-surface focus:border-primary outline-none min-w-[220px] disabled:opacity-50"
+        className="bg-background border border-outline rounded-md px-2.5 py-1.5 text-[14px] text-on-surface focus:border-primary outline-none min-w-[220px] disabled:opacity-50 transition-colors duration-150"
       >
         {campaigns.length === 0 && <option value="">Sin campañas</option>}
         {Object.entries(grouped).map(([strategy, items]) => {

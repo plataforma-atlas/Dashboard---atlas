@@ -42,18 +42,20 @@ export default function AdminCarteraPage() {
       <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[var(--sidebar-w,240px)] max-w-7xl flex flex-col gap-6 transition-[margin] duration-200">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <span className="text-[11px] uppercase tracking-[0.14em] text-[var(--wos-primary)] font-mono">Webinar Control Center</span>
+          <span className="text-xs uppercase tracking-[0.14em] text-[var(--wos-primary)] font-mono">Webinar Control Center</span>
           <h1 className="font-display text-2xl text-[var(--wos-ink)] font-semibold">Cartera de clientes</h1>
-          <p className="text-sm text-[var(--wos-ink-muted)]">Webinar automático — quién necesita atención, quién puede escalar.</p>
+          <p className="text-[15px] text-[var(--wos-ink-muted)]">Webinar automático — quién necesita atención, quién puede escalar.</p>
         </div>
       </header>
 
       {error && <div className="rounded-lg border border-outline-error bg-error-container px-4 py-3 text-sm text-error">{error}</div>}
 
       {loading ? (
-        <p className="text-sm text-[var(--wos-ink-faint)]">Cargando cartera…</p>
+        <p className="text-[15px] text-[var(--wos-ink-faint)]">Cargando cartera…</p>
       ) : (
-        <CarteraGrid cartera={cartera} />
+        <div className="animate-fade-in-up">
+          <CarteraGrid cartera={cartera} />
+        </div>
       )}
     </main>
     </div>

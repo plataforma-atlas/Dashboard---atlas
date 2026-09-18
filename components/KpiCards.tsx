@@ -7,7 +7,7 @@ function formatMoney(n: number) {
 function Card({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: "primary" | "secondary" }) {
   return (
     <div className="rounded-lg border border-outline bg-surface px-5 py-4 flex flex-col gap-1">
-      <span className="text-[11px] uppercase tracking-[0.14em] text-on-surface-faint font-medium">{label}</span>
+      <span className="text-xs uppercase tracking-[0.14em] text-on-surface-faint font-medium">{label}</span>
       <span
         className={`font-mono tabular text-2xl md:text-3xl font-semibold ${
           accent === "primary" ? "text-primary" : accent === "secondary" ? "text-secondary" : "text-on-surface"
@@ -15,7 +15,7 @@ function Card({ label, value, sub, accent }: { label: string; value: string; sub
       >
         {value}
       </span>
-      {sub && <span className="text-xs text-on-surface-variant">{sub}</span>}
+      {sub && <span className="text-[13px] text-on-surface-variant">{sub}</span>}
     </div>
   );
 }

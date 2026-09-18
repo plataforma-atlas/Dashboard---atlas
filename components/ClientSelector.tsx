@@ -19,7 +19,7 @@ export default function ClientSelector({
           <button
             key={c.id}
             onClick={() => onSelect(c.id)}
-            className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition ${
+            className={`press px-3.5 py-1.5 rounded-full text-[14px] font-medium transition-colors duration-150 ${
               active ? "bg-primary text-on-primary" : "text-on-surface-variant hover:text-on-surface"
             }`}
           >

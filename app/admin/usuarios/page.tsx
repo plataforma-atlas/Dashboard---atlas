@@ -122,21 +122,21 @@ export default function AdminUsuariosPage() {
       <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[var(--sidebar-w,240px)] max-w-5xl flex flex-col gap-6 bg-background transition-[margin] duration-200">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">Panel de Administración</span>
+          <span className="text-xs uppercase tracking-[0.14em] text-primary font-mono">Panel de Administración</span>
           <h1 className="font-display text-2xl text-on-surface font-semibold">Usuarios</h1>
-          <p className="text-sm text-on-surface-variant">Cambia roles y asigna qué clientes puede ver cada usuario.</p>
+          <p className="text-[15px] text-on-surface-variant">Cambia roles y asigna qué clientes puede ver cada usuario.</p>
         </div>
       </header>
 
       {error && <div className="rounded-lg border border-outline-error bg-error-container px-4 py-3 text-sm text-error">{error}</div>}
 
       {loading ? (
-        <p className="text-sm text-on-surface-variant">Cargando usuarios…</p>
+        <p className="text-[15px] text-on-surface-variant">Cargando usuarios…</p>
       ) : (
-        <div className="rounded-lg border border-outline bg-surface overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="animate-fade-in-up rounded-lg border border-outline bg-surface overflow-hidden">
+          <table className="w-full text-[14px]">
             <thead>
-              <tr className="border-b border-outline text-left text-[11px] uppercase tracking-[0.1em] text-on-surface-faint">
+              <tr className="border-b border-outline text-left text-xs uppercase tracking-[0.1em] text-on-surface-faint">
                 <th className="px-4 py-3 font-medium">Usuario</th>
                 <th className="px-4 py-3 font-medium">Rol</th>
                 <th className="px-4 py-3 font-medium">Clientes asignados</th>
@@ -150,14 +150,14 @@ export default function AdminUsuariosPage() {
                   <tr key={u.id} className="border-b border-outline/50 last:border-0 align-top">
                     <td className="px-4 py-3">
                       <div className="text-on-surface">{u.name}</div>
-                      <div className="text-on-surface-variant text-xs">{u.email}</div>
+                      <div className="text-on-surface-variant text-[13px]">{u.email}</div>
                     </td>
                     <td className="px-4 py-3">
                       <select
                         value={u.role}
                         disabled={isBusy}
                         onChange={(e) => cambiarRol(u.id, e.target.value as "admin" | "client" | "checkin")}
-                        className="bg-background border border-outline rounded-md px-2 py-1.5 text-sm text-on-surface focus:border-primary outline-none disabled:opacity-50"
+                        className="bg-background border border-outline rounded-md px-2 py-1.5 text-[14px] text-on-surface focus:border-primary outline-none disabled:opacity-50 transition-colors duration-150"
                       >
                         <option value="client">client</option>
                         <option value="admin">admin</option>
@@ -166,9 +166,9 @@ export default function AdminUsuariosPage() {
                     </td>
                     <td className="px-4 py-3">
                       {u.role === "admin" ? (
-                        <span className="text-xs text-on-surface-faint">Ve todos los clientes (es admin)</span>
+                        <span className="text-[13px] text-on-surface-faint">Ve todos los clientes (es admin)</span>
                       ) : u.role === "checkin" ? (
-                        <span className="text-xs text-on-surface-faint">Solo acceso a Check-in del evento (no ve clientes)</span>
+                        <span className="text-[13px] text-on-surface-faint">Solo acceso a Check-in del evento (no ve clientes)</span>
                       ) : (
                         <div className="flex flex-wrap gap-2">
                           {clientesDisponibles.map((c) => {
@@ -178,7 +178,7 @@ export default function AdminUsuariosPage() {
                                 key={c.id}
                                 disabled={isBusy}
                                 onClick={() => toggleCliente(u.id, c.id, tieneAcceso)}
-                                className={`text-xs px-2.5 py-1 rounded-full border transition disabled:opacity-50 ${
+                                className={`press text-[13px] px-2.5 py-1 rounded-full border transition-colors duration-150 disabled:opacity-50 disabled:active:scale-100 ${
                                   tieneAcceso ? "bg-primary text-on-primary border-primary" : "border-outline text-on-surface-variant hover:text-on-surface"
                                 }`}
                               >
@@ -193,7 +193,7 @@ export default function AdminUsuariosPage() {
                       <button
                         disabled={isBusy}
                         onClick={() => eliminarUsuario(u.id, u.email)}
-                        className="text-xs text-error border border-outline-error rounded-full px-3 py-1.5 hover:bg-error-container transition disabled:opacity-50"
+                        className="press text-[13px] text-error border border-outline-error rounded-full px-3 py-1.5 hover:bg-error-container transition-colors duration-150 disabled:opacity-50 disabled:active:scale-100"
                       >
                         Eliminar
                       </button>
@@ -203,7 +203,7 @@ export default function AdminUsuariosPage() {
               })}
               {usuarios.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-on-surface-variant text-sm">
+                  <td colSpan={4} className="px-4 py-6 text-center text-on-surface-variant text-[14px]">
                     No hay usuarios registrados todavía.
                   </td>
                 </tr>

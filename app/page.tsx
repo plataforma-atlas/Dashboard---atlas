@@ -562,7 +562,7 @@ function Home() {
           <p className="text-sm text-on-surface-variant mb-6">
             Tu cuenta fue creada correctamente, pero aún no tienes ningún cliente vinculado. Contacta a un administrador de la agencia.
           </p>
-          <button onClick={handleLogout} className="text-xs text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-4 py-2 transition">
+          <button onClick={handleLogout} className="press text-sm text-on-surface-variant hover:text-on-surface border border-outline rounded-full px-4 py-2 transition-colors duration-150">
             Salir
           </button>
         </div>
@@ -601,22 +601,23 @@ function Home() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/brand/vermetricas-icon.png" alt="" className="h-6 w-6" />
             </span>
-            <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">Agencia Vermetricas</span>
-            <h1 className="font-display text-2xl text-on-surface font-semibold">¿Qué cliente quieres revisar?</h1>
-            <p className="text-sm text-on-surface-variant max-w-sm">
+            <span className="text-xs uppercase tracking-[0.14em] text-primary font-mono">Agencia Vermetricas</span>
+            <h1 className="font-display text-[28px] leading-tight text-on-surface font-semibold">¿Qué cliente quieres revisar?</h1>
+            <p className="text-[15px] text-on-surface-variant max-w-sm">
               Elegí una cuenta para entrar a su panel, o revisá la cartera completa.
             </p>
           </div>
 
           {visibleClients.length === 0 ? (
-            <p className="text-sm text-on-surface-variant text-center">Cargando clientes…</p>
+            <p className="text-[15px] text-on-surface-variant text-center">Cargando clientes…</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {visibleClients.map((c, i) => (
                 <button
                   key={c.id}
                   onClick={() => setSelectedClientId(c.id)}
-                  className="group flex items-center gap-3 rounded-xl border border-outline bg-surface hover:bg-surface-high hover:border-primary/60 px-4 py-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20"
+                  style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+                  className="animate-fade-in-up press group flex items-center gap-3 rounded-xl border border-outline bg-surface hover:bg-surface-high hover:border-primary/60 px-4 py-4 text-left transition-[background-color,border-color,transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20"
                 >
                   <span
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${avatarAccents[i % avatarAccents.length]} text-sm font-semibold text-on-primary`}
@@ -624,13 +625,13 @@ function Home() {
                     {c.name.charAt(0).toUpperCase()}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-on-surface">{c.name}</span>
-                    <span className="block truncate text-[11px] font-mono text-on-surface-faint mt-0.5">{c.id}</span>
+                    <span className="block truncate text-[15px] font-medium text-on-surface">{c.name}</span>
+                    <span className="block truncate text-xs font-mono text-on-surface-faint mt-0.5">{c.id}</span>
                   </span>
                   <svg
                     viewBox="0 0 20 20"
                     fill="none"
-                    className="h-4 w-4 shrink-0 text-on-surface-faint group-hover:text-primary group-hover:translate-x-0.5 transition-all"
+                    className="h-4 w-4 shrink-0 text-on-surface-faint group-hover:text-primary group-hover:translate-x-0.5 transition-transform duration-200 ease-out"
                   >
                     <path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -642,12 +643,12 @@ function Home() {
           <div className="mt-10 flex items-center justify-center gap-3 border-t border-outline pt-6">
             <a
               href="/admin/cartera"
-              className="text-xs font-medium text-on-surface-variant hover:text-primary transition"
+              className="press text-sm font-medium text-on-surface-variant hover:text-primary transition-colors duration-150"
             >
               Ver Cartera en su lugar
             </a>
             <span className="text-outline">•</span>
-            <button onClick={handleLogout} className="text-xs font-medium text-on-surface-variant hover:text-error transition">
+            <button onClick={handleLogout} className="press text-sm font-medium text-on-surface-variant hover:text-error transition-colors duration-150">
               Salir
             </button>
           </div>
@@ -729,14 +730,14 @@ function Home() {
             <button
               onClick={() => (sidebarCollapsed ? toggleSidebarCollapsed() : setSelectorClienteAbierto((v) => !v))}
               disabled={!sidebarCollapsed && visibleClients.length <= 1}
-              className="flex items-center gap-2.5 rounded-lg hover:bg-white/5 transition p-1 -m-1 disabled:hover:bg-transparent min-w-0 flex-1"
+              className="press flex items-center gap-2.5 rounded-lg hover:bg-white/5 transition-colors duration-150 p-1 -m-1 disabled:hover:bg-transparent min-w-0 flex-1"
             >
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-secondary grid place-items-center text-sm font-bold text-on-primary shrink-0">
                 {selectedClient.name.charAt(0).toUpperCase()}
               </div>
               <div className={`min-w-0 text-left flex-1 ${sidebarCollapsed ? "md:hidden" : ""}`}>
-                <div className="text-[13px] font-semibold text-white truncate">{selectedClient.name}</div>
-                <div className="text-[10px] text-white/50">Panel de lanzamiento</div>
+                <div className="text-sm font-semibold text-white truncate">{selectedClient.name}</div>
+                <div className="text-[11px] text-white/50">Panel de lanzamiento</div>
               </div>
               {visibleClients.length > 1 && (
                 <svg
@@ -748,7 +749,7 @@ function Home() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className={`text-white/40 shrink-0 transition-transform ${selectorClienteAbierto ? "rotate-180" : ""} ${
+                  className={`text-white/40 shrink-0 transition-transform duration-200 ease-out ${selectorClienteAbierto ? "rotate-180" : ""} ${
                     sidebarCollapsed ? "md:hidden" : ""
                   }`}
                 >
@@ -760,7 +761,7 @@ function Home() {
           </div>
 
           {!sidebarCollapsed && selectorClienteAbierto && visibleClients.length > 1 && (
-            <div className="mt-2 flex flex-col gap-0.5 max-h-64 overflow-y-auto">
+            <div className="animate-fade-in-up mt-2 flex flex-col gap-0.5 max-h-64 overflow-y-auto">
               {visibleClients
                 .filter((c) => c.id !== selectedClient.id)
                 .map((c) => (
@@ -770,9 +771,9 @@ function Home() {
                       setSelectedClientId(c.id);
                       setSelectorClienteAbierto(false);
                     }}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] text-white/60 hover:text-white hover:bg-white/5 transition"
+                    className="press flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px] text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150"
                   >
-                    <span className="w-5 h-5 rounded-md bg-white/10 grid place-items-center text-[10px] font-semibold shrink-0">
+                    <span className="w-5 h-5 rounded-md bg-white/10 grid place-items-center text-xs font-semibold shrink-0">
                       {c.name.charAt(0).toUpperCase()}
                     </span>
                     <span className="truncate">{c.name}</span>
@@ -792,9 +793,9 @@ function Home() {
           <a
             href={session.role === "admin" ? `/panel/conexiones?cliente_id=${selectedClient.id}` : "/panel/conexiones"}
             title="Conexiones"
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
           >
-            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">⇄</span>
+            <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">⇄</span>
             {!sidebarCollapsed && <span>Conexiones</span>}
           </a>
           {session.role === "admin" && (
@@ -802,25 +803,25 @@ function Home() {
               <a
                 href="/admin/cartera"
                 title="Cartera"
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
+                className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">▦</span>
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">▦</span>
                 {!sidebarCollapsed && <span>Cartera</span>}
               </a>
               <a
                 href="/admin/clientes"
                 title="Clientes"
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
+                className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">◎</span>
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">◎</span>
                 {!sidebarCollapsed && <span>Clientes</span>}
               </a>
               <a
                 href="/admin/usuarios"
                 title="Usuarios"
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition ${sidebarCollapsed ? "justify-center" : ""}`}
+                className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-white/60 hover:text-white hover:bg-white/5 transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
               >
-                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-[11px] shrink-0">◈</span>
+                <span className="w-6 h-6 rounded-lg bg-white/10 grid place-items-center text-xs shrink-0">◈</span>
                 {!sidebarCollapsed && <span>Usuarios</span>}
               </a>
             </>
@@ -833,7 +834,7 @@ function Home() {
             onClick={handleLogout}
             title="Salir"
             aria-label="Salir"
-            className="w-9 h-9 rounded-lg bg-white/10 hover:bg-white/15 grid place-items-center text-white/70 hover:text-white transition shrink-0"
+            className="press w-9 h-9 rounded-lg bg-white/10 hover:bg-white/15 grid place-items-center text-white/70 hover:text-white transition-colors duration-150 shrink-0"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -853,9 +854,9 @@ function Home() {
             alt="Vermetricas"
             className="h-7 w-auto self-start mb-1"
           />
-          <span className="text-[11px] uppercase tracking-[0.14em] text-primary font-mono">Panel de lanzamiento</span>
+          <span className="text-xs uppercase tracking-[0.14em] text-primary font-mono">Panel de lanzamiento</span>
           <h1 className="font-display text-2xl md:text-3xl text-on-surface font-semibold">{selectedClient.name}</h1>
-          <p className="text-sm text-on-surface-variant">
+          <p className="text-[15px] text-on-surface-variant">
             {selectedCampaign ? selectedCampaign.name : "Telemetría del embudo de marketing"}
           </p>
         </div>
@@ -864,11 +865,11 @@ function Home() {
       {isWebinarAutomatizado ? (
         <div className="webinar-os-scope -mx-4 px-4 md:-mx-8 md:px-8 py-6" data-wos-theme={mode}>
           <div className="flex items-center justify-between gap-3 mb-5">
-            <span className="text-[11px] uppercase tracking-[0.1em] text-[var(--wos-ink-faint)] font-mono">Webinar OS</span>
+            <span className="text-xs uppercase tracking-[0.1em] text-[var(--wos-ink-faint)] font-mono">Webinar OS</span>
             <div className="flex items-center gap-2">
               <a
                 href={`/webinar-os/control-center/${selectedClient.id}`}
-                className="text-xs text-[var(--wos-ink-muted)] hover:text-[var(--wos-ink)] border border-[var(--wos-border)] rounded-full px-3 py-1.5 transition"
+                className="press text-sm text-[var(--wos-ink-muted)] hover:text-[var(--wos-ink)] border border-[var(--wos-border)] rounded-full px-3 py-1.5 transition-colors duration-150"
               >
                 Ver Control Center →
               </a>
@@ -876,14 +877,14 @@ function Home() {
                 type="date"
                 value={fechaInicio}
                 onChange={(e) => setFechaInicio(e.target.value)}
-                className="bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2 py-1 text-xs text-[var(--wos-ink)] outline-none focus:border-[var(--wos-primary)]"
+                className="bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2 py-1 text-[13px] text-[var(--wos-ink)] outline-none focus:border-[var(--wos-primary)] transition-colors duration-150"
               />
-              <span className="text-[var(--wos-ink-faint)] text-xs">—</span>
+              <span className="text-[var(--wos-ink-faint)] text-[13px]">—</span>
               <input
                 type="date"
                 value={fechaFin}
                 onChange={(e) => setFechaFin(e.target.value)}
-                className="bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2 py-1 text-xs text-[var(--wos-ink)] outline-none focus:border-[var(--wos-primary)]"
+                className="bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2 py-1 text-[13px] text-[var(--wos-ink)] outline-none focus:border-[var(--wos-primary)] transition-colors duration-150"
               />
             </div>
           </div>
@@ -957,20 +958,20 @@ function Home() {
             <div className="flex items-end gap-3 flex-wrap">
               <VslSelector vslCampaigns={vslCampaigns} selectedId={vslAngleId} onSelect={setVslAngleId} />
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] uppercase tracking-[0.1em] text-[var(--wos-ink-faint)]">Periodo</label>
+                <label className="text-xs uppercase tracking-[0.1em] text-[var(--wos-ink-faint)]">Periodo</label>
                 <div className="flex items-center gap-1.5">
                   <input
                     type="date"
                     value={fechaInicio}
                     onChange={(e) => setFechaInicio(e.target.value)}
-                    className="bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2 py-1.5 text-xs text-[var(--wos-ink)] outline-none focus:border-[var(--wos-primary)]"
+                    className="bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2 py-1.5 text-[13px] text-[var(--wos-ink)] outline-none focus:border-[var(--wos-primary)] transition-colors duration-150"
                   />
-                  <span className="text-[var(--wos-ink-faint)] text-xs">—</span>
+                  <span className="text-[var(--wos-ink-faint)] text-[13px]">—</span>
                   <input
                     type="date"
                     value={fechaFin}
                     onChange={(e) => setFechaFin(e.target.value)}
-                    className="bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2 py-1.5 text-xs text-[var(--wos-ink)] outline-none focus:border-[var(--wos-primary)]"
+                    className="bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2 py-1.5 text-[13px] text-[var(--wos-ink)] outline-none focus:border-[var(--wos-primary)] transition-colors duration-150"
                   />
                 </div>
               </div>
@@ -1013,21 +1014,21 @@ function Home() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
                   <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Evolución diaria: registros vs. depósitos</h3>
-                  <p className="text-xs text-[var(--wos-ink-muted)] mb-4">
+                  <p className="text-[13px] text-[var(--wos-ink-muted)] mb-4">
                     Compara registros del formulario con el capital depositado en HFM cada día (datos reales).
                   </p>
                   <VslDailyChart rows={vslDailyRows} />
                 </div>
                 <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
                   <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Embudo de intención</h3>
-                  <p className="text-xs text-[var(--wos-ink-muted)] mb-4">La última acción es el clic para abrir cuenta en HFM.</p>
+                  <p className="text-[13px] text-[var(--wos-ink-muted)] mb-4">La última acción es el clic para abrir cuenta en HFM.</p>
                   <VslFunnel stages={vslFunnelStages} />
                 </div>
               </div>
 
               <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
                 <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Desempeño diario detallado</h3>
-                <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Lectura completa desde el registro hasta el depósito realizado en HFM.</p>
+                <p className="text-[13px] text-[var(--wos-ink-muted)] mb-4">Lectura completa desde el registro hasta el depósito realizado en HFM.</p>
                 <VslDailyTable rows={vslDailyRows} />
               </div>
             </>
@@ -1039,20 +1040,20 @@ function Home() {
             <div className="flex items-end gap-3 flex-wrap">
               <EventoSelector eventoCampaigns={eventoCampaigns} selectedId={eventoAngleId} onSelect={setEventoAngleId} />
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] uppercase tracking-[0.1em] text-[var(--wos-ink-faint)]">Periodo</label>
+                <label className="text-xs uppercase tracking-[0.1em] text-[var(--wos-ink-faint)]">Periodo</label>
                 <div className="flex items-center gap-1.5">
                   <input
                     type="date"
                     value={fechaInicio}
                     onChange={(e) => setFechaInicio(e.target.value)}
-                    className="bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2 py-1.5 text-xs text-[var(--wos-ink)] outline-none focus:border-[var(--wos-primary)]"
+                    className="bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2 py-1.5 text-[13px] text-[var(--wos-ink)] outline-none focus:border-[var(--wos-primary)] transition-colors duration-150"
                   />
-                  <span className="text-[var(--wos-ink-faint)] text-xs">—</span>
+                  <span className="text-[var(--wos-ink-faint)] text-[13px]">—</span>
                   <input
                     type="date"
                     value={fechaFin}
                     onChange={(e) => setFechaFin(e.target.value)}
-                    className="bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2 py-1.5 text-xs text-[var(--wos-ink)] outline-none focus:border-[var(--wos-primary)]"
+                    className="bg-[var(--wos-surface)] border border-[var(--wos-border)] rounded-md px-2 py-1.5 text-[13px] text-[var(--wos-ink)] outline-none focus:border-[var(--wos-primary)] transition-colors duration-150"
                   />
                 </div>
               </div>
@@ -1061,7 +1062,7 @@ function Home() {
               href="/checkin"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-semibold text-[var(--wos-primary)] border border-[var(--wos-border)] rounded-md px-3 py-2 hover:bg-[var(--wos-surface-alt)]"
+              className="press text-sm font-semibold text-[var(--wos-primary)] border border-[var(--wos-border)] rounded-md px-3 py-2 hover:bg-[var(--wos-surface-alt)] transition-colors duration-150"
             >
               Abrir pantalla de check-in →
             </a>
@@ -1108,7 +1109,7 @@ function Home() {
               {eventoTiers.length > 0 && (
                 <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
                   <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Desglose de confirmados</h3>
-                  <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Cuántos confirmaron gratis vs. compraron Platinum/VIP — total real del evento.</p>
+                  <p className="text-[13px] text-[var(--wos-ink-muted)] mb-4">Cuántos confirmaron gratis vs. compraron Platinum/VIP — total real del evento.</p>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
                     {eventoTiers.map((t) => (
                       <VslKpiCard
@@ -1126,19 +1127,19 @@ function Home() {
 
               <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
                 <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Comparación por ángulo</h3>
-                <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Qué landing está trayendo más registros y convirtiendo mejor a venta.</p>
+                <p className="text-[13px] text-[var(--wos-ink-muted)] mb-4">Qué landing está trayendo más registros y convirtiendo mejor a venta.</p>
                 <EventoAngleTable stats={eventoAngleStats} adSpend={eventoAdSpend} />
               </div>
 
               <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
                 <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Leads por temperatura</h3>
-                <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Tibio = redes propias de los expertos (orgánico). Frío = pauta paga.</p>
+                <p className="text-[13px] text-[var(--wos-ink-muted)] mb-4">Tibio = redes propias de los expertos (orgánico). Frío = pauta paga.</p>
                 <EventoTemperaturaChart rows={eventoTemperaturaStats} />
               </div>
 
               <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
                 <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Gasto de pauta consolidado</h3>
-                <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Leads pagos vs. orgánicos por día, con CPL — total combinado de las campañas con pauta activa.</p>
+                <p className="text-[13px] text-[var(--wos-ink-muted)] mb-4">Leads pagos vs. orgánicos por día, con CPL — total combinado de las campañas con pauta activa.</p>
                 <EventoDailyTraficoChart rows={eventoDailyTrafico} />
                 <div className="mt-5">
                   <EventoAdSpendConsolidatedTable rows={eventoAdSpendConsolidated} />
@@ -1147,13 +1148,13 @@ function Home() {
 
               <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
                 <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Gasto de pauta día a día por ángulo</h3>
-                <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Desglose diario por ángulo — solo las campañas con pauta activa.</p>
+                <p className="text-[13px] text-[var(--wos-ink-muted)] mb-4">Desglose diario por ángulo — solo las campañas con pauta activa.</p>
                 <EventoAdSpendDailyTable rows={eventoAdSpend} />
               </div>
 
               <div className="rounded-xl border border-[var(--wos-border)] bg-[var(--wos-surface)] shadow-[var(--wos-shadow)] p-5">
                 <h3 className="text-base font-semibold text-[var(--wos-ink)] mb-1">Rendimiento por conjunto de anuncios y anuncio</h3>
-                <p className="text-xs text-[var(--wos-ink-muted)] mb-4">Desglose por conjunto de anuncios y anuncio individual para ver cuál convierte mejor.</p>
+                <p className="text-[13px] text-[var(--wos-ink-muted)] mb-4">Desglose por conjunto de anuncios y anuncio individual para ver cuál convierte mejor.</p>
                 <EventoAdPerformanceTable rows={eventoAdPerformance} />
               </div>
             </>
@@ -1187,7 +1188,7 @@ function Home() {
             <SourceTable data={sourceData} />
           </div>
 
-          <footer className="text-center text-[11px] text-on-surface-faint font-mono py-4">
+          <footer className="text-center text-xs text-on-surface-faint font-mono py-4">
             {loading ? "Cargando…" : source === "n8n" ? `Datos en vivo — campaña #${selectedCampaignId}` : "Selecciona una campaña"}
           </footer>
         </>
