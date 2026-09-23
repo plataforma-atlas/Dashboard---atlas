@@ -3,12 +3,14 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
-type PanelKey = "configuracion" | "embudos";
+type PanelKey = "configuracion" | "embudos" | "leads";
 
 type SidePanelContextValue = {
   open: PanelKey | null;
+  leadsCampaign: string | null;
   openConfiguracion: () => void;
   openEmbudos: () => void;
+  openLeads: (campaign?: string) => void;
   close: () => void;
 };
 
@@ -25,6 +27,7 @@ export function useSidePanel() {
 // su propio contenido principal, no como un overlay flotante encima.
 export default function SidePanelProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState<PanelKey | null>(null);
+  const [leadsCampaign, setLeadsCampaign] = useState<string | null>(null);
   const pathname = usePathname();
   const close = useCallback(() => setOpen(null), []);
 
@@ -35,7 +38,17 @@ export default function SidePanelProvider({ children }: { children: React.ReactN
 
   return (
     <SidePanelContext.Provider
-      value={{ open, openConfiguracion: () => setOpen("configuracion"), openEmbudos: () => setOpen("embudos"), close }}
+      value={{
+        open,
+        leadsCampaign,
+        openConfiguracion: () => setOpen("configuracion"),
+        openEmbudos: () => setOpen("embudos"),
+        openLeads: (campaign) => {
+          setLeadsCampaign(campaign ?? null);
+          setOpen("leads");
+        },
+        close,
+      }}
     >
       {children}
     </SidePanelContext.Provider>

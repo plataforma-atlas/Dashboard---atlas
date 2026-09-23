@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useSidePanel } from "@/components/SidePanelProvider";
 
 type Campana = { id: number; cliente_id: string; name: string; strategy_type: string; status: string; slug: string | null };
 
@@ -20,6 +21,7 @@ const PASOS: { paso: string; label: string; descripcion: string }[] = [
 
 export default function EmbudosBody() {
   const searchParams = useSearchParams();
+  const { openLeads } = useSidePanel();
 
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -159,7 +161,16 @@ export default function EmbudosBody() {
                   </span>
                 </div>
                 {c.slug && (
-                  <span className="text-[13px] px-3 py-1.5 rounded-full border border-primary text-primary shrink-0">Activo</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => openLeads(c.slug ?? undefined)}
+                      className="press text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-variant hover:text-on-surface hover:border-primary transition-colors duration-150"
+                    >
+                      Ver leads y compradores
+                    </button>
+                    <span className="text-[13px] px-3 py-1.5 rounded-full border border-primary text-primary">Activo</span>
+                  </div>
                 )}
               </div>
 

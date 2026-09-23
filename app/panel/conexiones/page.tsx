@@ -7,6 +7,7 @@ import AppSidebar from "@/components/AppSidebar";
 import { useSidePanel } from "@/components/SidePanelProvider";
 import ConexionesBody from "@/components/panel/ConexionesBody";
 import EmbudosBody from "@/components/panel/EmbudosBody";
+import LeadsBody from "@/components/panel/LeadsBody";
 
 export default function PanelConexionesPage() {
   const router = useRouter();
@@ -32,7 +33,9 @@ export default function PanelConexionesPage() {
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       <AppSidebar active="conexiones" isAdmin={isAdmin} mode={mode} onToggleMode={toggleMode} onLogout={handleLogout} />
       <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[var(--sidebar-w,240px)] bg-background transition-[margin] duration-200">
-        <Suspense fallback={null}>{open === "embudos" ? <EmbudosBody /> : <ConexionesBody />}</Suspense>
+        <Suspense fallback={null}>
+          {open === "embudos" ? <EmbudosBody /> : open === "leads" ? <LeadsBody /> : <ConexionesBody />}
+        </Suspense>
       </main>
     </div>
   );

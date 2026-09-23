@@ -2,10 +2,11 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeftRight, Briefcase, Users, UserCog, Workflow } from "lucide-react";
+import { ArrowLeftRight, Briefcase, Users, UserCog, Workflow, ClipboardList } from "lucide-react";
 import { useSidePanel } from "@/components/SidePanelProvider";
 import ConexionesBody from "@/components/panel/ConexionesBody";
 import EmbudosBody from "@/components/panel/EmbudosBody";
+import LeadsBody from "@/components/panel/LeadsBody";
 import { Campaign, FunnelRow } from "@/lib/types";
 import { toCountryBreakdown, toKpis, toSourceBreakdown, toStageSummary } from "@/lib/aggregate";
 import { defaultClient, themeForClient, ClientConfig } from "@/lib/clients";
@@ -102,7 +103,7 @@ function Home() {
   const [selectedClientId, setSelectedClientId] = useState("");
   const [selectorClienteAbierto, setSelectorClienteAbierto] = useState(false);
   const { collapsed: sidebarCollapsed, toggleCollapsed: toggleSidebarCollapsed } = useSidebarCollapse();
-  const { open, openConfiguracion, openEmbudos, close: closeSidePanel } = useSidePanel();
+  const { open, openConfiguracion, openEmbudos, openLeads, close: closeSidePanel } = useSidePanel();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignsLoading, setCampaignsLoading] = useState(false);
   // A qué cliente pertenece lo que hay hoy en `campaigns` — se compara contra
@@ -816,6 +817,17 @@ function Home() {
             </span>
             {!sidebarCollapsed && <span>Embudos</span>}
           </button>
+          <button
+            type="button"
+            title="Leads"
+            onClick={() => (open === "leads" ? closeSidePanel() : openLeads())}
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""} ${open === "leads" ? "bg-surface-high text-on-surface" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"}`}
+          >
+            <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
+              <ClipboardList size={13} strokeWidth={2} />
+            </span>
+            {!sidebarCollapsed && <span>Leads</span>}
+          </button>
           {session.role === "admin" && (
             <>
               <a
@@ -875,7 +887,7 @@ function Home() {
       <div className="min-h-screen flex flex-col md:flex-row">
         {sidebar}
         <main className="min-h-screen px-4 py-6 md:px-8 md:py-8 md:ml-[var(--sidebar-w,240px)] max-w-7xl flex flex-col gap-5 transition-[margin] duration-200">
-          {open === "configuracion" ? <ConexionesBody /> : <EmbudosBody />}
+          {open === "configuracion" ? <ConexionesBody /> : open === "leads" ? <LeadsBody /> : <EmbudosBody />}
         </main>
       </div>
     );

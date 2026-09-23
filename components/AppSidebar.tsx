@@ -1,19 +1,26 @@
 "use client";
 
-import { LayoutDashboard, ArrowLeftRight, Briefcase, Users, UserCog, Workflow, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, ArrowLeftRight, Briefcase, Users, UserCog, Workflow, ClipboardList, type LucideIcon } from "lucide-react";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
 import { useSidePanel } from "@/components/SidePanelProvider";
 
-type NavKey = "dashboard" | "conexiones" | "embudos" | "cartera" | "clientes" | "usuarios";
+type NavKey = "dashboard" | "conexiones" | "embudos" | "leads" | "cartera" | "clientes" | "usuarios";
 
-// "conexiones" y "embudos" no navegan a otra pagina - abren como panel
-// flotante encima de la pantalla actual (ver SidePanelProvider).
+// "conexiones", "embudos" y "leads" no navegan a otra pagina - reemplazan el
+// contenido principal de la pantalla actual (ver SidePanelProvider).
+const PANEL_KEY: Record<string, "configuracion" | "embudos" | "leads"> = {
+  conexiones: "configuracion",
+  embudos: "embudos",
+  leads: "leads",
+};
+
 const NAV_ITEMS: { key: NavKey; href?: string; label: string; Icon: LucideIcon; adminOnly?: boolean }[] = [
   { key: "dashboard", href: "/", label: "Dashboard", Icon: LayoutDashboard },
   { key: "conexiones", label: "Configuración", Icon: ArrowLeftRight },
   { key: "embudos", label: "Embudos", Icon: Workflow },
+  { key: "leads", label: "Leads", Icon: ClipboardList },
   { key: "cartera", href: "/admin/cartera", label: "Cartera", Icon: Briefcase, adminOnly: true },
   { key: "clientes", href: "/admin/clientes", label: "Clientes", Icon: Users, adminOnly: true },
   { key: "usuarios", href: "/admin/usuarios", label: "Usuarios", Icon: UserCog, adminOnly: true },
@@ -38,7 +45,7 @@ export default function AppSidebar({
   onLogout: () => void;
 }) {
   const { collapsed, toggleCollapsed } = useSidebarCollapse();
-  const { open, openConfiguracion, openEmbudos, close } = useSidePanel();
+  const { open, openConfiguracion, openEmbudos, openLeads, close } = useSidePanel();
 
   return (
     <aside className="wcc-no-print bg-surface border-r border-outline md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto transition-[width,background-color,border-color] duration-200">
@@ -60,10 +67,8 @@ export default function AppSidebar({
 
       <nav className="flex flex-col gap-1">
         {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map((item) => {
-          const isDrawerItem = item.key === "conexiones" || item.key === "embudos";
-          const isCurrentActive = isDrawerItem
-            ? open === (item.key === "conexiones" ? "configuracion" : "embudos")
-            : active === item.key;
+          const isDrawerItem = item.key in PANEL_KEY;
+          const isCurrentActive = isDrawerItem ? open === PANEL_KEY[item.key] : active === item.key;
           const className = `press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 w-full text-left ${
             collapsed ? "md:justify-center" : ""
           } ${isCurrentActive ? "bg-surface-high text-on-surface" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"}`;
@@ -77,13 +82,14 @@ export default function AppSidebar({
           );
 
           if (isDrawerItem) {
-            const panelKey = item.key === "conexiones" ? "configuracion" : "embudos";
+            const panelKey = PANEL_KEY[item.key];
+            const openPanel = panelKey === "configuracion" ? openConfiguracion : panelKey === "embudos" ? openEmbudos : () => openLeads();
             return (
               <button
                 key={item.key}
                 type="button"
                 title={item.label}
-                onClick={() => (open === panelKey ? close() : panelKey === "configuracion" ? openConfiguracion() : openEmbudos())}
+                onClick={() => (open === panelKey ? close() : openPanel())}
                 className={className}
               >
                 {content}

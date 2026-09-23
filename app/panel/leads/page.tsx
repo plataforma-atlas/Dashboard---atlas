@@ -9,7 +9,7 @@ import ConexionesBody from "@/components/panel/ConexionesBody";
 import EmbudosBody from "@/components/panel/EmbudosBody";
 import LeadsBody from "@/components/panel/LeadsBody";
 
-export default function EmbudosPage() {
+export default function PanelLeadsPage() {
   const router = useRouter();
   const { mode, toggleMode } = useThemeMode();
   const { open } = useSidePanel();
@@ -31,10 +31,10 @@ export default function EmbudosPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
-      <AppSidebar active="embudos" isAdmin={isAdmin} mode={mode} onToggleMode={toggleMode} onLogout={handleLogout} />
+      <AppSidebar active="leads" isAdmin={isAdmin} mode={mode} onToggleMode={toggleMode} onLogout={handleLogout} />
       <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[var(--sidebar-w,240px)] bg-background transition-[margin] duration-200">
         <Suspense fallback={null}>
-          {open === "configuracion" ? <ConexionesBody /> : open === "leads" ? <LeadsBody /> : <EmbudosBody />}
+          {open === "configuracion" ? <ConexionesBody /> : open === "embudos" ? <EmbudosBody /> : <LeadsBody />}
         </Suspense>
       </main>
     </div>
