@@ -7,7 +7,11 @@ import AppSidebar from "@/components/AppSidebar";
 
 type Campana = { id: number; cliente_id: string; name: string; strategy_type: string; status: string; slug: string | null };
 
-const EMBUDO_WEBINAR_BASE = "https://n8n-n8n.hbus8n.easypanel.host/webhook/embudo-webinar";
+// URLs bajo el propio dominio (proxeadas por app/api/hooks/[...path]) — el
+// cliente nunca ve que por detrás corre n8n.
+function embudoWebinarBase() {
+  return `${typeof window !== "undefined" ? window.location.origin : ""}/api/hooks/embudo-webinar`;
+}
 
 const PASOS: { paso: string; label: string; descripcion: string }[] = [
   { paso: "registro", label: "Página de registro", descripcion: "Pégala en tu formulario o automatización de registro." },
@@ -191,7 +195,7 @@ function EmbudosContent() {
                 ) : (
                   <div className="flex flex-col gap-2">
                     {PASOS.map((p) => {
-                      const url = `${EMBUDO_WEBINAR_BASE}/${p.paso}?cliente_id=${clienteId}&campaign=${c.slug}`;
+                      const url = `${embudoWebinarBase()}/${p.paso}?cliente_id=${clienteId}&campaign=${c.slug}`;
                       return (
                         <div key={p.paso} className="flex flex-col gap-1.5 rounded-md bg-background border border-outline p-3">
                           <div className="flex items-baseline justify-between gap-2">

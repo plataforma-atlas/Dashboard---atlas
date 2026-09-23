@@ -20,6 +20,7 @@ export async function middleware(req: NextRequest) {
     PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/invitacion") ||
+    pathname.startsWith("/api/hooks") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
     STATIC_ASSET_RE.test(pathname) ||

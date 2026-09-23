@@ -105,7 +105,7 @@ Solo nombres — nunca se deben pegar valores reales en documentación ni en el 
 `RESEND_API_KEY`, `N8N_ADMIN_RESETEAR_PASSWORD_URL` — este último es el mismo webhook de n8n que usaría un futuro reset manual de admin desde `/admin/usuarios` (no construido todavía); ver sección 18.
 
 **Embudo de captación self-service** (ver sección 20)
-`N8N_CONFIGURAR_EMBUDO_URL`, `N8N_EMBUDO_WEBINAR_LEADS_URL`, `N8N_META_ADS_PULL_URL`, `N8N_GHL_PIPELINES_PULL_URL`
+`N8N_CONFIGURAR_EMBUDO_URL`, `N8N_EMBUDO_WEBINAR_LEADS_URL`, `N8N_META_ADS_PULL_URL`, `N8N_GHL_PIPELINES_PULL_URL`, `N8N_WEBHOOK_BASE_URL` (base para el proxy `/api/hooks/[...path]` que enmascara n8n de cara al cliente)
 
 **Admin / gestión de usuarios y clientes**
 `N8N_ADMIN_USUARIOS_URL`, `N8N_ADMIN_CLIENTE_USUARIO_URL`, `N8N_ADMIN_ELIMINAR_USUARIO_URL`, `N8N_ADMIN_CAMBIAR_ROL_URL`, `N8N_CREAR_CLIENTE_URL`, `N8N_ESTADO_CLIENTE_URL`, `N8N_CLIENTES_URL`, `N8N_CAMPANAS_URL`
@@ -277,7 +277,7 @@ El webhook lo recibe el workflow de n8n **"ClaseEspecial (WebinarKit) Eventos �
 
 Corre en todas las rutas excepto `_next/static`, `_next/image`, `favicon.ico`.
 
-**Públicas (sin sesión)**: `/login*`, `/registro*`, `/invitacion*`, `/api/auth/*`, `/api/invitacion/*`, assets estáticos (regex por extensión — esto se agregó específicamente porque antes `/brand/*.png` quedaba atrapado por el redirect a login), y `/checkin` + `/api/evento/*` cuando `EVENTO_CHECKIN_PUBLICO=true`.
+**Públicas (sin sesión)**: `/login*`, `/registro*`, `/invitacion*`, `/api/auth/*`, `/api/invitacion/*`, `/api/hooks/*` (proxy de webhooks hacia n8n, ver sección 20 — lo llaman herramientas externas del cliente sin cookie de sesión), assets estáticos (regex por extensión — esto se agregó específicamente porque antes `/brand/*.png` quedaba atrapado por el redirect a login), y `/checkin` + `/api/evento/*` cuando `EVENTO_CHECKIN_PUBLICO=true`.
 
 **Lógica**:
 1. Sin sesión válida + ruta no pública → redirect a `/login?next=<ruta>`.
@@ -370,5 +370,7 @@ Primera pieza de la visión de "self-service": el cliente arma su propio embudo 
 **Gotcha real encontrado y corregido en esta sesión**: `pgp_sym_decrypt(bytea, text)` en Postgres **ya devuelve `text`**, no `bytea` — envolverlo en `convert_from(..., 'UTF8')` (como parecía sugerir el nombre de la función) rompe la query con `function convert_from(text, unknown) does not exist`. Como esos nodos de Postgres tenían `alwaysOutputData: true` + `onError: continueErrorOutput`, el error quedaba enmascarado: el endpoint respondía `200 {"conectado": false}` en vez de fallar visiblemente, dando la falsa impresión de que el cliente no había conectado nada. Cualquier query nueva que use `pgp_sym_decrypt` sobre `client_connections.credential_encrypted` debe usarlo directo, sin `convert_from`.
 
 **Gotcha de las respuestas de error en n8n**: los nodos `Respond to Webhook` de error interpolaban el mensaje real (`$json.error?.message`) directo dentro de un string JSON escrito a mano — si ese mensaje traía comillas (común en errores de APIs externas, ej. Meta devuelve un JSON crudo dentro del mensaje del error), el JSON de respuesta quedaba inválido y el nodo fallaba. Se corrigió armando el body de respuesta con `{{ JSON.stringify({ error: "...", detalle: $json.error?.message || $json.message }) }}` en vez de concatenar strings — mismo patrón que ya usaban `Onboarding - Responder Estado Error` y otros nodos "viejos" del proyecto original.
+
+**URLs enmascaradas — el cliente nunca ve "n8n"**: las URLs de captación que ve el cliente (las 4 del embudo + el webhook de ClaseEspecial) no apuntan directo a n8n — pasan por un proxy propio, `app/api/hooks/[...path]/route.ts` (ruta pública, agregada a `PUBLIC_PATHS` en `middleware.ts`), que reenvía la request a `N8N_WEBHOOK_BASE_URL` y devuelve la respuesta tal cual. Tiene una lista blanca explícita de paths permitidos (`embudo-webinar/registro`, `embudo-webinar/encuesta`, `embudo-webinar/whatsapp`, `embudo-webinar/registro-webinar`, `dsm-webinarkit`) — cualquier otro path devuelve 404, para no exponer accidentalmente otro webhook interno de n8n a través del dominio propio. Las páginas (`/panel/embudos`, `/panel/conexiones`) arman estas URLs con `window.location.origin`, no con un valor hardcodeado, así que apuntan solas al dominio correcto en cada entorno (local/producción).
 
 **Pendiente / fuera de alcance de esta sesión**: la página `/panel/leads` (listado de leads/compradores del embudo con export a CSV/Excel) — el endpoint que la alimenta (`Núcleo — Leads y Compradores`, `GET /webhook/embudo-webinar/leads?cliente_id=&campaign=`) ya existe y fue probado, solo falta la pantalla en Next.js. El constructor de páginas web / integración WordPress mencionado como visión a futuro tampoco se tocó.

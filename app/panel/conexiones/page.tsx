@@ -9,7 +9,11 @@ type EstadoConexion = { integration_type: string; status: string; updated_at: st
 
 // El webhook de ClaseEspecial es un mismo endpoint compartido para todos los
 // clientes — se diferencia por el ?cliente_id= en la URL, no por credencial.
-const CLASE_ESPECIAL_WEBHOOK_BASE = "https://n8n-n8n.hbus8n.easypanel.host/webhook/dsm-webinarkit";
+// Se sirve bajo el propio dominio (proxeado por app/api/hooks/[...path]) para
+// que el cliente nunca vea que por detrás corre n8n.
+function claseEspecialWebhookBase() {
+  return `${typeof window !== "undefined" ? window.location.origin : ""}/api/hooks/dsm-webinarkit`;
+}
 
 const INTEGRACIONES: { tipo: string; label: string; descripcion: string; disponible: boolean }[] = [
   { tipo: "ghl", label: "GoHighLevel", descripcion: "Tu CRM — donde llegan tus leads y oportunidades.", disponible: true },
@@ -278,11 +282,11 @@ function PanelConexionesContent() {
               </div>
               <div className="flex items-center gap-2">
                 <code className="flex-1 min-w-0 truncate bg-background border border-outline rounded-md px-3 py-2 text-[13px] text-on-surface font-mono">
-                  {CLASE_ESPECIAL_WEBHOOK_BASE}?cliente_id={clienteId}
+                  {claseEspecialWebhookBase()}?cliente_id={clienteId}
                 </code>
                 <button
                   type="button"
-                  onClick={() => copiarWebhook(`${CLASE_ESPECIAL_WEBHOOK_BASE}?cliente_id=${clienteId}`)}
+                  onClick={() => copiarWebhook(`${claseEspecialWebhookBase()}?cliente_id=${clienteId}`)}
                   className="press text-[13px] px-3 py-2 rounded-md bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
                 >
                   {webhookCopiado ? "¡Copiado!" : "Copiar"}
