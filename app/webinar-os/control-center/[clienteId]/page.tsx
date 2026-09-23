@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
-import { Briefcase, Users, UserCog, ArrowLeftRight, Workflow } from "lucide-react";
+import { Briefcase, Users, UserCog, ArrowLeftRight, Workflow, Layers, ChevronDown } from "lucide-react";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
 import { useSidePanel } from "@/components/SidePanelProvider";
 import { themeForClient } from "@/lib/clients";
@@ -24,6 +24,12 @@ import { WebinarSummary, WebinarDetail } from "@/lib/webinar-os/types";
 import ConexionesBody from "@/components/panel/ConexionesBody";
 import EmbudosBody from "@/components/panel/EmbudosBody";
 
+const ESTRATEGIA_LABEL: Record<string, string> = {
+  vsl: "VSL",
+  evento_presencial: "Evento presencial",
+  lanzamiento: "Lanzamiento",
+};
+
 export default function ControlCenterPage() {
   const params = useParams<{ clienteId: string }>();
   const clienteId = params.clienteId;
@@ -34,6 +40,7 @@ export default function ControlCenterPage() {
   const [clienteName, setClienteName] = useState(clienteId);
   const [todosLosClientes, setTodosLosClientes] = useState<{ id: string; name: string }[]>([]);
   const [selectorClienteAbierto, setSelectorClienteAbierto] = useState(false);
+  const [otrasCampanasAbierto, setOtrasCampanasAbierto] = useState(false);
   const { collapsed: sidebarCollapsed, toggleCollapsed: toggleSidebarCollapsed } = useSidebarCollapse();
   const { open, openConfiguracion, openEmbudos, close: closeSidePanel } = useSidePanel();
   const [campanas, setCampanas] = useState<CampanaCartera[]>([]);
@@ -237,6 +244,44 @@ export default function ControlCenterPage() {
         <WccSidebarNav collapsed={sidebarCollapsed} />
 
         <div className="flex flex-col gap-1.5 pt-4 border-t border-outline">
+          {otrasCampanas.length > 0 && (
+            <div>
+              <button
+                type="button"
+                title="Otras campañas"
+                onClick={() => setOtrasCampanasAbierto((v) => !v)}
+                className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 w-full text-left text-on-surface-variant hover:text-on-surface hover:bg-surface-high ${sidebarCollapsed ? "justify-center" : "justify-between"}`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
+                    <Layers size={13} strokeWidth={2} />
+                  </span>
+                  {!sidebarCollapsed && <span>Otras campañas</span>}
+                </span>
+                {!sidebarCollapsed && (
+                  <ChevronDown
+                    size={14}
+                    strokeWidth={2}
+                    className={`text-on-surface-faint shrink-0 transition-transform duration-200 ease-out ${otrasCampanasAbierto ? "rotate-180" : ""}`}
+                  />
+                )}
+              </button>
+              {!sidebarCollapsed && otrasCampanasAbierto && (
+                <div className="animate-fade-in-up mt-1 ml-2 flex flex-col gap-0.5 max-h-48 overflow-y-auto">
+                  {otrasCampanas.map((c) => (
+                    <a
+                      key={c.id}
+                      href={`/?vista=clasica&cliente_id=${clienteId}&campaign_id=${c.id}`}
+                      className="press flex flex-col px-3 py-1.5 rounded-lg text-[13px] text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150"
+                    >
+                      <span className="truncate">{c.name}</span>
+                      <span className="text-xs text-on-surface-faint">{ESTRATEGIA_LABEL[c.strategy_type] ?? c.strategy_type}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <button
             type="button"
             title="Configuración"
