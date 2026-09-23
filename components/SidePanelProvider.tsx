@@ -1,9 +1,7 @@
 "use client";
 
-import { createContext, Suspense, useCallback, useContext, useEffect, useState } from "react";
-import { X } from "lucide-react";
-import ConexionesBody from "@/components/panel/ConexionesBody";
-import EmbudosBody from "@/components/panel/EmbudosBody";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 type PanelKey = "configuracion" | "embudos";
 
@@ -22,58 +20,24 @@ export function useSidePanel() {
   return ctx;
 }
 
-const TITLES: Record<PanelKey, string> = {
-  configuracion: "Configuración",
-  embudos: "Embudos",
-};
-
+// Estado puro, sin UI propia: cada pantalla con sidebar (Control Center,
+// dashboard clasico, AppSidebar) decide como mostrar "open" — reemplazando
+// su propio contenido principal, no como un overlay flotante encima.
 export default function SidePanelProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState<PanelKey | null>(null);
+  const pathname = usePathname();
   const close = useCallback(() => setOpen(null), []);
 
+  // Al navegar de verdad a otra ruta, el panel abierto ya no aplica ahi.
   useEffect(() => {
-    if (!open) return;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") close();
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, close]);
+    setOpen(null);
+  }, [pathname]);
 
   return (
     <SidePanelContext.Provider
       value={{ open, openConfiguracion: () => setOpen("configuracion"), openEmbudos: () => setOpen("embudos"), close }}
     >
       {children}
-
-      {open && (
-        <div className="fixed inset-0 z-50 flex">
-          <div
-            onClick={close}
-            className="animate-fade-in-up absolute inset-0 bg-black/50"
-            style={{ animationDuration: "200ms" }}
-          />
-          <div
-            className="animate-pop-in relative ml-auto md:ml-[var(--sidebar-w,240px)] w-full md:w-[calc(100%-var(--sidebar-w,240px))] h-full bg-background border-l border-outline overflow-y-auto"
-            style={{ animationDuration: "220ms" }}
-          >
-            <div className="sticky top-0 z-10 flex items-center justify-between gap-4 px-4 py-3 md:px-8 bg-background/95 backdrop-blur border-b border-outline">
-              <span className="text-sm font-medium text-on-surface">{TITLES[open]}</span>
-              <button
-                onClick={close}
-                aria-label="Cerrar"
-                title="Cerrar"
-                className="press w-8 h-8 rounded-lg bg-surface-high hover:bg-outline grid place-items-center text-on-surface-variant hover:text-on-surface transition-colors duration-150 shrink-0"
-              >
-                <X size={15} strokeWidth={2} />
-              </button>
-            </div>
-            <div className="px-4 py-6 md:px-8">
-              <Suspense fallback={null}>{open === "configuracion" ? <ConexionesBody /> : <EmbudosBody />}</Suspense>
-            </div>
-          </div>
-        </div>
-      )}
     </SidePanelContext.Provider>
   );
 }

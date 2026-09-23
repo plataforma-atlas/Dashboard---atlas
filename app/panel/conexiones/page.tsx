@@ -4,11 +4,14 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import AppSidebar from "@/components/AppSidebar";
+import { useSidePanel } from "@/components/SidePanelProvider";
 import ConexionesBody from "@/components/panel/ConexionesBody";
+import EmbudosBody from "@/components/panel/EmbudosBody";
 
 export default function PanelConexionesPage() {
   const router = useRouter();
   const { mode, toggleMode } = useThemeMode();
+  const { open } = useSidePanel();
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -29,9 +32,7 @@ export default function PanelConexionesPage() {
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       <AppSidebar active="conexiones" isAdmin={isAdmin} mode={mode} onToggleMode={toggleMode} onLogout={handleLogout} />
       <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[var(--sidebar-w,240px)] bg-background transition-[margin] duration-200">
-        <Suspense fallback={null}>
-          <ConexionesBody />
-        </Suspense>
+        <Suspense fallback={null}>{open === "embudos" ? <EmbudosBody /> : <ConexionesBody />}</Suspense>
       </main>
     </div>
   );

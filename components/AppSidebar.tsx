@@ -38,7 +38,7 @@ export default function AppSidebar({
   onLogout: () => void;
 }) {
   const { collapsed, toggleCollapsed } = useSidebarCollapse();
-  const { open, openConfiguracion, openEmbudos } = useSidePanel();
+  const { open, openConfiguracion, openEmbudos, close } = useSidePanel();
 
   return (
     <aside className="wcc-no-print bg-surface border-r border-outline md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto transition-[width,background-color,border-color] duration-200">
@@ -77,12 +77,13 @@ export default function AppSidebar({
           );
 
           if (isDrawerItem) {
+            const panelKey = item.key === "conexiones" ? "configuracion" : "embudos";
             return (
               <button
                 key={item.key}
                 type="button"
                 title={item.label}
-                onClick={item.key === "conexiones" ? openConfiguracion : openEmbudos}
+                onClick={() => (open === panelKey ? close() : panelKey === "configuracion" ? openConfiguracion() : openEmbudos())}
                 className={className}
               >
                 {content}

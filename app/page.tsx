@@ -4,6 +4,8 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftRight, Briefcase, Users, UserCog, Workflow } from "lucide-react";
 import { useSidePanel } from "@/components/SidePanelProvider";
+import ConexionesBody from "@/components/panel/ConexionesBody";
+import EmbudosBody from "@/components/panel/EmbudosBody";
 import { Campaign, FunnelRow } from "@/lib/types";
 import { toCountryBreakdown, toKpis, toSourceBreakdown, toStageSummary } from "@/lib/aggregate";
 import { defaultClient, themeForClient, ClientConfig } from "@/lib/clients";
@@ -100,7 +102,7 @@ function Home() {
   const [selectedClientId, setSelectedClientId] = useState("");
   const [selectorClienteAbierto, setSelectorClienteAbierto] = useState(false);
   const { collapsed: sidebarCollapsed, toggleCollapsed: toggleSidebarCollapsed } = useSidebarCollapse();
-  const { openConfiguracion, openEmbudos } = useSidePanel();
+  const { open, openConfiguracion, openEmbudos, close: closeSidePanel } = useSidePanel();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignsLoading, setCampaignsLoading] = useState(false);
   // A qué cliente pertenece lo que hay hoy en `campaigns` — se compara contra
@@ -725,8 +727,7 @@ function Home() {
     );
   }
 
-  return (
-    <div className="min-h-screen flex flex-col md:flex-row">
+  const sidebar = (
       <aside className="bg-surface border-r border-outline md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto transition-[width,background-color,border-color] duration-200">
         <div className="relative pb-4 border-b border-outline">
           <div className={`flex items-center gap-2 ${sidebarCollapsed ? "md:flex-col md:items-center" : ""}`}>
@@ -796,8 +797,8 @@ function Home() {
           <button
             type="button"
             title="Configuración"
-            onClick={openConfiguracion}
-            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""}`}
+            onClick={() => (open === "configuracion" ? closeSidePanel() : openConfiguracion())}
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""} ${open === "configuracion" ? "bg-surface-high text-on-surface" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"}`}
           >
             <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
               <ArrowLeftRight size={13} strokeWidth={2} />
@@ -807,8 +808,8 @@ function Home() {
           <button
             type="button"
             title="Embudos"
-            onClick={openEmbudos}
-            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""}`}
+            onClick={() => (open === "embudos" ? closeSidePanel() : openEmbudos())}
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""} ${open === "embudos" ? "bg-surface-high text-on-surface" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"}`}
           >
             <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
               <Workflow size={13} strokeWidth={2} />
@@ -867,6 +868,22 @@ function Home() {
           </button>
         </div>
       </aside>
+  );
+
+  if (open) {
+    return (
+      <div className="min-h-screen flex flex-col md:flex-row">
+        {sidebar}
+        <main className="min-h-screen px-4 py-6 md:px-8 md:py-8 md:ml-[var(--sidebar-w,240px)] max-w-7xl flex flex-col gap-5 transition-[margin] duration-200">
+          {open === "configuracion" ? <ConexionesBody /> : <EmbudosBody />}
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {sidebar}
 
     <main className="min-h-screen px-4 py-6 md:px-8 md:py-8 md:ml-[var(--sidebar-w,240px)] max-w-7xl flex flex-col gap-5 transition-[margin] duration-200">
       <header className="flex flex-wrap items-start justify-between gap-4">

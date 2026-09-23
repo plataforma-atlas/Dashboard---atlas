@@ -21,6 +21,8 @@ import WccSidebarNav from "@/components/webinar-os/control-center/WccSidebarNav"
 import FunnelSteps from "@/components/webinar-os/control-center/FunnelSteps";
 import WccFilterBar from "@/components/webinar-os/control-center/WccFilterBar";
 import { WebinarSummary, WebinarDetail } from "@/lib/webinar-os/types";
+import ConexionesBody from "@/components/panel/ConexionesBody";
+import EmbudosBody from "@/components/panel/EmbudosBody";
 
 export default function ControlCenterPage() {
   const params = useParams<{ clienteId: string }>();
@@ -33,7 +35,7 @@ export default function ControlCenterPage() {
   const [todosLosClientes, setTodosLosClientes] = useState<{ id: string; name: string }[]>([]);
   const [selectorClienteAbierto, setSelectorClienteAbierto] = useState(false);
   const { collapsed: sidebarCollapsed, toggleCollapsed: toggleSidebarCollapsed } = useSidebarCollapse();
-  const { openConfiguracion, openEmbudos } = useSidePanel();
+  const { open, openConfiguracion, openEmbudos, close: closeSidePanel } = useSidePanel();
   const [campanas, setCampanas] = useState<CampanaCartera[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -171,8 +173,7 @@ export default function ControlCenterPage() {
   const recomendaciones = useMemo(() => pickRecomendaciones(campanas), [campanas]);
   const balance = useMemo(() => pickBalance(campanas), [campanas]);
 
-  return (
-    <div className="webinar-os-scope wcc-page min-h-screen flex flex-col md:flex-row" data-wos-theme={mode}>
+  const sidebar = (
       <aside className="wcc-no-print bg-surface border-r border-outline md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto transition-[width,background-color,border-color] duration-200">
         <div className="relative pb-4 border-b border-outline">
           <div className={`flex ${sidebarCollapsed ? "flex-col items-center gap-2" : "items-center gap-2"}`}>
@@ -239,8 +240,8 @@ export default function ControlCenterPage() {
           <button
             type="button"
             title="Configuración"
-            onClick={openConfiguracion}
-            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""}`}
+            onClick={() => (open === "configuracion" ? closeSidePanel() : openConfiguracion())}
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""} ${open === "configuracion" ? "bg-surface-high text-on-surface" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"}`}
           >
             <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
               <ArrowLeftRight size={13} strokeWidth={2} />
@@ -250,8 +251,8 @@ export default function ControlCenterPage() {
           <button
             type="button"
             title="Embudos"
-            onClick={openEmbudos}
-            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""}`}
+            onClick={() => (open === "embudos" ? closeSidePanel() : openEmbudos())}
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""} ${open === "embudos" ? "bg-surface-high text-on-surface" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"}`}
           >
             <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
               <Workflow size={13} strokeWidth={2} />
@@ -310,6 +311,22 @@ export default function ControlCenterPage() {
           </button>
         </div>
       </aside>
+  );
+
+  if (open) {
+    return (
+      <div className="webinar-os-scope wcc-page min-h-screen flex flex-col md:flex-row" data-wos-theme={mode}>
+        {sidebar}
+        <main className="flex-1 min-w-0 md:ml-[var(--sidebar-w,240px)] p-4 md:p-8 flex flex-col gap-6 bg-[var(--wcc-page-bg)] transition-[margin] duration-200">
+          {open === "configuracion" ? <ConexionesBody /> : <EmbudosBody />}
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="webinar-os-scope wcc-page min-h-screen flex flex-col md:flex-row" data-wos-theme={mode}>
+      {sidebar}
 
       <main className="flex-1 min-w-0 md:ml-[var(--sidebar-w,240px)] p-4 md:p-8 flex flex-col gap-6 bg-[var(--wcc-page-bg)] transition-[margin] duration-200">
         <div className="hidden print:block mb-2">
