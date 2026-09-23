@@ -1,15 +1,16 @@
 "use client";
 
-import { LayoutDashboard, ArrowLeftRight, Briefcase, Users, UserCog, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, ArrowLeftRight, Briefcase, Users, UserCog, Workflow, type LucideIcon } from "lucide-react";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
 
-type NavKey = "dashboard" | "conexiones" | "cartera" | "clientes" | "usuarios";
+type NavKey = "dashboard" | "conexiones" | "embudos" | "cartera" | "clientes" | "usuarios";
 
 const NAV_ITEMS: { key: NavKey; href: string; label: string; Icon: LucideIcon; adminOnly?: boolean }[] = [
   { key: "dashboard", href: "/", label: "Dashboard", Icon: LayoutDashboard },
-  { key: "conexiones", href: "/panel/conexiones", label: "Conexiones", Icon: ArrowLeftRight },
+  { key: "conexiones", href: "/panel/conexiones", label: "Configuración", Icon: ArrowLeftRight },
+  { key: "embudos", href: "/panel/embudos", label: "Embudos", Icon: Workflow },
   { key: "cartera", href: "/admin/cartera", label: "Cartera", Icon: Briefcase, adminOnly: true },
   { key: "clientes", href: "/admin/clientes", label: "Clientes", Icon: Users, adminOnly: true },
   { key: "usuarios", href: "/admin/usuarios", label: "Usuarios", Icon: UserCog, adminOnly: true },

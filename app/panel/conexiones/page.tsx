@@ -13,7 +13,7 @@ const CLASE_ESPECIAL_WEBHOOK_BASE = "https://n8n-n8n.hbus8n.easypanel.host/webho
 
 const INTEGRACIONES: { tipo: string; label: string; descripcion: string; disponible: boolean }[] = [
   { tipo: "ghl", label: "GoHighLevel", descripcion: "Tu CRM — donde llegan tus leads y oportunidades.", disponible: true },
-  { tipo: "meta_ads", label: "Meta Ads", descripcion: "Para traer el gasto e inversión de tus campañas.", disponible: false },
+  { tipo: "meta_ads", label: "Meta Ads", descripcion: "Para traer el gasto e inversión de tus campañas.", disponible: true },
   { tipo: "whop", label: "Whop", descripcion: "Para sincronizar compras y membresías.", disponible: false },
   {
     tipo: "webinarkit",
@@ -38,6 +38,12 @@ function PanelConexionesContent() {
   const [tokenGhl, setTokenGhl] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const [metaFormAbierto, setMetaFormAbierto] = useState(false);
+  const [metaAdAccountId, setMetaAdAccountId] = useState("");
+  const [metaAccessToken, setMetaAccessToken] = useState("");
+  const [metaGuardando, setMetaGuardando] = useState(false);
+  const [metaFormError, setMetaFormError] = useState<string | null>(null);
 
   const [webhookAbierto, setWebhookAbierto] = useState(false);
   const [webhookCopiado, setWebhookCopiado] = useState(false);
@@ -171,6 +177,40 @@ function PanelConexionesContent() {
     }
   }
 
+  async function conectarMeta(e: React.FormEvent) {
+    e.preventDefault();
+    setMetaFormError(null);
+    if (!metaAdAccountId.trim()) {
+      setMetaFormError("Falta el ID de la cuenta publicitaria.");
+      return;
+    }
+    if (!metaAccessToken.trim()) {
+      setMetaFormError("Falta el token de acceso.");
+      return;
+    }
+    setMetaGuardando(true);
+    try {
+      const res = await fetch("/api/onboarding/conectar-meta-ads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: clienteId, adAccountId: metaAdAccountId.trim(), accessToken: metaAccessToken.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMetaFormError(data.error || "No se pudo guardar la conexión");
+        return;
+      }
+      setMetaAdAccountId("");
+      setMetaAccessToken("");
+      setMetaFormAbierto(false);
+      if (clienteId) await cargarEstado(clienteId);
+    } catch {
+      setMetaFormError("No se pudo conectar al servidor");
+    } finally {
+      setMetaGuardando(false);
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       <AppSidebar active="conexiones" isAdmin={isAdmin} mode={mode} onToggleMode={toggleMode} onLogout={handleLogout} />
@@ -212,9 +252,9 @@ function PanelConexionesContent() {
                     </button>
                   ) : conectada ? (
                     <span className="text-[13px] px-3 py-1.5 rounded-full border border-primary text-primary shrink-0">Conectado</span>
-                  ) : integ.tipo === "ghl" && formAbierto ? null : (
+                  ) : integ.tipo === "ghl" && formAbierto ? null : integ.tipo === "meta_ads" && metaFormAbierto ? null : (
                     <button
-                      onClick={() => setFormAbierto(true)}
+                      onClick={() => (integ.tipo === "meta_ads" ? setMetaFormAbierto(true) : setFormAbierto(true))}
                       className="press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
                     >
                       Conectar
@@ -297,6 +337,61 @@ function PanelConexionesContent() {
                   onClick={() => {
                     setFormAbierto(false);
                     setFormError(null);
+                  }}
+                  className="press text-[14px] text-on-surface-variant hover:text-on-surface transition-colors duration-150"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          )}
+
+          {metaFormAbierto && (
+            <form onSubmit={conectarMeta} className="animate-fade-in-up rounded-lg border border-outline bg-surface p-5 flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-[14px] font-medium text-on-surface">Conectar Meta Ads</span>
+                <p className="text-[13px] text-on-surface-variant">
+                  Necesitamos el <span className="font-mono">ID de tu cuenta publicitaria</span> (Administrador comercial → Cuentas
+                  publicitarias) y un <span className="font-medium">token de acceso</span> con permisos de lectura de anuncios
+                  (<span className="font-mono">ads_read</span>).
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">ID de cuenta publicitaria</label>
+                <input
+                  type="text"
+                  value={metaAdAccountId}
+                  onChange={(e) => setMetaAdAccountId(e.target.value)}
+                  placeholder="Ej. 123456789012345 (con o sin act_)"
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Token de acceso</label>
+                <input
+                  type="password"
+                  value={metaAccessToken}
+                  onChange={(e) => setMetaAccessToken(e.target.value)}
+                  placeholder="EAAG..."
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
+                />
+              </div>
+
+              {metaFormError && <p className="text-sm text-error">{metaFormError}</p>}
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={metaGuardando}
+                  className="press rounded-md bg-primary text-on-primary text-[14px] font-medium px-4 py-2.5 disabled:opacity-50 disabled:active:scale-100 transition-transform duration-150"
+                >
+                  {metaGuardando ? "Guardando…" : "Guardar conexión"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMetaFormAbierto(false);
+                    setMetaFormError(null);
                   }}
                   className="press text-[14px] text-on-surface-variant hover:text-on-surface transition-colors duration-150"
                 >
