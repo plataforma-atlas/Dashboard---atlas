@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
-import { LayoutGrid, Briefcase, Users, UserCog } from "lucide-react";
+import { LayoutGrid, Briefcase, Users, UserCog, ArrowLeftRight, Workflow } from "lucide-react";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
 import { themeForClient } from "@/lib/clients";
 import { Campaign } from "@/lib/types";
@@ -243,6 +243,26 @@ export default function ControlCenterPage() {
               <LayoutGrid size={13} strokeWidth={2} />
             </span>
             {!sidebarCollapsed && <span>Dashboard clásico</span>}
+          </a>
+          <a
+            href="/panel/conexiones"
+            title="Configuración"
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
+          >
+            <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
+              <ArrowLeftRight size={13} strokeWidth={2} />
+            </span>
+            {!sidebarCollapsed && <span>Configuración</span>}
+          </a>
+          <a
+            href="/panel/embudos"
+            title="Embudos"
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
+          >
+            <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
+              <Workflow size={13} strokeWidth={2} />
+            </span>
+            {!sidebarCollapsed && <span>Embudos</span>}
           </a>
           {isAdmin && (
             <>

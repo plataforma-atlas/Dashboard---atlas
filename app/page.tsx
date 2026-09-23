@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeftRight, Briefcase, Users, UserCog } from "lucide-react";
+import { ArrowLeftRight, Briefcase, Users, UserCog, Workflow } from "lucide-react";
 import { Campaign, FunnelRow } from "@/lib/types";
 import { toCountryBreakdown, toKpis, toSourceBreakdown, toStageSummary } from "@/lib/aggregate";
 import { defaultClient, themeForClient, ClientConfig } from "@/lib/clients";
@@ -793,13 +793,23 @@ function Home() {
         <div className="flex flex-col gap-1.5 pt-4 border-t border-outline">
           <a
             href={session.role === "admin" ? `/panel/conexiones?cliente_id=${selectedClient.id}` : "/panel/conexiones"}
-            title="Conexiones"
+            title="Configuración"
             className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
           >
             <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
               <ArrowLeftRight size={13} strokeWidth={2} />
             </span>
-            {!sidebarCollapsed && <span>Conexiones</span>}
+            {!sidebarCollapsed && <span>Configuración</span>}
+          </a>
+          <a
+            href={session.role === "admin" ? `/panel/embudos?cliente_id=${selectedClient.id}` : "/panel/embudos"}
+            title="Embudos"
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
+          >
+            <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
+              <Workflow size={13} strokeWidth={2} />
+            </span>
+            {!sidebarCollapsed && <span>Embudos</span>}
           </a>
           {session.role === "admin" && (
             <>
