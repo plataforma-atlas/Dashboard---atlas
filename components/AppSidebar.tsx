@@ -4,13 +4,16 @@ import { LayoutDashboard, ArrowLeftRight, Briefcase, Users, UserCog, Workflow, t
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
+import { useSidePanel } from "@/components/SidePanelProvider";
 
 type NavKey = "dashboard" | "conexiones" | "embudos" | "cartera" | "clientes" | "usuarios";
 
-const NAV_ITEMS: { key: NavKey; href: string; label: string; Icon: LucideIcon; adminOnly?: boolean }[] = [
+// "conexiones" y "embudos" no navegan a otra pagina - abren como panel
+// flotante encima de la pantalla actual (ver SidePanelProvider).
+const NAV_ITEMS: { key: NavKey; href?: string; label: string; Icon: LucideIcon; adminOnly?: boolean }[] = [
   { key: "dashboard", href: "/", label: "Dashboard", Icon: LayoutDashboard },
-  { key: "conexiones", href: "/panel/conexiones", label: "Configuración", Icon: ArrowLeftRight },
-  { key: "embudos", href: "/panel/embudos", label: "Embudos", Icon: Workflow },
+  { key: "conexiones", label: "Configuración", Icon: ArrowLeftRight },
+  { key: "embudos", label: "Embudos", Icon: Workflow },
   { key: "cartera", href: "/admin/cartera", label: "Cartera", Icon: Briefcase, adminOnly: true },
   { key: "clientes", href: "/admin/clientes", label: "Clientes", Icon: Users, adminOnly: true },
   { key: "usuarios", href: "/admin/usuarios", label: "Usuarios", Icon: UserCog, adminOnly: true },
@@ -27,16 +30,15 @@ export default function AppSidebar({
   mode,
   onToggleMode,
   onLogout,
-  conexionesHref,
 }: {
   active: NavKey;
   isAdmin: boolean;
   mode: "light" | "dark";
   onToggleMode: () => void;
   onLogout: () => void;
-  conexionesHref?: string;
 }) {
   const { collapsed, toggleCollapsed } = useSidebarCollapse();
+  const { open, openConfiguracion, openEmbudos } = useSidePanel();
 
   return (
     <aside className="wcc-no-print bg-surface border-r border-outline md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto transition-[width,background-color,border-color] duration-200">
@@ -57,21 +59,43 @@ export default function AppSidebar({
       </div>
 
       <nav className="flex flex-col gap-1">
-        {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map((item) => (
-          <a
-            key={item.key}
-            href={item.key === "conexiones" && conexionesHref ? conexionesHref : item.href}
-            title={item.label}
-            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 ${
-              collapsed ? "md:justify-center" : ""
-            } ${active === item.key ? "bg-surface-high text-on-surface" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"}`}
-          >
-            <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
-              <item.Icon size={13} strokeWidth={2} />
-            </span>
-            <span className={collapsed ? "md:hidden" : ""}>{item.label}</span>
-          </a>
-        ))}
+        {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map((item) => {
+          const isDrawerItem = item.key === "conexiones" || item.key === "embudos";
+          const isCurrentActive = isDrawerItem
+            ? open === (item.key === "conexiones" ? "configuracion" : "embudos")
+            : active === item.key;
+          const className = `press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 w-full text-left ${
+            collapsed ? "md:justify-center" : ""
+          } ${isCurrentActive ? "bg-surface-high text-on-surface" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"}`;
+          const content = (
+            <>
+              <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
+                <item.Icon size={13} strokeWidth={2} />
+              </span>
+              <span className={collapsed ? "md:hidden" : ""}>{item.label}</span>
+            </>
+          );
+
+          if (isDrawerItem) {
+            return (
+              <button
+                key={item.key}
+                type="button"
+                title={item.label}
+                onClick={item.key === "conexiones" ? openConfiguracion : openEmbudos}
+                className={className}
+              >
+                {content}
+              </button>
+            );
+          }
+
+          return (
+            <a key={item.key} href={item.href} title={item.label} className={className}>
+              {content}
+            </a>
+          );
+        })}
       </nav>
 
       <div

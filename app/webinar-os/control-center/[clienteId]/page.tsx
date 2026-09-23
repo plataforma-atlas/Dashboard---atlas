@@ -5,8 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
-import { LayoutGrid, Briefcase, Users, UserCog, ArrowLeftRight, Workflow } from "lucide-react";
+import { Briefcase, Users, UserCog, ArrowLeftRight, Workflow } from "lucide-react";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
+import { useSidePanel } from "@/components/SidePanelProvider";
 import { themeForClient } from "@/lib/clients";
 import { Campaign } from "@/lib/types";
 import { CampanaCartera } from "@/lib/webinar-os/control-center/types";
@@ -32,6 +33,7 @@ export default function ControlCenterPage() {
   const [todosLosClientes, setTodosLosClientes] = useState<{ id: string; name: string }[]>([]);
   const [selectorClienteAbierto, setSelectorClienteAbierto] = useState(false);
   const { collapsed: sidebarCollapsed, toggleCollapsed: toggleSidebarCollapsed } = useSidebarCollapse();
+  const { openConfiguracion, openEmbudos } = useSidePanel();
   const [campanas, setCampanas] = useState<CampanaCartera[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -234,36 +236,28 @@ export default function ControlCenterPage() {
         <WccSidebarNav collapsed={sidebarCollapsed} />
 
         <div className="flex flex-col gap-1.5 pt-4 border-t border-outline">
-          <a
-            href="/?vista=clasica"
-            title="Dashboard clásico"
-            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
-          >
-            <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
-              <LayoutGrid size={13} strokeWidth={2} />
-            </span>
-            {!sidebarCollapsed && <span>Dashboard clásico</span>}
-          </a>
-          <a
-            href="/panel/conexiones"
+          <button
+            type="button"
             title="Configuración"
-            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
+            onClick={openConfiguracion}
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""}`}
           >
             <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
               <ArrowLeftRight size={13} strokeWidth={2} />
             </span>
             {!sidebarCollapsed && <span>Configuración</span>}
-          </a>
-          <a
-            href="/panel/embudos"
+          </button>
+          <button
+            type="button"
             title="Embudos"
-            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
+            onClick={openEmbudos}
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""}`}
           >
             <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
               <Workflow size={13} strokeWidth={2} />
             </span>
             {!sidebarCollapsed && <span>Embudos</span>}
-          </a>
+          </button>
           {isAdmin && (
             <>
               <a

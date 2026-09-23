@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftRight, Briefcase, Users, UserCog, Workflow } from "lucide-react";
+import { useSidePanel } from "@/components/SidePanelProvider";
 import { Campaign, FunnelRow } from "@/lib/types";
 import { toCountryBreakdown, toKpis, toSourceBreakdown, toStageSummary } from "@/lib/aggregate";
 import { defaultClient, themeForClient, ClientConfig } from "@/lib/clients";
@@ -99,6 +100,7 @@ function Home() {
   const [selectedClientId, setSelectedClientId] = useState("");
   const [selectorClienteAbierto, setSelectorClienteAbierto] = useState(false);
   const { collapsed: sidebarCollapsed, toggleCollapsed: toggleSidebarCollapsed } = useSidebarCollapse();
+  const { openConfiguracion, openEmbudos } = useSidePanel();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignsLoading, setCampaignsLoading] = useState(false);
   // A qué cliente pertenece lo que hay hoy en `campaigns` — se compara contra
@@ -791,26 +793,28 @@ function Home() {
         )}
 
         <div className="flex flex-col gap-1.5 pt-4 border-t border-outline">
-          <a
-            href={session.role === "admin" ? `/panel/conexiones?cliente_id=${selectedClient.id}` : "/panel/conexiones"}
+          <button
+            type="button"
             title="Configuración"
-            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
+            onClick={openConfiguracion}
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""}`}
           >
             <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
               <ArrowLeftRight size={13} strokeWidth={2} />
             </span>
             {!sidebarCollapsed && <span>Configuración</span>}
-          </a>
-          <a
-            href={session.role === "admin" ? `/panel/embudos?cliente_id=${selectedClient.id}` : "/panel/embudos"}
+          </button>
+          <button
+            type="button"
             title="Embudos"
-            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 ${sidebarCollapsed ? "justify-center" : ""}`}
+            onClick={openEmbudos}
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""}`}
           >
             <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
               <Workflow size={13} strokeWidth={2} />
             </span>
             {!sidebarCollapsed && <span>Embudos</span>}
-          </a>
+          </button>
           {session.role === "admin" && (
             <>
               <a
