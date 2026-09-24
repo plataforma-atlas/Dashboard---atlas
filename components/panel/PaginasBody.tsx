@@ -6,6 +6,8 @@ import { useSidePanel } from "@/components/SidePanelProvider";
 import {
   paginaSpecVacio,
   slugsDePagina,
+  generarHtmlEncuesta,
+  preguntaDemo,
   type PaginaSpec,
   type Colores,
   type CopyCaptura,
@@ -19,6 +21,7 @@ import {
   type SeccionMecanismo,
   type SeccionChecklist,
   type SeccionExperto,
+  type PlantillaEncuesta,
 } from "@/lib/paginas/templates";
 
 function listSet(list: string[], i: number, value: string): string[] {
@@ -154,6 +157,21 @@ const WHATSAPP_FORMATOS: { value: WhatsappFormato; label: string; ejemplo: strin
   },
 ];
 
+const PLANTILLAS_ENCUESTA: { id: PlantillaEncuesta; nombre: string; descripcion: string; colorVista: string }[] = [
+  {
+    id: "padrao",
+    nombre: "Estándar",
+    descripcion: "Card centrada en los colores de la página, opciones con letra (A/B/C…) y barra de progreso.",
+    colorVista: "linear-gradient(160deg, #1c1030, #05030a)",
+  },
+  {
+    id: "urgencia",
+    nombre: "Urgencia",
+    descripcion: "Quiz claro estilo funil de anuncio: barra de progreso fija arriba, opciones con círculo o emoji.",
+    colorVista: "linear-gradient(160deg, #f0f0f3, #d8d8de)",
+  },
+];
+
 export default function PaginasBody() {
   const searchParams = useSearchParams();
   const { openConfiguracion } = useSidePanel();
@@ -183,6 +201,7 @@ export default function PaginasBody() {
   const [preview, setPreview] = useState<{ captura: HtmlGenerado; encuesta: HtmlGenerado | null; gracias: HtmlGenerado } | null>(null);
   const [previewTab, setPreviewTab] = useState<"captura" | "encuesta" | "gracias">("captura");
   const [generandoPreview, setGenerandoPreview] = useState(false);
+  const [previewPlantillaEncuesta, setPreviewPlantillaEncuesta] = useState<PlantillaEncuesta | null>(null);
 
   const conEncuesta = spec.copy.flujo === "captura_encuesta_gracias";
   const visibleSteps = STEP_DEFS.filter((s) => s.key !== "encuesta" || conEncuesta);
@@ -300,7 +319,14 @@ export default function PaginasBody() {
           },
           encuestaIntro: { ...base.copy.encuestaIntro, ...(p.copy?.encuestaIntro || {}) },
         },
-        encuesta: Array.isArray(p.encuesta) ? p.encuesta : base.encuesta,
+        encuesta: Array.isArray(p.encuesta)
+          ? p.encuesta.map((q: Partial<PreguntaEncuesta>) => ({
+              texto: q.texto || "",
+              tipo: q.tipo === "abierta" ? "abierta" : "opciones",
+              opciones: Array.isArray(q.opciones) ? q.opciones : [],
+              emojis: Array.isArray(q.emojis) ? q.emojis : [],
+            }))
+          : base.encuesta,
         gracias: { ...base.gracias, ...(p.gracias || {}) },
         imagenes: { ...base.imagenes, ...(p.imagenes || {}) },
       });
@@ -378,10 +404,32 @@ export default function PaginasBody() {
     setSpec((prev) => ({ ...prev, encuesta: prev.encuesta.map((p, idx) => (idx === i ? { ...p, ...patch } : p)) }));
   }
   function addPregunta() {
-    setSpec((prev) => ({ ...prev, encuesta: [...prev.encuesta, { texto: "", tipo: "abierta", opciones: [] }] }));
+    setSpec((prev) => ({ ...prev, encuesta: [...prev.encuesta, { texto: "", tipo: "opciones", opciones: [], emojis: [] }] }));
   }
   function removePregunta(i: number) {
     setSpec((prev) => ({ ...prev, encuesta: prev.encuesta.filter((_, idx) => idx !== i) }));
+  }
+
+  function emojisAlineados(p: PreguntaEncuesta): string[] {
+    return p.opciones.map((_, i) => p.emojis[i] || "");
+  }
+  function setOpcion(preguntaIdx: number, opcionIdx: number, value: string) {
+    setPregunta(preguntaIdx, { opciones: listSet(spec.encuesta[preguntaIdx].opciones, opcionIdx, value) });
+  }
+  function addOpcion(preguntaIdx: number) {
+    setPregunta(preguntaIdx, { opciones: listAdd(spec.encuesta[preguntaIdx].opciones) });
+  }
+  function removeOpcion(preguntaIdx: number, opcionIdx: number) {
+    const p = spec.encuesta[preguntaIdx];
+    setPregunta(preguntaIdx, { opciones: listRemove(p.opciones, opcionIdx), emojis: listRemove(emojisAlineados(p), opcionIdx) });
+  }
+  function setEmoji(preguntaIdx: number, opcionIdx: number, value: string) {
+    const p = spec.encuesta[preguntaIdx];
+    setPregunta(preguntaIdx, { emojis: listSet(emojisAlineados(p), opcionIdx, value) });
+  }
+  function elegirPlantillaEncuesta(plantilla: PlantillaEncuesta) {
+    updateEncuestaIntro({ plantilla });
+    setPreviewPlantillaEncuesta(plantilla);
   }
 
   function onNombreChange(value: string) {
@@ -628,8 +676,28 @@ export default function PaginasBody() {
     );
   }
 
+  const previewEncuestaHtml = previewPlantillaEncuesta
+    ? generarHtmlEncuesta(
+        {
+          ...spec,
+          encuesta: spec.encuesta.length ? spec.encuesta : [preguntaDemo()],
+          copy: {
+            ...spec.copy,
+            encuestaIntro: {
+              ...spec.copy.encuestaIntro,
+              plantilla: previewPlantillaEncuesta,
+              titulo: spec.copy.encuestaIntro.titulo || "Esta información nos ayudará a entender mejor tu negocio.",
+              textoBoton: spec.copy.encuestaIntro.textoBoton || "Continuar",
+            },
+          },
+        },
+        { eventoUrl: "#", clienteId: "", paginaId: "preview", urlGracias: "#" }
+      )
+    : null;
+
   // vista === "wizard"
   return (
+    <>
     <div className="max-w-3xl flex flex-col gap-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
@@ -1003,35 +1071,83 @@ export default function PaginasBody() {
       {paso === "encuesta" && (
         <div className={cardClass}>
           <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Modelo de la encuesta — hacé click para ver una vista previa</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {PLANTILLAS_ENCUESTA.map((t) => {
+                const activo = spec.copy.encuestaIntro.plantilla === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => elegirPlantillaEncuesta(t.id)}
+                    className={`press text-left rounded-lg border overflow-hidden flex flex-col transition-colors duration-150 ${
+                      activo ? "border-primary" : "border-outline hover:border-primary"
+                    }`}
+                  >
+                    <div className="h-24 flex flex-col justify-center items-center gap-1.5 p-3 shrink-0" style={{ background: t.colorVista }}>
+                      <div className="h-1 w-2/3 rounded-full bg-white/50" />
+                      <div className="h-4 w-4/5 rounded-md bg-white/80" />
+                      <div className="h-4 w-4/5 rounded-md bg-white/60" />
+                    </div>
+                    <div className="p-3 flex flex-col gap-1">
+                      <span className="text-[13.5px] font-semibold text-on-surface">{t.nombre}</span>
+                      <span className="text-[12px] text-on-surface-variant leading-snug">{t.descripcion}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
             <label className={labelClass}>Título de la encuesta</label>
             <input type="text" value={spec.copy.encuestaIntro.titulo} onChange={(e) => updateEncuestaIntro({ titulo: e.target.value })} className={inputClass} />
+            <p className="text-[12px] text-on-surface-variant">
+              Ya viene listo — cambialo si querés. En "Estándar" aparece como título de la card; en "Urgencia", como la línea destacada
+              arriba de la pregunta.
+            </p>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className={labelClass}>Subtítulo</label>
-            <input type="text" value={spec.copy.encuestaIntro.subtitulo} onChange={(e) => updateEncuestaIntro({ subtitulo: e.target.value })} className={inputClass} />
-          </div>
+
           <div className="flex flex-col gap-2">
-            <label className={labelClass}>Preguntas</label>
+            <label className={labelClass}>Preguntas ({spec.encuesta.length})</label>
             {spec.encuesta.map((p, i) => (
               <div key={i} className="flex flex-col gap-2 rounded-md bg-background border border-outline p-3">
                 <div className="flex items-center gap-2">
                   <input type="text" value={p.texto} onChange={(e) => setPregunta(i, { texto: e.target.value })} placeholder="Texto de la pregunta" className={inputClass} />
                   <select value={p.tipo} onChange={(e) => setPregunta(i, { tipo: e.target.value as PreguntaEncuesta["tipo"] })} className={`${inputClass} w-40 shrink-0`}>
-                    <option value="abierta">Respuesta abierta</option>
                     <option value="opciones">Opción múltiple</option>
+                    <option value="abierta">Respuesta abierta</option>
                   </select>
                   <button type="button" onClick={() => removePregunta(i)} className="press text-[12px] px-2.5 py-1.5 rounded-md border border-outline text-on-surface-variant shrink-0">
                     Quitar
                   </button>
                 </div>
                 {p.tipo === "opciones" && (
-                  <input
-                    type="text"
-                    value={p.opciones.join(", ")}
-                    onChange={(e) => setPregunta(i, { opciones: e.target.value.split(",").map((o) => o.trim()) })}
-                    placeholder="Opción A, Opción B, Opción C"
-                    className={inputClass}
-                  />
+                  <div className="flex flex-col gap-1.5 pl-2">
+                    {spec.copy.encuestaIntro.plantilla === "urgencia" && (
+                      <p className="text-[11.5px] text-on-surface-faint">Cada opción tiene un campo de emoji — dejalo vacío para mostrar solo el círculo de selección.</p>
+                    )}
+                    {p.opciones.map((o, j) => (
+                      <div key={j} className="flex items-center gap-2">
+                        {spec.copy.encuestaIntro.plantilla === "urgencia" && (
+                          <input
+                            type="text"
+                            value={emojisAlineados(p)[j]}
+                            onChange={(e) => setEmoji(i, j, e.target.value)}
+                            placeholder="😊"
+                            className={`${inputClass} w-14 text-center shrink-0`}
+                          />
+                        )}
+                        <input type="text" value={o} onChange={(e) => setOpcion(i, j, e.target.value)} className={inputClass} />
+                        <button type="button" onClick={() => removeOpcion(i, j)} className="press text-[12px] px-2.5 py-1.5 rounded-md border border-outline text-on-surface-variant shrink-0">
+                          Quitar
+                        </button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => addOpcion(i)} className="press text-[13px] px-3 py-1.5 rounded-md border border-outline text-on-surface-variant self-start">
+                      + Agregar opción
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
@@ -1039,6 +1155,7 @@ export default function PaginasBody() {
               + Agregar pregunta
             </button>
           </div>
+
           <div className="flex flex-col gap-1.5">
             <label className={labelClass}>Texto del botón</label>
             <input type="text" value={spec.copy.encuestaIntro.textoBoton} onChange={(e) => updateEncuestaIntro({ textoBoton: e.target.value })} className={inputClass} />
@@ -1168,5 +1285,32 @@ export default function PaginasBody() {
         </div>
       )}
     </div>
+
+    {previewPlantillaEncuesta && previewEncuestaHtml && (
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-5" onClick={() => setPreviewPlantillaEncuesta(null)}>
+        <div className="bg-surface rounded-lg max-w-lg w-full h-[80vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-start justify-between gap-4 p-4 border-b border-outline">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[14px] font-semibold text-on-surface">
+                {PLANTILLAS_ENCUESTA.find((t) => t.id === previewPlantillaEncuesta)?.nombre} — preview
+              </span>
+              <span className="text-[12px] text-on-surface-variant">
+                Vista previa ampliada, solo para visualizar — la página real se genera en el paso de Revisión, con tu copy.
+              </span>
+            </div>
+            <button type="button" onClick={() => setPreviewPlantillaEncuesta(null)} className="press text-on-surface-variant hover:text-on-surface text-lg leading-none shrink-0">
+              ×
+            </button>
+          </div>
+          <iframe sandbox="allow-scripts" srcDoc={previewEncuestaHtml} className="w-full flex-1 bg-white" title="Vista previa de encuesta" />
+          <div className="p-3 border-t border-outline flex justify-end">
+            <button type="button" onClick={() => setPreviewPlantillaEncuesta(null)} className={botonAtras}>
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

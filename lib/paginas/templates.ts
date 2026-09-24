@@ -52,9 +52,13 @@ export type CopyCaptura = {
   whatsappFormato: WhatsappFormato;
 };
 
+/** "padrao": card centrado en las cores de la página, opciones con letra (A/B/C…). "urgencia": quiz claro estilo funil de anuncio, opciones con círculo (o emoji) y barra de progreso fija arriba. */
+export type PlantillaEncuesta = "padrao" | "urgencia";
+
 export type CopyEncuestaIntro = {
+  plantilla: PlantillaEncuesta;
+  /** Título único de toda la encuesta — en "padrao" es el título de la card, en "urgencia" es la línea destacada arriba de cada pregunta. No es por-pregunta. */
   titulo: string;
-  subtitulo: string;
   textoBoton: string;
 };
 
@@ -73,7 +77,8 @@ export type Copy = {
   encuestaIntro: CopyEncuestaIntro;
 };
 
-export type PreguntaEncuesta = { texto: string; tipo: "opciones" | "abierta"; opciones: string[] };
+// `emojis` es paralelo a `opciones` (mismo índice) — solo se usa/muestra con la plantilla "urgencia".
+export type PreguntaEncuesta = { texto: string; tipo: "opciones" | "abierta"; opciones: string[]; emojis: string[] };
 
 export type Gracias = { titulo: string; subtitulo: string; textoBoton: string; linkBoton: string };
 
@@ -114,9 +119,9 @@ export function paginaSpecVacio(): PaginaSpec {
         whatsappFormato: "internacional",
       },
       encuestaIntro: {
-        titulo: "Antes de continuar",
-        subtitulo: "Contanos un poco más para preparar el contenido.",
-        textoBoton: "Enviar respuestas",
+        plantilla: "padrao",
+        titulo: "Esta información nos ayudará a entender mejor tu negocio.",
+        textoBoton: "Continuar",
       },
     },
     encuesta: [],
@@ -302,6 +307,96 @@ function capturaStyles(colores: Colores): string {
   `;
 }
 
+/** Pregunta de relleno para la vista previa cuando todavía no se cargó ninguna real. */
+export function preguntaDemo(): PreguntaEncuesta {
+  return {
+    texto: "¿Cuál es el nivel de facturación mensual aproximado de tu negocio actualmente?",
+    tipo: "opciones",
+    opciones: [
+      "Menos de USD 1.000",
+      "Entre USD 1.000 y USD 3.000",
+      "Entre USD 3.000 y USD 10.000",
+      "Entre USD 10.000 y USD 30.000",
+      "Más de USD 30.000",
+    ],
+    emojis: [],
+  };
+}
+
+// Estilos del quiz de encuesta — comparten estructura (una pregunta por
+// pantalla, barra de progreso, botón "Continuar") pero difieren en piel:
+// "padrao" es una card centrada en los colores de la página con opciones con
+// letra (A/B/C…); "urgencia" es un quiz claro tipo funil de anuncio con barra
+// de progreso fija arriba y opciones con círculo o emoji.
+function encuestaStyles(colores: Colores, plantilla: PlantillaEncuesta): string {
+  const textoBoton = colorContraste(colores.primario);
+  const comun = `
+    :root { --primario: ${colores.primario}; --fondo: ${colores.fondo}; --texto: ${colores.texto}; --texto-boton: ${textoBoton}; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .pregunta-pantalla { display: none; }
+    .pregunta-pantalla.activa { display: flex; flex-direction: column; gap: 14px; }
+    .pregunta-texto { font-size: 19px; font-weight: 800; line-height: 1.35; margin: 0; }
+    .opciones-quiz { display: flex; flex-direction: column; gap: 10px; }
+    .opcion-quiz { display: flex; align-items: center; gap: 12px; cursor: pointer; border-radius: 12px; padding: 14px 16px; transition: border-color 0.15s ease, background 0.15s ease; }
+    .opcion-quiz input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+    .opcion-quiz .texto-opcion { font-size: 14.5px; font-weight: 500; }
+    .input-abierta { width: 100%; padding: 14px 16px; border-radius: 12px; font-size: 15px; outline: none; }
+    .btn-continuar { border: none; border-radius: 999px; padding: 15px 20px; font-size: 15.5px; font-weight: 700; cursor: pointer; background: var(--primario); color: var(--texto-boton); transition: opacity 0.15s ease, transform 0.12s ease; }
+    .btn-continuar:active { transform: scale(0.98); }
+    .btn-continuar:disabled { opacity: 0.45; cursor: default; }
+    .nota-candado { font-size: 12px; text-align: center; opacity: 0.55; margin: 0; }
+    .footer-quiz { text-align: center; font-size: 12px; opacity: 0.55; padding: 24px 20px; }
+    .error-msg { color: #e05252; font-size: 13px; text-align: center; margin: 0; display: none; }
+  `;
+
+  if (plantilla === "urgencia") {
+    return (
+      comun +
+      `
+    body { background: #f7f7f9; color: #16181d; display: flex; flex-direction: column; min-height: 100vh; }
+    .progreso-track-top { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: rgba(0,0,0,0.08); z-index: 10; }
+    .progreso-track-top .progreso-fill { height: 100%; background: var(--primario); transition: width 0.25s ease; width: 0%; }
+    .brand-label { text-align: center; font-size: 12.5px; font-weight: 700; padding: 22px 20px 0; opacity: 0.6; }
+    .eyebrow-titulo { max-width: 480px; margin: 10px auto 0; padding: 0 24px; text-align: center; font-size: 12.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--primario); }
+    .contador { text-align: center; font-size: 13px; opacity: 0.6; margin: 10px 0 0; }
+    #preguntas-wrap { flex: 1; max-width: 480px; width: 100%; margin: 18px auto 0; padding: 0 24px 24px; }
+    .pregunta-texto { text-align: center; font-size: 20px; }
+    .opcion-quiz { background: #ffffff; border: 1.5px solid #e6e6ea; }
+    .opcion-quiz:has(input:checked) { border-color: var(--primario); background: color-mix(in srgb, var(--primario) 8%, #ffffff); }
+    .opcion-quiz .letra { display: none; }
+    .opcion-quiz .circulo { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #cfcfd6; flex-shrink: 0; }
+    .opcion-quiz:has(input:checked) .circulo { border-color: var(--primario); background: var(--primario); }
+    .opcion-quiz .emoji { font-size: 20px; flex-shrink: 0; }
+    .input-abierta { border: 1.5px solid #e6e6ea; }
+    .input-abierta:focus { border-color: var(--primario); }
+    .btn-continuar { width: 100%; }
+  `
+    );
+  }
+
+  return (
+    comun +
+    `
+    body { background: var(--fondo); color: var(--texto); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+    .brand-label { position: absolute; top: 20px; left: 0; right: 0; text-align: center; font-size: 12.5px; font-weight: 700; color: var(--primario); }
+    .quiz-card { width: 100%; max-width: 480px; background: rgba(127,127,127,0.06); border: 1px solid rgba(127,127,127,0.15); border-radius: 20px; padding: 32px 28px; display: flex; flex-direction: column; gap: 16px; }
+    .saludo { font-size: 13px; opacity: 0.6; margin: 0; }
+    .quiz-titulo { font-size: 21px; font-weight: 800; line-height: 1.3; margin: 0; }
+    .progreso-track { height: 6px; border-radius: 999px; background: rgba(127,127,127,0.2); overflow: hidden; }
+    .progreso-track .progreso-fill { height: 100%; background: var(--primario); transition: width 0.25s ease; width: 0%; }
+    .contador { font-size: 12.5px; opacity: 0.6; margin: 0; }
+    .opcion-quiz { border: 1.5px solid rgba(127,127,127,0.25); }
+    .opcion-quiz:has(input:checked) { border-color: var(--primario); background: rgba(127,127,127,0.1); }
+    .opcion-quiz .letra { width: 24px; height: 24px; border-radius: 50%; background: rgba(127,127,127,0.18); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    .opcion-quiz:has(input:checked) .letra { background: var(--primario); color: var(--texto-boton); }
+    .opcion-quiz .circulo, .opcion-quiz .emoji { display: none; }
+    .input-abierta { border: 1.5px solid rgba(127,127,127,0.25); background: transparent; color: var(--texto); }
+    .input-abierta:focus { border-color: var(--primario); }
+  `
+  );
+}
+
 const UTM_SCRIPT = `
   function leerUtm() {
     var p = new URLSearchParams(window.location.search);
@@ -481,25 +576,56 @@ export function generarHtmlEncuesta(
   opts: { eventoUrl: string; clienteId: string; paginaId: number | string; urlGracias: string }
 ): string {
   const c = spec.copy.encuestaIntro;
+  const preguntas = spec.encuesta.length ? spec.encuesta : [preguntaDemo()];
+  const esUrgencia = c.plantilla === "urgencia";
   const eventoFullUrl = `${opts.eventoUrl}?cliente_id=${encodeURIComponent(opts.clienteId)}&pagina_id=${encodeURIComponent(
     String(opts.paginaId)
   )}`;
 
-  const preguntasHtml = spec.encuesta
+  const letras = "ABCDEFGHIJ";
+  const pantallasHtml = preguntas
     .map((p, i) => {
-      if (p.tipo === "opciones") {
-        const opciones = (p.opciones || [])
-          .filter((o) => o.trim())
-          .map(
-            (o, j) =>
-              `<label><input type="radio" name="pregunta-${i}" value="${esc(o)}" ${j === 0 ? "required" : ""} /> ${esc(o)}</label>`
-          )
-          .join("");
-        return `<div class="campo"><label>${esc(p.texto)}</label><div class="opciones">${opciones}</div></div>`;
-      }
-      return `<div class="campo"><label for="pregunta-${i}">${esc(p.texto)}</label><input type="text" id="pregunta-${i}" name="pregunta-${i}" /></div>`;
+      const cuerpo =
+        p.tipo === "opciones"
+          ? `<div class="opciones-quiz">${(p.opciones || [])
+              .filter((o) => o.trim())
+              .map((o, j) => {
+                const emoji = (p.emojis || [])[j];
+                const marca = emoji ? `<span class="emoji">${esc(emoji)}</span>` : `<span class="circulo"></span>`;
+                return `<label class="opcion-quiz">
+                  <input type="radio" name="pregunta-${i}" value="${esc(o)}" />
+                  <span class="letra">${letras[j] || j + 1}</span>
+                  ${marca}
+                  <span class="texto-opcion">${esc(o)}</span>
+                </label>`;
+              })
+              .join("")}</div>`
+          : `<input type="text" class="input-abierta" placeholder="Escribí tu respuesta" />`;
+
+      return `<div class="pregunta-pantalla${i === 0 ? " activa" : ""}" data-index="${i}" data-tipo="${p.tipo}">
+        <h2 class="pregunta-texto">${esc(p.texto)}</h2>
+        ${cuerpo}
+        <button type="button" class="btn-continuar" disabled>${esc(c.textoBoton)} →</button>
+        <p class="nota-candado">🔒 Tus respuestas quedan vinculadas a tu inscripción.</p>
+        <p class="error-msg">No pudimos guardar tus respuestas. Probá de nuevo.</p>
+      </div>`;
     })
     .join("");
+
+  const encabezado = esUrgencia
+    ? `<div class="progreso-track-top"><div class="progreso-fill" id="progreso-fill"></div></div>
+       <div class="brand-label">${esc(spec.nombre)}</div>
+       <p class="eyebrow-titulo">${esc(c.titulo)}</p>
+       <p class="contador" id="contador"></p>
+       <div id="preguntas-wrap">${pantallasHtml}</div>`
+    : `<div class="brand-label">${esc(spec.nombre)}</div>
+       <div class="quiz-card">
+         <p class="saludo">¡Hola!</p>
+         <h1 class="quiz-titulo">${esc(c.titulo)}</h1>
+         <div class="progreso-track"><div class="progreso-fill" id="progreso-fill"></div></div>
+         <p class="contador" id="contador"></p>
+         <div id="preguntas-wrap">${pantallasHtml}</div>
+       </div>`;
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -507,36 +633,39 @@ export function generarHtmlEncuesta(
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${esc(c.titulo)}</title>
-<style>${baseStyles(spec.colores)}</style>
+<style>${encuestaStyles(spec.colores, c.plantilla)}</style>
 </head>
 <body>
-  <div class="card">
-    <h1>${esc(c.titulo)}</h1>
-    <p class="sub">${esc(c.subtitulo)}</p>
-    <form id="form-encuesta">
-      ${preguntasHtml}
-      <button type="submit" class="enviar">${esc(c.textoBoton)}</button>
-      <p class="error-msg" id="error-msg">No pudimos guardar tus respuestas. Probá de nuevo.</p>
-    </form>
-  </div>
+  ${encabezado}
+  <footer class="footer-quiz">${esc(spec.nombre)} · © ${new Date().getFullYear()}</footer>
+
   <script>
-    var preguntas = ${embedJson(spec.encuesta.map((p) => p.texto))};
-    var form = document.getElementById('form-encuesta');
+    var totalPreguntas = ${preguntas.length};
+    var textos = ${embedJson(preguntas.map((p) => p.texto))};
+    var contadorPrefijo = ${esUrgencia ? embedJson("¡Hola! · ") : embedJson("")};
+    var indice = 0;
+    var respuestas = {};
+    var pantallas = document.querySelectorAll('.pregunta-pantalla');
+    var progresoFill = document.getElementById('progreso-fill');
+    var contador = document.getElementById('contador');
     var urlGracias = ${embedJson(opts.urlGracias)};
     var params = new URLSearchParams(window.location.search);
     var email = params.get('email') || '';
     var whatsapp = params.get('whatsapp') || '';
-    form.addEventListener('submit', function (ev) {
-      ev.preventDefault();
-      var btn = form.querySelector('button.enviar');
-      var errorMsg = document.getElementById('error-msg');
-      errorMsg.style.display = 'none';
+
+    function actualizarProgreso() {
+      progresoFill.style.width = Math.round((indice / totalPreguntas) * 100) + '%';
+      contador.textContent = contadorPrefijo + 'Pregunta ' + (indice + 1) + ' de ' + totalPreguntas;
+    }
+    function mostrarPantalla(i) {
+      pantallas.forEach(function (el, idx) { el.classList.toggle('activa', idx === i); });
+      actualizarProgreso();
+    }
+    function enviar() {
+      var ultima = pantallas[pantallas.length - 1];
+      var btn = ultima.querySelector('.btn-continuar');
+      var errorMsg = ultima.querySelector('.error-msg');
       btn.disabled = true;
-      var respuestas = {};
-      preguntas.forEach(function (texto, i) {
-        var campo = form.querySelector('[name="pregunta-' + i + '"]:checked, #pregunta-' + i);
-        respuestas[texto] = campo ? campo.value : '';
-      });
       fetch(${embedJson(eventoFullUrl)}, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -551,7 +680,35 @@ export function generarHtmlEncuesta(
           btn.disabled = false;
           errorMsg.style.display = 'block';
         });
+    }
+
+    pantallas.forEach(function (pantalla, i) {
+      var btn = pantalla.querySelector('.btn-continuar');
+      if (pantalla.dataset.tipo === 'opciones') {
+        pantalla.querySelectorAll('input[type="radio"]').forEach(function (radio) {
+          radio.addEventListener('change', function () { btn.disabled = false; });
+        });
+      } else {
+        var input = pantalla.querySelector('.input-abierta');
+        input.addEventListener('input', function () { btn.disabled = input.value.trim().length === 0; });
+      }
+      btn.addEventListener('click', function () {
+        if (pantalla.dataset.tipo === 'opciones') {
+          var marcada = pantalla.querySelector('input[type="radio"]:checked');
+          respuestas[textos[i]] = marcada ? marcada.value : '';
+        } else {
+          respuestas[textos[i]] = pantalla.querySelector('.input-abierta').value.trim();
+        }
+        if (i < pantallas.length - 1) {
+          indice = i + 1;
+          mostrarPantalla(indice);
+        } else {
+          enviar();
+        }
+      });
     });
+
+    actualizarProgreso();
   </script>
 </body>
 </html>`;
