@@ -49,6 +49,15 @@ export default function ConexionesBody() {
   const [webhookCopiado, setWebhookCopiado] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  const [wpEstado, setWpEstado] = useState<{ conectado: boolean; site_url?: string; username?: string } | null>(null);
+  const [wpFormAbierto, setWpFormAbierto] = useState(false);
+  const [wpSiteUrl, setWpSiteUrl] = useState("");
+  const [wpUsername, setWpUsername] = useState("");
+  const [wpAppPassword, setWpAppPassword] = useState("");
+  const [wpGuardando, setWpGuardando] = useState(false);
+  const [wpFormError, setWpFormError] = useState<string | null>(null);
+  const [wpDesconectando, setWpDesconectando] = useState(false);
+
   const [clientesPendientes, setClientesPendientes] = useState<{ id: string; name: string; faltantes: string[] }[] | null>(null);
   const [cargandoPendientes, setCargandoPendientes] = useState(false);
 
@@ -119,6 +128,21 @@ export default function ConexionesBody() {
 
   useEffect(() => {
     if (clienteId) cargarEstado(clienteId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteId]);
+
+  async function cargarEstadoWordpress(id: string) {
+    try {
+      const res = await fetch(`/api/onboarding/wordpress-estado?cliente_id=${encodeURIComponent(id)}`, { cache: "no-store" });
+      const data = await res.json().catch(() => null);
+      setWpEstado(res.ok && data ? data : { conectado: false });
+    } catch {
+      setWpEstado({ conectado: false });
+    }
+  }
+
+  useEffect(() => {
+    if (clienteId) cargarEstadoWordpress(clienteId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clienteId]);
 
@@ -205,6 +229,65 @@ export default function ConexionesBody() {
     }
   }
 
+  async function conectarWordpress(e: React.FormEvent) {
+    e.preventDefault();
+    setWpFormError(null);
+    if (!wpSiteUrl.trim()) {
+      setWpFormError("Falta la URL de tu sitio.");
+      return;
+    }
+    if (!wpUsername.trim()) {
+      setWpFormError("Falta el usuario.");
+      return;
+    }
+    if (!wpAppPassword.trim()) {
+      setWpFormError("Falta la contraseña de aplicación.");
+      return;
+    }
+    setWpGuardando(true);
+    try {
+      const res = await fetch("/api/onboarding/conectar-wordpress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cliente_id: clienteId,
+          site_url: wpSiteUrl.trim(),
+          username: wpUsername.trim(),
+          application_password: wpAppPassword.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setWpFormError(data.error || "No se pudo conectar con WordPress");
+        return;
+      }
+      setWpSiteUrl("");
+      setWpUsername("");
+      setWpAppPassword("");
+      setWpFormAbierto(false);
+      if (clienteId) await cargarEstadoWordpress(clienteId);
+    } catch {
+      setWpFormError("No se pudo conectar al servidor");
+    } finally {
+      setWpGuardando(false);
+    }
+  }
+
+  async function desconectarWordpress() {
+    if (!clienteId) return;
+    setWpDesconectando(true);
+    try {
+      await fetch("/api/onboarding/desconectar-wordpress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: clienteId }),
+      });
+      await cargarEstadoWordpress(clienteId);
+    } finally {
+      setWpDesconectando(false);
+    }
+  }
+
   return (
     <div className="max-w-3xl flex flex-col gap-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -258,6 +341,105 @@ export default function ConexionesBody() {
               </div>
             );
           })}
+
+          <div
+            style={{ animationDelay: `${INTEGRACIONES.length * 40}ms` }}
+            className="animate-fade-in-up rounded-lg border border-outline bg-surface p-5 flex items-center justify-between gap-4"
+          >
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-[14px] font-medium text-on-surface">WordPress</span>
+              <span className="text-[13px] text-on-surface-variant truncate">
+                {wpEstado?.conectado
+                  ? `Conectado a ${wpEstado.site_url}`
+                  : "Para publicar tus páginas de captación directo en tu sitio."}
+              </span>
+            </div>
+            {wpEstado?.conectado ? (
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[13px] px-3 py-1.5 rounded-full border border-primary text-primary">Conectado</span>
+                <button
+                  type="button"
+                  onClick={desconectarWordpress}
+                  disabled={wpDesconectando}
+                  className="press text-[13px] text-on-surface-variant hover:text-error disabled:opacity-50 transition-colors duration-150"
+                >
+                  {wpDesconectando ? "Desconectando…" : "Desconectar"}
+                </button>
+              </div>
+            ) : wpFormAbierto ? null : (
+              <button
+                onClick={() => setWpFormAbierto(true)}
+                className="press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
+              >
+                Conectar
+              </button>
+            )}
+          </div>
+
+          {wpFormAbierto && (
+            <form onSubmit={conectarWordpress} className="animate-fade-in-up rounded-lg border border-outline bg-surface p-5 flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-[14px] font-medium text-on-surface">Conectar WordPress</span>
+                <p className="text-[13px] text-on-surface-variant">
+                  Necesitamos la URL de tu sitio y una <span className="font-medium">contraseña de aplicación</span> — no es tu
+                  contraseña de acceso normal: se genera en Usuarios → Tu perfil → Contraseñas de aplicación → Agregar nueva.
+                  Probamos la conexión antes de guardarla.
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">URL del sitio</label>
+                <input
+                  type="text"
+                  value={wpSiteUrl}
+                  onChange={(e) => setWpSiteUrl(e.target.value)}
+                  placeholder="https://tusitio.com"
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Usuario</label>
+                <input
+                  type="text"
+                  value={wpUsername}
+                  onChange={(e) => setWpUsername(e.target.value)}
+                  placeholder="admin"
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Contraseña de aplicación</label>
+                <input
+                  type="password"
+                  value={wpAppPassword}
+                  onChange={(e) => setWpAppPassword(e.target.value)}
+                  placeholder="xxxx xxxx xxxx xxxx"
+                  className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
+                />
+              </div>
+
+              {wpFormError && <p className="text-sm text-error">{wpFormError}</p>}
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={wpGuardando}
+                  className="press rounded-md bg-primary text-on-primary text-[14px] font-medium px-4 py-2.5 disabled:opacity-50 disabled:active:scale-100 transition-transform duration-150"
+                >
+                  {wpGuardando ? "Probando y guardando…" : "Probar y guardar conexión"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWpFormAbierto(false);
+                    setWpFormError(null);
+                  }}
+                  className="press text-[14px] text-on-surface-variant hover:text-on-surface transition-colors duration-150"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          )}
 
           {webhookAbierto && (
             <div className="animate-pop-in rounded-lg border border-outline bg-surface p-5 flex flex-col gap-3">

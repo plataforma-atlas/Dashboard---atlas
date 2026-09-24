@@ -1,6 +1,6 @@
 # Documentación técnica — Panel Vermetricas
 
-> Este documento complementa al [`README.md`](./README.md) (quick-start) con el detalle completo del proyecto: arquitectura, autenticación, modelo de datos, inventario de rutas/APIs, integración con n8n, y los flujos de onboarding de clientes. Generado a partir de una lectura completa del código el 2026-09-14 — todo lo que dice acá está verificado contra archivos reales del repo, no es una descripción genérica. Actualizado el 2026-09-15 con el sidebar compartido/colapsable y los cambios de navegación del Control Center (secciones 7, 8 y 16). Actualizado el 2026-09-16 con el flujo de recuperación de contraseña self-service vía Resend (sección 18) y sus variables de entorno (sección 6). Actualizado el 2026-09-18 con el rediseño del selector de periodo del Control Center, el reemplazo de íconos del sidebar, el sidebar theme-aware + nuevo switch claro/oscuro, y el sistema de animación/tipografía aplicado a todo el dashboard (secciones 15 y 19). Actualizado el 2026-09-23 con el embudo de captación self-service para clientes (páginas `/panel/embudos` y `/panel/conexiones` con Meta Ads), sus nuevos endpoints de n8n, las tablas/etapas de Postgres que usan, el proxy que enmascara las URLs de n8n, la navegación "Configuración"/"Embudos"/"Leads" in-place (sin popup) en los tres sidebars, el menú "Otras campañas" del Control Center para clientes multi-estrategia existentes, y la pantalla `/panel/leads` de leads/compradores con paginación propia (`components/ui/pagination.tsx`) y export a CSV/Excel (sección 20).
+> Este documento complementa al [`README.md`](./README.md) (quick-start) con el detalle completo del proyecto: arquitectura, autenticación, modelo de datos, inventario de rutas/APIs, integración con n8n, y los flujos de onboarding de clientes. Generado a partir de una lectura completa del código el 2026-09-14 — todo lo que dice acá está verificado contra archivos reales del repo, no es una descripción genérica. Actualizado el 2026-09-15 con el sidebar compartido/colapsable y los cambios de navegación del Control Center (secciones 7, 8 y 16). Actualizado el 2026-09-16 con el flujo de recuperación de contraseña self-service vía Resend (sección 18) y sus variables de entorno (sección 6). Actualizado el 2026-09-18 con el rediseño del selector de periodo del Control Center, el reemplazo de íconos del sidebar, el sidebar theme-aware + nuevo switch claro/oscuro, y el sistema de animación/tipografía aplicado a todo el dashboard (secciones 15 y 19). Actualizado el 2026-09-23 con el embudo de captación self-service para clientes (páginas `/panel/embudos` y `/panel/conexiones` con Meta Ads), sus nuevos endpoints de n8n, las tablas/etapas de Postgres que usan, el proxy que enmascara las URLs de n8n, la navegación "Configuración"/"Embudos"/"Leads" in-place (sin popup) en los tres sidebars, el menú "Otras campañas" del Control Center para clientes multi-estrategia existentes, y la pantalla `/panel/leads` de leads/compradores con paginación propia (`components/ui/pagination.tsx`) y export a CSV/Excel (sección 20). Actualizado el 2026-09-24 con el backend del constructor de páginas propio (tablas `landing_pages`/`landing_page_leads`, workflow `Núcleo — Páginas de Captación`, rutas `/api/paginas/*`) y la integración de WordPress (conectar con prueba de credenciales real, estado, desconectar y publicar páginas por REST, workflows `Integraciones — WordPress (Cliente)` e `Integraciones — Publicar en WordPress (Cliente)`, tarjeta "WordPress" en `/panel/conexiones`) — todavía sin la pantalla del wizard que arma el HTML (sección 21).
 
 ## 1. Qué es este proyecto
 
@@ -107,6 +107,9 @@ Solo nombres — nunca se deben pegar valores reales en documentación ni en el 
 **Embudo de captación self-service** (ver sección 20)
 `N8N_CONFIGURAR_EMBUDO_URL`, `N8N_EMBUDO_WEBINAR_LEADS_URL`, `N8N_META_ADS_PULL_URL`, `N8N_GHL_PIPELINES_PULL_URL`, `N8N_WEBHOOK_BASE_URL` (base para el proxy `/api/hooks/[...path]` que enmascara n8n de cara al cliente)
 
+**Constructor de páginas propio y conexión WordPress** (ver sección 21)
+`N8N_PAGINAS_URL` (base — `/guardar`, `/listar`, `/detalle` cuelgan de acá), `N8N_WORDPRESS_CONECTAR_URL`, `N8N_WORDPRESS_ESTADO_URL`, `N8N_WORDPRESS_DESCONECTAR_URL`, `N8N_WORDPRESS_PUBLICAR_URL`
+
 **Admin / gestión de usuarios y clientes**
 `N8N_ADMIN_USUARIOS_URL`, `N8N_ADMIN_CLIENTE_USUARIO_URL`, `N8N_ADMIN_ELIMINAR_USUARIO_URL`, `N8N_ADMIN_CAMBIAR_ROL_URL`, `N8N_CREAR_CLIENTE_URL`, `N8N_ESTADO_CLIENTE_URL`, `N8N_CLIENTES_URL`, `N8N_CAMPANAS_URL`
 
@@ -137,6 +140,8 @@ app/
   panel/conexiones/                Panel de integraciones del cliente (GHL, Meta Ads, ClaseEspecial)
   panel/embudos/                    Crear/activar el embudo de Webinar Automático y ver sus 4 URLs de captación
   panel/leads/                      Leads y compradores capturados por el embudo, con paginación y export CSV/Excel
+  api/paginas/                      CRUD del constructor de páginas propio (guardar/listar/detalle) + publicar-wordpress — ver sección 21
+  api/onboarding/conectar-wordpress, wordpress-estado, desconectar-wordpress   Conexión WordPress por cliente — ver sección 21
   webinar-os/control-center/[clienteId]/   Vista agregada semanal por cliente (Webinar OS)
   admin/cartera/, admin/clientes/, admin/usuarios/   Solo admin
   api/                             Proxies server-side hacia n8n (ver sección 10)
@@ -194,7 +199,8 @@ Patrón repetido en **todas** las rutas (ver sección 11 para el detalle): verif
 **Auth** — `login`, `logout`, `me`, `registro`, `registro-invitado`, `olvide-password` (pública), `restablecer-password` (pública, protegida por token firmado)
 **Invitación** — `invitacion/verificar` (pública)
 **Datos core** — `clientes`, `campanas`, `funnel` (embudo genérico, usado por varios módulos)
-**Onboarding** — `onboarding/conectar-ghl`, `onboarding/estado`
+**Onboarding** — `onboarding/conectar-ghl`, `onboarding/estado`, `onboarding/conectar-meta-ads`, `onboarding/conectar-wordpress`, `onboarding/wordpress-estado`, `onboarding/desconectar-wordpress`
+**Embudo / páginas / leads** — `embudo/configurar`, `leads`, `paginas` (GET listar + POST guardar), `paginas/[id]` (GET detalle), `paginas/publicar-wordpress`, `hooks/[...path]` (proxy público que enmascara los webhooks de n8n)
 **Webinar OS** — `webinar-os/webinars`, `webinar-os/webinar-detalle`, `webinar-os/cartera` (admin), `webinar-os/cartera-por-campana`
 **Evento presencial** — `evento/buscar`, `checkin`, `checkin-deshacer`, `checkin-resumen`, `invitado-guardar`, `lead-actualizar`, `lead-detalle`, `listar-por-tier`, `marcar-vip`, `quitar-vip`, `registrar-invitado-general`, `registrar-invitado-ponente`, `resumen-pagos`, `gasto-pauta`, `gasto-pauta-consolidado`, `gasto-pauta-por-anuncio`
 **Admin** (todas requieren `role === "admin"`) — `usuarios`, `cambiar-rol`, `cliente-usuario`, `eliminar-usuario`, `crear-cliente`, `estado-cliente`, `generar-invitacion`
@@ -244,7 +250,9 @@ clients (id, name, status: active|archived)
           └─< datos de evento (registros/checkins/confirmados/tiers + gasto por ángulo)             [strategy_type = evento_presencial]
           └─< KPIs de VSL (registros/depósitos/capital)                                             [strategy_type = vsl]
 clients
-   └─< conexiones por cliente (cliente_id, integration_type, status, updated_at, config, tiene_credencial)
+   └─< client_connections (cliente_id, integration_type, status, config jsonb, credential_encrypted, updated_at) — CHECK integration_type IN ('ghl','meta_ads','whop','webinarkit','hotmart','wordpress')
+   └─< landing_pages (id, cliente_id, slug, nombre, tipo_funil, plantilla, colores/copy/encuesta/gracias/imagenes jsonb, status)      [constructor de páginas propio, ver sección 21]
+          └─< landing_page_leads (id, cliente_id, pagina_id, nombre, email, whatsapp, respuestas jsonb, utm_*, fbclid/gclid/ttclid, referrer, landing)
 users (user_id, role: admin|client|checkin, …)
    └─< user_clientes (join many-to-many: user_id, cliente_id)
 ```
@@ -273,6 +281,7 @@ Fuente: `app/api/onboarding/conectar-ghl`, `app/api/onboarding/estado`, `app/pan
 - La UI considera "Conectado" solo si `integration_type === "ghl" && status === "active" && tiene_credencial === true`.
 - **Meta Ads ya no es un placeholder** (ver sección 20) — el mismo webhook de n8n (`onboarding/conectar-integracion`) ya aceptaba `meta_ads` como `integration_type` válido antes de construir la UI; solo hizo falta agregarle el formulario en `/panel/conexiones` (ID de cuenta publicitaria + token de acceso, guardados en `config.ad_account_id` y `credential_encrypted`).
 - **Whop sigue siendo un placeholder** en la UI (`disponible: false`, "Próximamente") — no tiene ruta de backend todavía.
+- **WordPress** (agregado 2026-09-24) es una tarjeta aparte en `/panel/conexiones` con su propio flujo de conexión (URL + usuario + contraseña de aplicación, probada contra la REST API real antes de guardar) — no reutiliza `onboarding/conectar-integracion` como GHL/Meta Ads, tiene sus propios endpoints dedicados porque necesita esa validación previa. Ver sección 21 para el detalle completo (conectar/estado/desconectar/publicar).
 
 **ClaseEspecial (antes "WebinarKit") — integración inversa, sin credencial.** A diferencia de GHL, acá no le pedimos nada al cliente: le mostramos un webhook (`/panel/conexiones`, botón "Ver webhook") para que él lo pegue en la configuración de webhooks de su plataforma de ClaseEspecial/WebinarKit. Es una única URL compartida entre todos los clientes, diferenciada por `?cliente_id=` en la query — no pasa por `client_connections`/`tiene_credencial` como GHL, así que nunca muestra "Conectado", solo el botón para ver la URL.
 
@@ -313,6 +322,8 @@ Cada API route **vuelve a verificar** sesión y permisos por su cuenta — el mi
 - **Links a `/?vista=clasica&campaign_id=...` siempre necesitan `cliente_id`.** El dashboard clásico (`app/page.tsx`) resuelve el cliente activo por su propio estado (`selectedClientId`, default admin = primer cliente de la lista); sin `cliente_id` en la URL, el `campaign_id` se busca en el cliente equivocado, no matchea nada, y cae en el default de ESE cliente sin avisar — visto en el selector del Control Center, ver sección 8.
 - **`CampaignSelector` (dashboard clásico) colapsa `webinar_automatizado`/`vsl`/`evento_presencial` en una sola entrada del `<select>`** (el resto de la selección de país/edición/ángulo vive dentro del módulo). El `value` de esa entrada tiene que ser la campaña realmente activa del grupo si hay una (no siempre `items[0].id`), o un link directo a la 2ª/3ª campaña de esa estrategia muestra el contenido correcto pero la etiqueta equivocada en el dropdown.
 - **Cambiar de cliente en `app/page.tsx` puede mostrar un instante mezclado** (nombre del cliente nuevo + campaña del cliente anterior) si el fetch de campañas nuevas no se trackea contra qué cliente pertenece — el efecto que lo reemplaza corre después del render, así que el frame intermedio es real, no solo teórico. El fix (`campaignsClientId` comparado en cada render + un id de request para ignorar respuestas tardías de un cliente del que ya se salió) es el patrón a seguir si se agrega otro fetch "por cliente seleccionado" en este archivo.
+- **EasyPanel (donde vive n8n) intercepta las respuestas `502` de los webhooks y les reemplaza el cuerpo por su propia página de error genérica** ("Service is not reachable", con logo de EasyPanel) — el JSON real que devuelve el nodo `Respond to Webhook` nunca llega al cliente. Confirmado con una prueba aislada: la misma respuesta con código `500` sí pasa el cuerpo real, `502` no. Por eso todos los workflows de "Integraciones — WordPress" responden errores con `400`, nunca `502`/`503`/`504`. Si se agrega un workflow nuevo y sus respuestas de error "desaparecen" en el cliente, revisar primero el código de estado antes de sospechar de n8n.
+- **`client_connections` tiene un CHECK constraint en `integration_type`** que limita los valores aceptados a una lista fija en la base de datos (no solo en el código de n8n) — antes de agregar un `integration_type` nuevo hay que migrar este constraint (`ALTER TABLE ... DROP CONSTRAINT ... ADD CONSTRAINT ... CHECK (integration_type = ANY (ARRAY[...]))`) o el `INSERT`/`UPDATE` falla. Pasó exactamente esto con `'wordpress'`: el código (Next.js + n8n) ya lo daba por soportado, pero el constraint todavía no lo incluía, así que cualquier conexión se hubiera "guardado" sin error visible salvo que el `RETURNING` viniera vacío — silencioso y fácil de pasar por alto. Ya está corregido (`wordpress` agregado a la lista), pero es la señal a buscar si un futuro `client_connections` INSERT "no tira error pero tampoco persiste".
 - **`GET /api/evento/resumen-pagos` (desglose Gratuita/Platinum/VIP) no recibe ni filtra por `cliente_id` — devuelve siempre el mismo evento** (el route handler solo chequea que la sesión tenga acceso a `"atlas"`, hardcodeado). Cualquier otro cliente con una campaña `evento_presencial` (la mayoría son placeholders sin evento real todavía) va a ver el desglose de pagos de Atlas como si fuera suyo. El resto del módulo Evento (`gasto-pauta*`, KPIs de registro/check-in) sí es por cliente vía `cliente_id`/`campaign_id` — este endpoint es la excepción.
 
 ## 17. Deploy
@@ -390,4 +401,62 @@ Primera pieza de la visión de "self-service": el cliente arma su propio embudo,
 
 **"Configuración" / "Embudos" / "Leads" reemplazan el contenido principal in-place, no navegan ni abren un popup**: en los tres sidebars (dashboard clásico, Control Center, `AppSidebar`), estos tres items son `<button>` — al hacer click, el `<main>` de la pantalla actual muestra `ConexionesBody`/`EmbudosBody`/`LeadsBody` (`components/panel/`) en vez de su contenido normal, sin overlay, sin backdrop, sin botón de cerrar. El sidebar se queda exactamente igual y el item activo queda resaltado. Es un toggle: click de nuevo en el mismo botón vuelve al contenido normal de esa pantalla. El estado (`open: "configuracion" | "embudos" | "leads" | null`) vive en `components/SidePanelProvider.tsx` (contexto `useSidePanel()`, provisto en `app/layout.tsx`) — el provider no renderiza UI propia, cada pantalla decide cómo mostrar `open`. Al navegar de verdad a otra ruta (cambio de `pathname`), el provider resetea `open` a `null` automáticamente. Los links de navegación internos del Control Center (`WccSidebarNav`, anclas `#resumen` etc.) no cambian de `pathname`, así que cierran el panel explícitamente antes de saltar a la sección. Las páginas standalone `/panel/conexiones`, `/panel/embudos` y `/panel/leads` se mantienen para acceso directo por URL, y también respetan `open` (si `open` apunta a otro panel, lo muestran en vez de su propio contenido por defecto). De paso se quitó el link "Dashboard clásico" del sidebar del Control Center — ya no tenía una función clara una vez agregados estos accesos.
 
-**Pendiente / fuera de alcance**: el constructor de páginas web / integración WordPress mencionado como visión a futuro no se tocó.
+**Actualización 2026-09-24**: el constructor de páginas web / integración WordPress mencionado acá como visión a futuro ya tiene su backend construido — ver sección 21.
+
+## 21. Constructor de páginas propio + integración WordPress (backend, sin wizard todavía)
+
+Segunda pieza de la visión "self-service", separada del embudo de webinar de la sección 20: en vez de depender de una herramienta externa (tipo Zoryam) para armar landing pages de captación/encuesta/gracias, el objetivo es que el propio dashboard las genere y las publique directo en el WordPress del cliente. **Lo que existe hoy es el backend completo (modelo de datos + n8n + rutas Next.js) — todavía no hay ninguna pantalla de wizard que arme el HTML ni un botón "Publicar" visible en la UI.** Esta sección documenta ese backend tal cual quedó, para que quien construya el wizard sepa exactamente con qué contratos tiene que hablar.
+
+### Modelo de datos
+
+Fuente: migración corrida a mano vía un workflow temporal de n8n (no hay archivo `.sql` en el repo, igual que el resto del proyecto).
+
+```sql
+landing_pages (
+  id, cliente_id, slug, nombre, tipo_funil ('webinario'|'sesion_estrategica'),
+  plantilla, colores/copy/encuesta/gracias/imagenes (jsonb), status, created_at, updated_at,
+  UNIQUE (cliente_id, slug)
+)
+landing_page_leads (
+  id, cliente_id, pagina_id → landing_pages.id, nombre, email, whatsapp, respuestas (jsonb),
+  utm_source/utm_medium/utm_campaign/utm_term/utm_content, fbclid, gclid, ttclid, referrer, landing,
+  created_at, updated_at
+)
+```
+
+`landing_pages` guarda el estado completo del wizard (para poder reabrir/editar/regenerar una página ya creada, como el "Páginas salvas" de la referencia). `landing_page_leads` es el equivalente propio a la hoja de Google Sheets que usan herramientas como Zoryam — mismo patrón de "buscar por email/whatsapp dentro de la misma página, actualizar si ya existe" que ya usa el embudo de webinar (sección 20), para no duplicar leads entre el paso de captura y el de encuesta.
+
+### `Núcleo — Páginas de Captación` (n8n, carpeta "07 · Núcleo Compartido")
+
+Cuatro webhooks:
+- `POST /webhook/paginas/guardar` — upsert por `(cliente_id, slug)` (`ON CONFLICT DO UPDATE`, reemplaza el snapshot completo — el caller siempre tiene que mandar el estado entero, no un parche parcial). Devuelve `{ ok, id, slug }`.
+- `GET /webhook/paginas/listar?cliente_id=` — lista liviana (sin el jsonb completo) para la pantalla de "páginas guardadas".
+- `GET /webhook/paginas/detalle?cliente_id=&id=` — trae la config completa de una página; 404 si no existe o no es de ese cliente.
+- `POST /webhook/paginas/evento?cliente_id=&pagina_id=` — el único endpoint **público** de los cuatro (pensado para ir embebido directo en el HTML/WordPress generado, sin pasar por `/api/hooks` porque no es un webhook que herramientas externas necesiten llamar). Acepta `{ tipo: "lead"|"pesquisa", nombre, email, whatsapp, utm, respuestas }` — mismo comportamiento que el Apps Script de referencia: busca el lead por email/whatsapp dentro de esa `pagina_id`, actualiza si existe (con los UTM en modo "primer touch": `COALESCE(utm_x, nuevo_valor)`, nunca se pisa el dato una vez capturado) o crea si no.
+
+Rutas Next.js: `app/api/paginas/route.ts` (`GET` listar / `POST` guardar) y `app/api/paginas/[id]/route.ts` (`GET` detalle) — mismo patrón de sesión/rol que el resto (`clientesDeSesion()`, admin ve cualquier cliente).
+
+### Conexión de WordPress (`/panel/conexiones`)
+
+A diferencia de GHL/Meta Ads (sección 13), WordPress **no** reutiliza el webhook genérico `onboarding/conectar-integracion` — tiene su propio workflow porque necesita probar la credencial contra la API real antes de guardarla (el "Testar e salvar conexão" de la referencia). Fuente: `Integraciones — WordPress (Cliente)` (n8n, carpeta "11 · Integraciones Cliente"), `components/panel/ConexionesBody.tsx` (tarjeta "WordPress").
+
+- `POST /integraciones/wordpress-conectar` — recibe `{ cliente_id, site_url, username, application_password }` (la "contraseña de aplicación" de WordPress, no la de login — se genera en Usuarios → Perfil → Contraseñas de aplicación). Normaliza la URL (agrega `https://` si falta, saca la barra final), arma el header `Authorization: Basic base64(usuario:password)` a mano (no usa el sistema de credenciales de n8n porque el usuario/password son dinámicos por cliente) y llama a `GET {site}/wp-json/wp/v2/users/me`. Solo si WordPress responde con un usuario válido (`id` presente) guarda en `client_connections` (`integration_type: 'wordpress'`, `config: { site_url, username }`, `credential_encrypted` = la contraseña de aplicación cifrada con `pgp_sym_encrypt`, misma clave que el resto del proyecto). Si falla la prueba, no guarda nada y responde `400` con un mensaje claro.
+- `GET /integraciones/wordpress-estado?cliente_id=` — `{ conectado, site_url, username, updated_at }` — nunca devuelve la contraseña.
+- `POST /integraciones/wordpress-desconectar` — borra la fila de `client_connections`.
+
+Rutas Next.js: `app/api/onboarding/conectar-wordpress`, `wordpress-estado`, `desconectar-wordpress` — mismo patrón de sesión/rol.
+
+**Gotcha real encontrado y corregido**: `client_connections` tiene un CHECK constraint de base de datos (`client_connections_integration_type_check`) que restringía `integration_type` a `('ghl','meta_ads','whop','webinarkit','hotmart')` — **`'wordpress'` no estaba en la lista**. El código (tanto n8n como esta documentación) ya daba por hecho que `wordpress` era un valor válido, pero cualquier `INSERT`/`ON CONFLICT DO UPDATE` con ese valor violaba el constraint. Se migró el constraint para agregar `'wordpress'`. Ver también el gotcha de EasyPanel/502 en la sección 16, encontrado mientras se diagnosticaba este mismo problema.
+
+### Publicar páginas en WordPress
+
+`Integraciones — Publicar en WordPress (Cliente)` (n8n, misma carpeta): `POST /integraciones/wordpress-publicar`, body `{ cliente_id, captura, encuesta, gracias }` donde cada una de esas tres claves es `{ slug, titulo, html } | null` (el HTML ya renderizado — este workflow no genera copy ni arma plantillas, solo publica lo que le llega). Para cada clave presente:
+1. Busca en WordPress si ya existe una página con ese `slug` (`GET /wp-json/wp/v2/pages?slug=&status=any`).
+2. Si existe, la actualiza (`POST /wp-json/wp/v2/pages/{id}`); si no, la crea (`POST /wp-json/wp/v2/pages`) — ambas con `status: 'publish'`.
+3. Devuelve `{ tipo, ok, slug, url }` o `{ tipo, ok: false, error }` por cada una; las que vienen `null` responden `{ tipo, ok: true, omitido: true }` sin llamar a WordPress.
+
+Los tres resultados se combinan con dos nodos `merge` (append) en cascada — no con un loop (`splitInBatches`) porque la cardinalidad es fija (siempre son a lo sumo 3 páginas conocidas de antemano, nunca un array dinámico), lo que evita el problema típico de n8n de perder el contexto por-item al salir de un loop. Ruta Next.js: `app/api/paginas/publicar-wordpress/route.ts`.
+
+Probado de punta a punta con una conexión de prueba contra `wordpress.org` real (credenciales inválidas a propósito, para no depender de un sitio real): las 3 ramas devolvieron el error real de WordPress (`401 rest_cannot_create`) y la omitida se marcó correctamente — el mecanismo completo (búsqueda, creación/actualización, combinación de resultados) quedó verificado, solo falta un sitio con credenciales reales para confirmar el camino 100% feliz.
+
+**Pendiente / fuera de alcance de esta sesión**: el wizard visual que arma el `copy_spec` por secciones, elige plantilla/colores, arma la encuesta pregunta por pregunta y genera el HTML final a partir de todo eso — hoy ese HTML tendría que armarse a mano para poder llamar a `/api/paginas/publicar-wordpress`. Tampoco hay todavía un botón "Publicar" en ninguna pantalla del panel.
