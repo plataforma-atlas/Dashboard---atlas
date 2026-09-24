@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
-import { Briefcase, Users, UserCog, ArrowLeftRight, Workflow, ClipboardList, LayoutTemplate, Layers, ChevronDown } from "lucide-react";
+import { Briefcase, Users, UserCog, ArrowLeftRight, Workflow, ClipboardList, Layers, ChevronDown } from "lucide-react";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
 import { useSidePanel } from "@/components/SidePanelProvider";
 import { themeForClient } from "@/lib/clients";
@@ -44,7 +44,7 @@ export default function ControlCenterPage() {
   const [selectorClienteAbierto, setSelectorClienteAbierto] = useState(false);
   const [otrasCampanasAbierto, setOtrasCampanasAbierto] = useState(false);
   const { collapsed: sidebarCollapsed, toggleCollapsed: toggleSidebarCollapsed } = useSidebarCollapse();
-  const { open, openConfiguracion, openEmbudos, openLeads, openPaginas, close: closeSidePanel } = useSidePanel();
+  const { open, openConfiguracion, openEmbudos, openLeads, close: closeSidePanel } = useSidePanel();
   const [campanas, setCampanas] = useState<CampanaCartera[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -316,17 +316,6 @@ export default function ControlCenterPage() {
               <ClipboardList size={13} strokeWidth={2} />
             </span>
             {!sidebarCollapsed && <span>Leads</span>}
-          </button>
-          <button
-            type="button"
-            title="Páginas"
-            onClick={() => (open === "paginas" ? closeSidePanel() : openPaginas())}
-            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""} ${open === "paginas" ? "bg-surface-high text-on-surface" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"}`}
-          >
-            <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
-              <LayoutTemplate size={13} strokeWidth={2} />
-            </span>
-            {!sidebarCollapsed && <span>Páginas</span>}
           </button>
           {isAdmin && (
             <>

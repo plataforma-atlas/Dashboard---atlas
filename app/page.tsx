@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeftRight, Briefcase, Users, UserCog, Workflow, ClipboardList, LayoutTemplate } from "lucide-react";
+import { ArrowLeftRight, Briefcase, Users, UserCog, Workflow, ClipboardList } from "lucide-react";
 import { useSidePanel } from "@/components/SidePanelProvider";
 import ConexionesBody from "@/components/panel/ConexionesBody";
 import EmbudosBody from "@/components/panel/EmbudosBody";
@@ -104,7 +104,7 @@ function Home() {
   const [selectedClientId, setSelectedClientId] = useState("");
   const [selectorClienteAbierto, setSelectorClienteAbierto] = useState(false);
   const { collapsed: sidebarCollapsed, toggleCollapsed: toggleSidebarCollapsed } = useSidebarCollapse();
-  const { open, openConfiguracion, openEmbudos, openLeads, openPaginas, close: closeSidePanel } = useSidePanel();
+  const { open, openConfiguracion, openEmbudos, openLeads, close: closeSidePanel } = useSidePanel();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignsLoading, setCampaignsLoading] = useState(false);
   // A qué cliente pertenece lo que hay hoy en `campaigns` — se compara contra
@@ -828,17 +828,6 @@ function Home() {
               <ClipboardList size={13} strokeWidth={2} />
             </span>
             {!sidebarCollapsed && <span>Leads</span>}
-          </button>
-          <button
-            type="button"
-            title="Páginas"
-            onClick={() => (open === "paginas" ? closeSidePanel() : openPaginas())}
-            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""} ${open === "paginas" ? "bg-surface-high text-on-surface" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"}`}
-          >
-            <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
-              <LayoutTemplate size={13} strokeWidth={2} />
-            </span>
-            {!sidebarCollapsed && <span>Páginas</span>}
           </button>
           {session.role === "admin" && (
             <>

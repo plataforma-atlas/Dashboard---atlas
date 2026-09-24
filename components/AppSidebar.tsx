@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, ArrowLeftRight, Briefcase, Users, UserCog, Workflow, ClipboardList, LayoutTemplate, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, ArrowLeftRight, Briefcase, Users, UserCog, Workflow, ClipboardList, type LucideIcon } from "lucide-react";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
@@ -17,12 +17,15 @@ const PANEL_KEY: Record<string, "configuracion" | "embudos" | "leads" | "paginas
   paginas: "paginas",
 };
 
+// "paginas" (constructor de páginas) queda pausado a pedido explícito del
+// cliente (2026-09-25) — se va a construir aparte, en otro proyecto/plataforma.
+// El código (backend, wizard, generador de HTML) queda intacto en el repo,
+// solo se sacó del nav para que nadie tropiece con él mientras tanto.
 const NAV_ITEMS: { key: NavKey; href?: string; label: string; Icon: LucideIcon; adminOnly?: boolean }[] = [
   { key: "dashboard", href: "/", label: "Dashboard", Icon: LayoutDashboard },
   { key: "conexiones", label: "Configuración", Icon: ArrowLeftRight },
   { key: "embudos", label: "Embudos", Icon: Workflow },
   { key: "leads", label: "Leads", Icon: ClipboardList },
-  { key: "paginas", label: "Páginas", Icon: LayoutTemplate },
   { key: "cartera", href: "/admin/cartera", label: "Cartera", Icon: Briefcase, adminOnly: true },
   { key: "clientes", href: "/admin/clientes", label: "Clientes", Icon: Users, adminOnly: true },
   { key: "usuarios", href: "/admin/usuarios", label: "Usuarios", Icon: UserCog, adminOnly: true },
