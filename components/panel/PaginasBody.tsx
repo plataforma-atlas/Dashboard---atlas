@@ -16,7 +16,20 @@ import {
   type Flujo,
   type SlugsPaginas,
   type WhatsappFormato,
+  type SeccionMecanismo,
+  type SeccionChecklist,
+  type SeccionExperto,
 } from "@/lib/paginas/templates";
+
+function listSet(list: string[], i: number, value: string): string[] {
+  return list.map((v, idx) => (idx === i ? value : v));
+}
+function listAdd(list: string[]): string[] {
+  return [...list, ""];
+}
+function listRemove(list: string[], i: number): string[] {
+  return list.filter((_, idx) => idx !== i);
+}
 
 type PaginaListado = {
   id: number;
@@ -101,27 +114,28 @@ const FLUJO_OPTIONS: { value: Flujo; label: string; paginas: number; descripcion
   },
 ];
 
-const TEMPLATES: { id: string; nombre: string; disponible: boolean; descripcion: string; secciones: string[] }[] = [
+const TEMPLATES: { id: string; nombre: string; disponible: boolean; descripcion: string; colorVista: string }[] = [
   {
     id: "clasica-01",
-    nombre: "Clásica",
+    nombre: "Estándar",
     disponible: true,
-    descripcion: "Una sola pantalla, sin scroll — va directo al grano.",
-    secciones: ["Título + subtítulo", "Lista de beneficios (opcional)", "Formulario: nombre, email y WhatsApp", "Botón de acción"],
+    descripcion:
+      "Hero con foto de fondo + 4 secciones (mecanismo, checklist, quién conduce) + CTA fijo global. Todos los botones abren el mismo popup con el formulario.",
+    colorVista: "linear-gradient(160deg, #123524, #05100a)",
   },
   {
     id: "urgencia",
     nombre: "Urgencia",
     disponible: false,
-    descripcion: "Con barra de urgencia y contador regresivo arriba del formulario.",
-    secciones: ["Barra de urgencia / contador", "Título + subtítulo", "Formulario", "Botón de acción"],
+    descripcion: "Centrada al 100%: barra de urgencia/contador + hero con foto de fondo + retos + beneficios + quién conduce.",
+    colorVista: "linear-gradient(160deg, #4a2600, #1a0f00)",
   },
   {
     id: "webinario-vsl",
     nombre: "Webinario + VSL",
     disponible: false,
-    descripcion: "Con video (VSL) arriba del formulario, para captar atención antes de pedir los datos.",
-    secciones: ["Video (VSL)", "Título + subtítulo", "Formulario", "Botón de acción"],
+    descripcion: "Hero con video (VSL) + contraste antes/después + 3 pasos + 4 entregables. Cada botón abre el popup, sin formulario visible en la página.",
+    colorVista: "linear-gradient(160deg, #0a1a33, #000814)",
   },
 ];
 
@@ -277,7 +291,13 @@ export default function PaginasBody() {
         copy: {
           flujo: p.copy?.flujo === "captura_gracias" ? "captura_gracias" : base.copy.flujo,
           slugsPaginas: { ...base.copy.slugsPaginas, ...(p.copy?.slugsPaginas || {}) },
-          captura: { ...base.copy.captura, ...(p.copy?.captura || {}) },
+          captura: {
+            ...base.copy.captura,
+            ...(p.copy?.captura || {}),
+            mecanismo: { ...base.copy.captura.mecanismo, ...(p.copy?.captura?.mecanismo || {}) },
+            checklist: { ...base.copy.captura.checklist, ...(p.copy?.captura?.checklist || {}) },
+            experto: { ...base.copy.captura.experto, ...(p.copy?.captura?.experto || {}) },
+          },
           encuestaIntro: { ...base.copy.encuestaIntro, ...(p.copy?.encuestaIntro || {}) },
         },
         encuesta: Array.isArray(p.encuesta) ? p.encuesta : base.encuesta,
@@ -311,6 +331,15 @@ export default function PaginasBody() {
   function updateCaptura(patch: Partial<CopyCaptura>) {
     setSpec((prev) => ({ ...prev, copy: { ...prev.copy, captura: { ...prev.copy.captura, ...patch } } }));
   }
+  function updateMecanismo(patch: Partial<SeccionMecanismo>) {
+    setSpec((prev) => ({ ...prev, copy: { ...prev.copy, captura: { ...prev.copy.captura, mecanismo: { ...prev.copy.captura.mecanismo, ...patch } } } }));
+  }
+  function updateChecklist(patch: Partial<SeccionChecklist>) {
+    setSpec((prev) => ({ ...prev, copy: { ...prev.copy, captura: { ...prev.copy.captura, checklist: { ...prev.copy.captura.checklist, ...patch } } } }));
+  }
+  function updateExperto(patch: Partial<SeccionExperto>) {
+    setSpec((prev) => ({ ...prev, copy: { ...prev.copy, captura: { ...prev.copy.captura, experto: { ...prev.copy.captura.experto, ...patch } } } }));
+  }
   function updateEncuestaIntro(patch: Partial<CopyEncuestaIntro>) {
     setSpec((prev) => ({ ...prev, copy: { ...prev.copy, encuestaIntro: { ...prev.copy.encuestaIntro, ...patch } } }));
   }
@@ -321,14 +350,28 @@ export default function PaginasBody() {
     setSpec((prev) => ({ ...prev, imagenes: { ...prev.imagenes, ...patch } }));
   }
 
-  function setBullet(i: number, value: string) {
-    updateCaptura({ bullets: spec.copy.captura.bullets.map((b, idx) => (idx === i ? value : b)) });
-  }
-  function addBullet() {
-    updateCaptura({ bullets: [...spec.copy.captura.bullets, ""] });
-  }
-  function removeBullet(i: number) {
-    updateCaptura({ bullets: spec.copy.captura.bullets.filter((_, idx) => idx !== i) });
+  function editorLista(valores: string[], onChange: (nuevos: string[]) => void, placeholder?: string) {
+    return (
+      <div className="flex flex-col gap-2">
+        {valores.map((v, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              type="text"
+              value={v}
+              onChange={(e) => onChange(listSet(valores, i, e.target.value))}
+              placeholder={placeholder}
+              className="w-full bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface focus:border-primary outline-none transition-colors duration-150"
+            />
+            <button type="button" onClick={() => onChange(listRemove(valores, i))} className="press text-[12px] px-2.5 py-1.5 rounded-md border border-outline text-on-surface-variant shrink-0">
+              Quitar
+            </button>
+          </div>
+        ))}
+        <button type="button" onClick={() => onChange(listAdd(valores))} className="press text-[13px] px-3 py-1.5 rounded-md border border-outline text-on-surface-variant self-start">
+          + Agregar
+        </button>
+      </div>
+    );
   }
 
   function setPregunta(i: number, patch: Partial<PreguntaEncuesta>) {
@@ -751,7 +794,7 @@ export default function PaginasBody() {
         <div className={cardClass}>
           <div className="flex flex-col gap-1.5">
             <label className={labelClass}>Modelo de la página de captura</label>
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {TEMPLATES.map((t) => {
                 const activo = spec.plantilla === t.id;
                 return (
@@ -760,27 +803,25 @@ export default function PaginasBody() {
                     type="button"
                     disabled={!t.disponible}
                     onClick={() => updateSpec({ plantilla: t.id })}
-                    className={`press text-left rounded-lg border p-4 flex flex-col gap-2 transition-colors duration-150 ${
-                      !t.disponible
-                        ? "opacity-50 cursor-not-allowed border-outline"
-                        : activo
-                        ? "border-primary bg-surface-high"
-                        : "border-outline hover:border-primary"
+                    className={`press text-left rounded-lg border overflow-hidden flex flex-col transition-colors duration-150 ${
+                      !t.disponible ? "opacity-50 cursor-not-allowed border-outline" : activo ? "border-primary" : "border-outline hover:border-primary"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="text-[14.5px] font-semibold text-on-surface">{t.nombre}</span>
-                      {!t.disponible && (
-                        <span className="text-[11px] px-2 py-0.5 rounded-full border border-outline text-on-surface-faint">Próximamente</span>
-                      )}
+                    <div className="h-24 flex flex-col justify-end gap-1 p-3 shrink-0" style={{ background: t.colorVista }}>
+                      <div className="h-1.5 w-2/3 rounded-full bg-white/70" />
+                      <div className="h-1.5 w-1/2 rounded-full bg-white/40" />
+                      <div className="h-4 w-16 rounded-full bg-white/90 mt-1" />
                     </div>
-                    <span className="text-[13px] text-on-surface-variant">{t.descripcion}</span>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      {t.secciones.map((s) => (
-                        <span key={s} className="text-[11.5px] px-2 py-1 rounded-md bg-background border border-outline text-on-surface-variant">
-                          {s}
-                        </span>
-                      ))}
+                    <div className="p-3 flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[13.5px] font-semibold text-on-surface">{t.nombre}</span>
+                        {!t.disponible && (
+                          <span className="text-[10.5px] px-1.5 py-0.5 rounded-full border border-outline text-on-surface-faint shrink-0">
+                            Próximamente
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[12px] text-on-surface-variant leading-snug">{t.descripcion}</span>
                     </div>
                   </button>
                 );
@@ -859,8 +900,18 @@ export default function PaginasBody() {
 
       {paso === "captura" && (
         <div className={cardClass}>
+          <p className="text-[13px] text-on-surface-variant">
+            Todos los botones "{spec.copy.captura.textoBoton || "…"}" de la página abren el mismo popup con el formulario — no hay
+            formulario suelto en el medio de la página, igual que en las páginas de referencia.
+          </p>
+
+          <span className="text-xs uppercase tracking-wide text-on-surface-faint">Hero</span>
           <div className="flex flex-col gap-1.5">
-            <label className={labelClass}>Título</label>
+            <label className={labelClass}>Badge (fecha/hora, opcional)</label>
+            <input type="text" value={spec.copy.captura.badge} onChange={(e) => updateCaptura({ badge: e.target.value })} placeholder="Próximo martes a las 7:00 PM hora Colombia" className={inputClass} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Título — envolvé una palabra en **así** para resaltarla</label>
             <input type="text" value={spec.copy.captura.titulo} onChange={(e) => updateCaptura({ titulo: e.target.value })} className={inputClass} />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -868,27 +919,76 @@ export default function PaginasBody() {
             <input type="text" value={spec.copy.captura.subtitulo} onChange={(e) => updateCaptura({ subtitulo: e.target.value })} className={inputClass} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className={labelClass}>Beneficios (bullets)</label>
-            {spec.copy.captura.bullets.map((b, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <input type="text" value={b} onChange={(e) => setBullet(i, e.target.value)} className={inputClass} />
-                <button type="button" onClick={() => removeBullet(i)} className="press text-[12px] px-2.5 py-1.5 rounded-md border border-outline text-on-surface-variant shrink-0">
-                  Quitar
-                </button>
-              </div>
-            ))}
-            <button type="button" onClick={addBullet} className="press text-[13px] px-3 py-1.5 rounded-md border border-outline text-on-surface-variant self-start">
-              + Agregar beneficio
-            </button>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className={labelClass}>Texto del botón</label>
+            <label className={labelClass}>Texto del botón (se repite en toda la página)</label>
             <input type="text" value={spec.copy.captura.textoBoton} onChange={(e) => updateCaptura({ textoBoton: e.target.value })} className={inputClass} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className={labelClass}>Imagen (URL, opcional)</label>
+            <label className={labelClass}>Frases de confianza (debajo del botón del hero)</label>
+            {editorLista(spec.copy.captura.trustBullets, (v) => updateCaptura({ trustBullets: v }), "Ej. Cupos limitados")}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Imagen de fondo del hero (URL, opcional)</label>
             <input type="text" value={spec.imagenes.capturaUrl} onChange={(e) => updateImagenes({ capturaUrl: e.target.value })} placeholder="https://…" className={inputClass} />
           </div>
+
+          <span className="text-xs uppercase tracking-wide text-on-surface-faint pt-2 border-t border-outline">Mecanismo</span>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Eyebrow (etiqueta pequeña arriba del título)</label>
+            <input type="text" value={spec.copy.captura.mecanismo.eyebrow} onChange={(e) => updateMecanismo({ eyebrow: e.target.value })} className={inputClass} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Título de la sección</label>
+            <input type="text" value={spec.copy.captura.mecanismo.titulo} onChange={(e) => updateMecanismo({ titulo: e.target.value })} className={inputClass} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Párrafos</label>
+            {editorLista(spec.copy.captura.mecanismo.parrafos, (v) => updateMecanismo({ parrafos: v }), "Un párrafo de texto")}
+          </div>
+
+          <span className="text-xs uppercase tracking-wide text-on-surface-faint pt-2 border-t border-outline">Para quién es (checklist)</span>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Eyebrow</label>
+            <input type="text" value={spec.copy.captura.checklist.eyebrow} onChange={(e) => updateChecklist({ eyebrow: e.target.value })} className={inputClass} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Título de la sección</label>
+            <input type="text" value={spec.copy.captura.checklist.titulo} onChange={(e) => updateChecklist({ titulo: e.target.value })} className={inputClass} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Items del checklist</label>
+            {editorLista(spec.copy.captura.checklist.items, (v) => updateChecklist({ items: v }), "Ej. Semanas de presión en cada lanzamiento")}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Nota final (opcional, ej. "Cupos limitados")</label>
+            <input type="text" value={spec.copy.captura.checklist.notaFinal} onChange={(e) => updateChecklist({ notaFinal: e.target.value })} className={inputClass} />
+          </div>
+
+          <span className="text-xs uppercase tracking-wide text-on-surface-faint pt-2 border-t border-outline">Quién conduce (experto)</span>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Eyebrow</label>
+            <input type="text" value={spec.copy.captura.experto.eyebrow} onChange={(e) => updateExperto({ eyebrow: e.target.value })} className={inputClass} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Título de la sección</label>
+            <input type="text" value={spec.copy.captura.experto.titulo} onChange={(e) => updateExperto({ titulo: e.target.value })} className={inputClass} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Foto del experto (URL, circular)</label>
+            <input type="text" value={spec.copy.captura.experto.fotoUrl} onChange={(e) => updateExperto({ fotoUrl: e.target.value })} placeholder="https://…" className={inputClass} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Párrafos de la bio</label>
+            {editorLista(spec.copy.captura.experto.parrafos, (v) => updateExperto({ parrafos: v }), "Un párrafo de la bio")}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Frase destacada (opcional, va en negrita)</label>
+            <input type="text" value={spec.copy.captura.experto.fraseDestacada} onChange={(e) => updateExperto({ fraseDestacada: e.target.value })} className={inputClass} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Números / logros (chips)</label>
+            {editorLista(spec.copy.captura.experto.stats, (v) => updateExperto({ stats: v }), "Ej. +USD 8 millones en ventas generadas")}
+          </div>
+
           <div className="flex gap-2">
             <button type="button" onClick={retroceder} className={botonAtras}>
               Atrás
