@@ -1,19 +1,20 @@
 "use client";
 
-import { LayoutDashboard, ArrowLeftRight, Briefcase, Users, UserCog, Workflow, ClipboardList, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, ArrowLeftRight, Briefcase, Users, UserCog, Workflow, ClipboardList, LayoutTemplate, type LucideIcon } from "lucide-react";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
 import { useSidePanel } from "@/components/SidePanelProvider";
 
-type NavKey = "dashboard" | "conexiones" | "embudos" | "leads" | "cartera" | "clientes" | "usuarios";
+type NavKey = "dashboard" | "conexiones" | "embudos" | "leads" | "paginas" | "cartera" | "clientes" | "usuarios";
 
-// "conexiones", "embudos" y "leads" no navegan a otra pagina - reemplazan el
-// contenido principal de la pantalla actual (ver SidePanelProvider).
-const PANEL_KEY: Record<string, "configuracion" | "embudos" | "leads"> = {
+// "conexiones", "embudos", "leads" y "paginas" no navegan a otra pagina -
+// reemplazan el contenido principal de la pantalla actual (ver SidePanelProvider).
+const PANEL_KEY: Record<string, "configuracion" | "embudos" | "leads" | "paginas"> = {
   conexiones: "configuracion",
   embudos: "embudos",
   leads: "leads",
+  paginas: "paginas",
 };
 
 const NAV_ITEMS: { key: NavKey; href?: string; label: string; Icon: LucideIcon; adminOnly?: boolean }[] = [
@@ -21,6 +22,7 @@ const NAV_ITEMS: { key: NavKey; href?: string; label: string; Icon: LucideIcon; 
   { key: "conexiones", label: "Configuración", Icon: ArrowLeftRight },
   { key: "embudos", label: "Embudos", Icon: Workflow },
   { key: "leads", label: "Leads", Icon: ClipboardList },
+  { key: "paginas", label: "Páginas", Icon: LayoutTemplate },
   { key: "cartera", href: "/admin/cartera", label: "Cartera", Icon: Briefcase, adminOnly: true },
   { key: "clientes", href: "/admin/clientes", label: "Clientes", Icon: Users, adminOnly: true },
   { key: "usuarios", href: "/admin/usuarios", label: "Usuarios", Icon: UserCog, adminOnly: true },
@@ -45,7 +47,7 @@ export default function AppSidebar({
   onLogout: () => void;
 }) {
   const { collapsed, toggleCollapsed } = useSidebarCollapse();
-  const { open, openConfiguracion, openEmbudos, openLeads, close } = useSidePanel();
+  const { open, openConfiguracion, openEmbudos, openLeads, openPaginas, close } = useSidePanel();
 
   return (
     <aside className="wcc-no-print bg-surface border-r border-outline md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto transition-[width,background-color,border-color] duration-200">
@@ -83,7 +85,14 @@ export default function AppSidebar({
 
           if (isDrawerItem) {
             const panelKey = PANEL_KEY[item.key];
-            const openPanel = panelKey === "configuracion" ? openConfiguracion : panelKey === "embudos" ? openEmbudos : () => openLeads();
+            const openPanel =
+              panelKey === "configuracion"
+                ? openConfiguracion
+                : panelKey === "embudos"
+                ? openEmbudos
+                : panelKey === "paginas"
+                ? openPaginas
+                : () => openLeads();
             return (
               <button
                 key={item.key}

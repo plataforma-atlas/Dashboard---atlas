@@ -25,7 +25,9 @@ export async function GET(req: Request) {
     if (!res.ok) {
       return NextResponse.json({ error: data.error || "No se pudieron listar las páginas" }, { status: res.status });
     }
-    return NextResponse.json({ paginas: data });
+    // El nodo "Responder Listar OK" de n8n usa "allIncomingItems" — con 0 filas
+    // devuelve "{}" (objeto vacío) en vez de "[]", no un array vacío.
+    return NextResponse.json({ paginas: Array.isArray(data) ? data : [] });
   } catch (err) {
     console.error("Error listando páginas:", err);
     return NextResponse.json({ error: "No se pudo conectar al servidor" }, { status: 502 });

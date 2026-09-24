@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
-import { Briefcase, Users, UserCog, ArrowLeftRight, Workflow, ClipboardList, Layers, ChevronDown } from "lucide-react";
+import { Briefcase, Users, UserCog, ArrowLeftRight, Workflow, ClipboardList, LayoutTemplate, Layers, ChevronDown } from "lucide-react";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
 import { useSidePanel } from "@/components/SidePanelProvider";
 import { themeForClient } from "@/lib/clients";
@@ -24,6 +24,7 @@ import { WebinarSummary, WebinarDetail } from "@/lib/webinar-os/types";
 import ConexionesBody from "@/components/panel/ConexionesBody";
 import EmbudosBody from "@/components/panel/EmbudosBody";
 import LeadsBody from "@/components/panel/LeadsBody";
+import PaginasBody from "@/components/panel/PaginasBody";
 
 const ESTRATEGIA_LABEL: Record<string, string> = {
   vsl: "VSL",
@@ -43,7 +44,7 @@ export default function ControlCenterPage() {
   const [selectorClienteAbierto, setSelectorClienteAbierto] = useState(false);
   const [otrasCampanasAbierto, setOtrasCampanasAbierto] = useState(false);
   const { collapsed: sidebarCollapsed, toggleCollapsed: toggleSidebarCollapsed } = useSidebarCollapse();
-  const { open, openConfiguracion, openEmbudos, openLeads, close: closeSidePanel } = useSidePanel();
+  const { open, openConfiguracion, openEmbudos, openLeads, openPaginas, close: closeSidePanel } = useSidePanel();
   const [campanas, setCampanas] = useState<CampanaCartera[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -316,6 +317,17 @@ export default function ControlCenterPage() {
             </span>
             {!sidebarCollapsed && <span>Leads</span>}
           </button>
+          <button
+            type="button"
+            title="Páginas"
+            onClick={() => (open === "paginas" ? closeSidePanel() : openPaginas())}
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm whitespace-nowrap transition-colors duration-150 w-full text-left ${sidebarCollapsed ? "justify-center" : ""} ${open === "paginas" ? "bg-surface-high text-on-surface" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"}`}
+          >
+            <span className="w-6 h-6 rounded-lg bg-surface-high grid place-items-center shrink-0">
+              <LayoutTemplate size={13} strokeWidth={2} />
+            </span>
+            {!sidebarCollapsed && <span>Páginas</span>}
+          </button>
           {isAdmin && (
             <>
               <a
@@ -375,7 +387,7 @@ export default function ControlCenterPage() {
       <div className="webinar-os-scope wcc-page min-h-screen flex flex-col md:flex-row" data-wos-theme={mode}>
         {sidebar}
         <main className="flex-1 min-w-0 md:ml-[var(--sidebar-w,240px)] p-4 md:p-8 flex flex-col gap-6 bg-[var(--wcc-page-bg)] transition-[margin] duration-200">
-          {open === "configuracion" ? <ConexionesBody /> : open === "leads" ? <LeadsBody /> : <EmbudosBody />}
+          {open === "configuracion" ? <ConexionesBody /> : open === "leads" ? <LeadsBody /> : open === "paginas" ? <PaginasBody /> : <EmbudosBody />}
         </main>
       </div>
     );

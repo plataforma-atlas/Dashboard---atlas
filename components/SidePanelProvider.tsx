@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
-type PanelKey = "configuracion" | "embudos" | "leads";
+type PanelKey = "configuracion" | "embudos" | "leads" | "paginas";
 
 type SidePanelContextValue = {
   open: PanelKey | null;
@@ -11,6 +11,7 @@ type SidePanelContextValue = {
   openConfiguracion: () => void;
   openEmbudos: () => void;
   openLeads: (campaign?: string) => void;
+  openPaginas: () => void;
   close: () => void;
 };
 
@@ -47,6 +48,7 @@ export default function SidePanelProvider({ children }: { children: React.ReactN
           setLeadsCampaign(campaign ?? null);
           setOpen("leads");
         },
+        openPaginas: () => setOpen("paginas"),
         close,
       }}
     >

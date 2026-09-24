@@ -8,6 +8,7 @@ import { useSidePanel } from "@/components/SidePanelProvider";
 import ConexionesBody from "@/components/panel/ConexionesBody";
 import EmbudosBody from "@/components/panel/EmbudosBody";
 import LeadsBody from "@/components/panel/LeadsBody";
+import PaginasBody from "@/components/panel/PaginasBody";
 
 export default function PanelLeadsPage() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function PanelLeadsPage() {
       <AppSidebar active="leads" isAdmin={isAdmin} mode={mode} onToggleMode={toggleMode} onLogout={handleLogout} />
       <main className="min-h-screen px-4 py-8 md:px-8 md:ml-[var(--sidebar-w,240px)] bg-background transition-[margin] duration-200">
         <Suspense fallback={null}>
-          {open === "configuracion" ? <ConexionesBody /> : open === "embudos" ? <EmbudosBody /> : <LeadsBody />}
+          {open === "configuracion" ? <ConexionesBody /> : open === "embudos" ? <EmbudosBody /> : open === "paginas" ? <PaginasBody /> : <LeadsBody />}
         </Suspense>
       </main>
     </div>
