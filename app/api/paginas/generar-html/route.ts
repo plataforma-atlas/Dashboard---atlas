@@ -35,18 +35,31 @@ export async function POST(req: Request) {
   // cliente todavía no conectó WordPress usamos rutas relativas — sirven
   // para la vista previa, pero solo van a resolver bien una vez publicadas
   // en el dominio real.
-  const slugs = slugsDePagina(spec.slug);
+  const sugeridos = slugsDePagina(spec.slug);
+  const guardados = spec.copy?.slugsPaginas;
+  const slugs = {
+    captura: guardados?.captura?.trim() || sugeridos.captura,
+    encuesta: guardados?.encuesta?.trim() || sugeridos.encuesta,
+    gracias: guardados?.gracias?.trim() || sugeridos.gracias,
+  };
+  const conEncuesta = spec.copy?.flujo !== "captura_gracias";
   const urlEncuesta = siteUrl ? `${siteUrl}/${slugs.encuesta}/` : `/${slugs.encuesta}/`;
   const urlGracias = siteUrl ? `${siteUrl}/${slugs.gracias}/` : `/${slugs.gracias}/`;
 
   try {
-    const captura = generarHtmlCaptura(spec, { eventoUrl, clienteId, paginaId, urlEncuesta });
-    const encuesta = generarHtmlEncuesta(spec, { eventoUrl, clienteId, paginaId, urlGracias });
+    const captura = generarHtmlCaptura(spec, {
+      eventoUrl,
+      clienteId,
+      paginaId,
+      urlSiguiente: conEncuesta ? urlEncuesta : urlGracias,
+    });
     const gracias = generarHtmlGracias(spec);
 
     return NextResponse.json({
       captura: { slug: slugs.captura, titulo: spec.copy.captura.titulo, html: captura },
-      encuesta: { slug: slugs.encuesta, titulo: spec.copy.encuestaIntro.titulo, html: encuesta },
+      encuesta: conEncuesta
+        ? { slug: slugs.encuesta, titulo: spec.copy.encuestaIntro.titulo, html: generarHtmlEncuesta(spec, { eventoUrl, clienteId, paginaId, urlGracias }) }
+        : null,
       gracias: { slug: slugs.gracias, titulo: spec.gracias.titulo, html: gracias },
     });
   } catch (err) {

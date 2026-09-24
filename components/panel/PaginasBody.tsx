@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useSidePanel } from "@/components/SidePanelProvider";
 import {
   paginaSpecVacio,
+  slugsDePagina,
   type PaginaSpec,
   type Colores,
   type CopyCaptura,
@@ -12,6 +13,9 @@ import {
   type Gracias,
   type Imagenes,
   type PreguntaEncuesta,
+  type Flujo,
+  type SlugsPaginas,
+  type WhatsappFormato,
 } from "@/lib/paginas/templates";
 
 type PaginaListado = {
@@ -41,7 +45,100 @@ function slugify(s: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-const PASOS = ["Datos básicos", "Colores", "Captura", "Encuesta", "Gracias", "Revisión"];
+type PasoKey = "basicos" | "funil" | "flujo" | "modelo" | "colores" | "captura" | "encuesta" | "gracias" | "revision";
+
+const STEP_DEFS: { key: PasoKey; label: string }[] = [
+  { key: "basicos", label: "Datos básicos" },
+  { key: "funil", label: "Funil" },
+  { key: "flujo", label: "Flujo" },
+  { key: "modelo", label: "Modelo" },
+  { key: "colores", label: "Colores" },
+  { key: "captura", label: "Copy — Captura" },
+  { key: "encuesta", label: "Encuesta" },
+  { key: "gracias", label: "Gracias" },
+  { key: "revision", label: "Revisión" },
+];
+
+const FUNNEL_OPTIONS: { value: PaginaSpec["tipo_funil"]; label: string; descripcion: string; pasos: string[] }[] = [
+  {
+    value: "webinario",
+    label: "Webinario",
+    descripcion:
+      "El embudo clásico de webinario automático: vendé el evento en vivo, calificá al lead con una encuesta rápida, y llevalo hasta el día del webinario.",
+    pasos: [
+      "El lead se registra en la página de captura del webinario.",
+      "Cae directo al grupo de WhatsApp del webinario.",
+      "Responde una encuesta corta para calificarlo.",
+      "Recibe los recordatorios de tu automatización hasta el día del evento.",
+    ],
+  },
+  {
+    value: "sesion_estrategica",
+    label: "Sesión estratégica",
+    descripcion: "Pensado para agendar llamadas 1 a 1: filtrá quién realmente aplica antes de ofrecerle un horario.",
+    pasos: [
+      "El lead se registra para aplicar a una sesión estratégica gratuita.",
+      "Responde una breve encuesta de calificación.",
+      "Si califica, agenda su sesión; si no, queda en lista de espera.",
+    ],
+  },
+];
+
+const FLUJO_OPTIONS: { value: Flujo; label: string; paginas: number; descripcion: string }[] = [
+  {
+    value: "captura_encuesta_gracias",
+    label: "Captura + Encuesta + Gracias",
+    paginas: 3,
+    descripcion:
+      "El lead completa el formulario, responde una encuesta corta (queda guardada en el mismo registro, identificado por su email o WhatsApp) y recién ahí llega a la página de gracias. Recomendada si necesitás calificar o segmentar tus leads.",
+  },
+  {
+    value: "captura_gracias",
+    label: "Captura + Gracias",
+    paginas: 2,
+    descripcion:
+      "El lead completa el formulario y pasa directo a la página de gracias con el botón de acceso (grupo de WhatsApp, sala del webinario, etc). Sin encuesta.",
+  },
+];
+
+const TEMPLATES: { id: string; nombre: string; disponible: boolean; descripcion: string; secciones: string[] }[] = [
+  {
+    id: "clasica-01",
+    nombre: "Clásica",
+    disponible: true,
+    descripcion: "Una sola pantalla, sin scroll — va directo al grano.",
+    secciones: ["Título + subtítulo", "Lista de beneficios (opcional)", "Formulario: nombre, email y WhatsApp", "Botón de acción"],
+  },
+  {
+    id: "urgencia",
+    nombre: "Urgencia",
+    disponible: false,
+    descripcion: "Con barra de urgencia y contador regresivo arriba del formulario.",
+    secciones: ["Barra de urgencia / contador", "Título + subtítulo", "Formulario", "Botón de acción"],
+  },
+  {
+    id: "webinario-vsl",
+    nombre: "Webinario + VSL",
+    disponible: false,
+    descripcion: "Con video (VSL) arriba del formulario, para captar atención antes de pedir los datos.",
+    secciones: ["Video (VSL)", "Título + subtítulo", "Formulario", "Botón de acción"],
+  },
+];
+
+const WHATSAPP_FORMATOS: { value: WhatsappFormato; label: string; ejemplo: string; detalle: string }[] = [
+  {
+    value: "internacional",
+    label: "Internacional — código de país + número",
+    ejemplo: "+57 321 8998981",
+    detalle: "Formato LATAM estándar (código de país + número); el código de país es obligatorio.",
+  },
+  {
+    value: "brasil",
+    label: "Brasil — DDD + número",
+    ejemplo: "(11) 91234-5678",
+    detalle: "Valida 10-11 dígitos, sin código de país.",
+  },
+];
 
 export default function PaginasBody() {
   const searchParams = useSearchParams();
@@ -62,16 +159,28 @@ export default function PaginasBody() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [spec, setSpec] = useState<PaginaSpec>(paginaSpecVacio());
   const [slugTocado, setSlugTocado] = useState(false);
-  const [paso, setPaso] = useState(0);
+  const [paso, setPaso] = useState<PasoKey>("basicos");
 
   const [guardando, setGuardando] = useState(false);
   const [publicando, setPublicando] = useState(false);
   const [accionError, setAccionError] = useState<string | null>(null);
   const [resultados, setResultados] = useState<ResultadosPublicacion | null>(null);
 
-  const [preview, setPreview] = useState<{ captura: HtmlGenerado; encuesta: HtmlGenerado; gracias: HtmlGenerado } | null>(null);
+  const [preview, setPreview] = useState<{ captura: HtmlGenerado; encuesta: HtmlGenerado | null; gracias: HtmlGenerado } | null>(null);
   const [previewTab, setPreviewTab] = useState<"captura" | "encuesta" | "gracias">("captura");
   const [generandoPreview, setGenerandoPreview] = useState(false);
+
+  const conEncuesta = spec.copy.flujo === "captura_encuesta_gracias";
+  const visibleSteps = STEP_DEFS.filter((s) => s.key !== "encuesta" || conEncuesta);
+
+  function avanzar() {
+    const idx = visibleSteps.findIndex((s) => s.key === paso);
+    if (idx >= 0 && idx < visibleSteps.length - 1) setPaso(visibleSteps[idx + 1].key);
+  }
+  function retroceder() {
+    const idx = visibleSteps.findIndex((s) => s.key === paso);
+    if (idx > 0) setPaso(visibleSteps[idx - 1].key);
+  }
 
   useEffect(() => {
     (async () => {
@@ -140,7 +249,7 @@ export default function PaginasBody() {
     setEditingId(null);
     setSpec(paginaSpecVacio());
     setSlugTocado(false);
-    setPaso(0);
+    setPaso("basicos");
     setPreview(null);
     setResultados(null);
     setAccionError(null);
@@ -166,6 +275,8 @@ export default function PaginasBody() {
         plantilla: p.plantilla || base.plantilla,
         colores: { ...base.colores, ...(p.colores || {}) },
         copy: {
+          flujo: p.copy?.flujo === "captura_gracias" ? "captura_gracias" : base.copy.flujo,
+          slugsPaginas: { ...base.copy.slugsPaginas, ...(p.copy?.slugsPaginas || {}) },
           captura: { ...base.copy.captura, ...(p.copy?.captura || {}) },
           encuestaIntro: { ...base.copy.encuestaIntro, ...(p.copy?.encuestaIntro || {}) },
         },
@@ -175,7 +286,7 @@ export default function PaginasBody() {
       });
       setEditingId(id);
       setSlugTocado(true);
-      setPaso(0);
+      setPaso("basicos");
       setPreview(null);
       setResultados(null);
       setAccionError(null);
@@ -190,6 +301,12 @@ export default function PaginasBody() {
   }
   function updateColores(patch: Partial<Colores>) {
     setSpec((prev) => ({ ...prev, colores: { ...prev.colores, ...patch } }));
+  }
+  function updateFlujo(flujo: Flujo) {
+    setSpec((prev) => ({ ...prev, copy: { ...prev.copy, flujo } }));
+  }
+  function updateSlugsPaginas(patch: Partial<SlugsPaginas>) {
+    setSpec((prev) => ({ ...prev, copy: { ...prev.copy, slugsPaginas: { ...prev.copy.slugsPaginas, ...patch } } }));
   }
   function updateCaptura(patch: Partial<CopyCaptura>) {
     setSpec((prev) => ({ ...prev, copy: { ...prev.copy, captura: { ...prev.copy.captura, ...patch } } }));
@@ -228,6 +345,24 @@ export default function PaginasBody() {
     updateSpec({ nombre: value, slug: slugTocado ? spec.slug : slugify(value) });
   }
 
+  // Al entrar al paso "Flujo" por primera vez, sugerimos los 3 slugs a partir
+  // del slug base — de ahí en más el cliente los edita a mano sin que se
+  // vuelvan a pisar solos.
+  useEffect(() => {
+    if (paso !== "flujo") return;
+    const s = spec.copy.slugsPaginas;
+    if (!s.captura && !s.encuesta && !s.gracias && spec.slug) {
+      updateSlugsPaginas(slugsDePagina(spec.slug));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paso]);
+
+  // Si el flujo pasa a 2 páginas mientras la pestaña de vista previa activa
+  // era "encuesta", volvemos a "captura" para no quedar en una pestaña que ya no existe.
+  useEffect(() => {
+    if (!conEncuesta && previewTab === "encuesta") setPreviewTab("captura");
+  }, [conEncuesta, previewTab]);
+
   async function generarPreview() {
     if (!clienteId) return;
     setGenerandoPreview(true);
@@ -257,7 +392,7 @@ export default function PaginasBody() {
   }
 
   useEffect(() => {
-    if (vista === "wizard" && paso === 5) generarPreview();
+    if (vista === "wizard" && paso === "revision") generarPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paso, vista]);
 
@@ -345,12 +480,19 @@ export default function PaginasBody() {
     }
   }
 
-  const puedeAvanzarPaso0 = spec.nombre.trim().length > 0 && spec.slug.trim().length > 0;
+  const puedeAvanzarBasicos = spec.nombre.trim().length > 0 && spec.slug.trim().length > 0;
+  const puedeAvanzarFlujo =
+    spec.copy.slugsPaginas.captura.trim().length > 0 &&
+    spec.copy.slugsPaginas.gracias.trim().length > 0 &&
+    (!conEncuesta || spec.copy.slugsPaginas.encuesta.trim().length > 0);
 
   const inputClass =
     "w-full bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface focus:border-primary outline-none transition-colors duration-150";
   const labelClass = "text-[13px] font-medium text-on-surface-variant";
   const cardClass = "animate-fade-in-up rounded-lg border border-outline bg-surface p-5 flex flex-col gap-4";
+  const botonAtras = "press text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-variant";
+  const botonSiguiente =
+    "press bg-primary text-on-primary font-semibold rounded-md px-4 py-2.5 text-[14px] disabled:opacity-50 disabled:active:scale-100 transition-transform duration-150";
 
   if (loading) {
     return <p className="text-[15px] text-on-surface-variant">Cargando…</p>;
@@ -461,28 +603,28 @@ export default function PaginasBody() {
       </header>
 
       <div className="flex flex-wrap gap-2">
-        {PASOS.map((label, i) => (
+        {visibleSteps.map((s, i) => (
           <button
-            key={label}
+            key={s.key}
             type="button"
-            onClick={() => setPaso(i)}
+            onClick={() => setPaso(s.key)}
             className={`press text-[12.5px] px-3 py-1.5 rounded-full border transition-colors duration-150 ${
-              paso === i ? "border-primary text-primary" : "border-outline text-on-surface-variant hover:text-on-surface"
+              paso === s.key ? "border-primary text-primary" : "border-outline text-on-surface-variant hover:text-on-surface"
             }`}
           >
-            {i + 1}. {label}
+            {i + 1}. {s.label}
           </button>
         ))}
       </div>
 
-      {paso === 0 && (
+      {paso === "basicos" && (
         <div className={cardClass}>
           <div className="flex flex-col gap-1.5">
             <label className={labelClass}>Nombre del embudo</label>
             <input type="text" value={spec.nombre} onChange={(e) => onNombreChange(e.target.value)} placeholder="Ej. Webinar Octubre 2026" className={inputClass} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className={labelClass}>Slug (parte de la URL)</label>
+            <label className={labelClass}>Slug base (identificador interno)</label>
             <input
               type="text"
               value={spec.slug}
@@ -494,35 +636,200 @@ export default function PaginasBody() {
               className={inputClass}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className={labelClass}>Tipo de embudo</label>
-            <div className="flex gap-2">
-              {(["webinario", "sesion_estrategica"] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => updateSpec({ tipo_funil: t })}
-                  className={`press text-[13px] px-3 py-2 rounded-md border transition-colors duration-150 ${
-                    spec.tipo_funil === t ? "border-primary text-primary" : "border-outline text-on-surface-variant"
-                  }`}
-                >
-                  {t === "webinario" ? "Webinario" : "Sesión estratégica"}
-                </button>
-              ))}
-            </div>
-          </div>
-          <button
-            type="button"
-            disabled={!puedeAvanzarPaso0}
-            onClick={() => setPaso(1)}
-            className="press bg-primary text-on-primary font-semibold rounded-md px-4 py-2.5 text-[14px] self-start disabled:opacity-50 disabled:active:scale-100 transition-transform duration-150"
-          >
+          <button type="button" disabled={!puedeAvanzarBasicos} onClick={avanzar} className={`${botonSiguiente} self-start`}>
             Siguiente
           </button>
         </div>
       )}
 
-      {paso === 1 && (
+      {paso === "funil" && (
+        <div className={cardClass}>
+          <p className="text-[14px] text-on-surface-variant">
+            Elegí el tipo de embudo — define qué le mostramos al lead y qué recorrido hace después de dejar sus datos.
+          </p>
+          <div className="flex flex-col gap-3">
+            {FUNNEL_OPTIONS.map((opt) => {
+              const activo = spec.tipo_funil === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => updateSpec({ tipo_funil: opt.value })}
+                  className={`press text-left rounded-lg border p-4 flex flex-col gap-2 transition-colors duration-150 ${
+                    activo ? "border-primary bg-surface-high" : "border-outline hover:border-primary"
+                  }`}
+                >
+                  <span className="text-[14.5px] font-semibold text-on-surface">{opt.label}</span>
+                  <span className="text-[13px] text-on-surface-variant">{opt.descripcion}</span>
+                  <ol className="flex flex-col gap-1 mt-1">
+                    {opt.pasos.map((p, i) => (
+                      <li key={i} className="text-[12.5px] text-on-surface-variant flex gap-2">
+                        <span className="text-primary font-semibold shrink-0">{i + 1}.</span>
+                        <span>{p}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex gap-2">
+            <button type="button" onClick={retroceder} className={botonAtras}>
+              Atrás
+            </button>
+            <button type="button" onClick={avanzar} className={botonSiguiente}>
+              Siguiente
+            </button>
+          </div>
+        </div>
+      )}
+
+      {paso === "flujo" && (
+        <div className={cardClass}>
+          <p className="text-[14px] text-on-surface-variant">¿Cuántas páginas necesita este embudo?</p>
+          <div className="flex flex-col gap-3">
+            {FLUJO_OPTIONS.map((opt) => {
+              const activo = spec.copy.flujo === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => updateFlujo(opt.value)}
+                  className={`press text-left rounded-lg border p-4 flex flex-col gap-2 transition-colors duration-150 ${
+                    activo ? "border-primary bg-surface-high" : "border-outline hover:border-primary"
+                  }`}
+                >
+                  <span className="text-[14.5px] font-semibold text-on-surface">
+                    {opt.label} <span className="text-on-surface-variant font-normal">· {opt.paginas} páginas</span>
+                  </span>
+                  <span className="text-[13px] text-on-surface-variant">{opt.descripcion}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-col gap-3 pt-2 border-t border-outline">
+            <label className={labelClass}>Slug — página de captura</label>
+            <input
+              type="text"
+              value={spec.copy.slugsPaginas.captura}
+              onChange={(e) => updateSlugsPaginas({ captura: slugify(e.target.value) })}
+              className={inputClass}
+            />
+            {conEncuesta && (
+              <>
+                <label className={labelClass}>Slug — página de encuesta</label>
+                <input
+                  type="text"
+                  value={spec.copy.slugsPaginas.encuesta}
+                  onChange={(e) => updateSlugsPaginas({ encuesta: slugify(e.target.value) })}
+                  className={inputClass}
+                />
+              </>
+            )}
+            <label className={labelClass}>Slug — página de gracias</label>
+            <input
+              type="text"
+              value={spec.copy.slugsPaginas.gracias}
+              onChange={(e) => updateSlugsPaginas({ gracias: slugify(e.target.value) })}
+              className={inputClass}
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <button type="button" onClick={retroceder} className={botonAtras}>
+              Atrás
+            </button>
+            <button type="button" disabled={!puedeAvanzarFlujo} onClick={avanzar} className={botonSiguiente}>
+              Siguiente
+            </button>
+          </div>
+        </div>
+      )}
+
+      {paso === "modelo" && (
+        <div className={cardClass}>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Modelo de la página de captura</label>
+            <div className="flex flex-col gap-3">
+              {TEMPLATES.map((t) => {
+                const activo = spec.plantilla === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    disabled={!t.disponible}
+                    onClick={() => updateSpec({ plantilla: t.id })}
+                    className={`press text-left rounded-lg border p-4 flex flex-col gap-2 transition-colors duration-150 ${
+                      !t.disponible
+                        ? "opacity-50 cursor-not-allowed border-outline"
+                        : activo
+                        ? "border-primary bg-surface-high"
+                        : "border-outline hover:border-primary"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[14.5px] font-semibold text-on-surface">{t.nombre}</span>
+                      {!t.disponible && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-full border border-outline text-on-surface-faint">Próximamente</span>
+                      )}
+                    </div>
+                    <span className="text-[13px] text-on-surface-variant">{t.descripcion}</span>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {t.secciones.map((s) => (
+                        <span key={s} className="text-[11.5px] px-2 py-1 rounded-md bg-background border border-outline text-on-surface-variant">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 pt-2 border-t border-outline">
+            <label className="flex items-center gap-2 text-[13px] text-on-surface-variant">
+              <input type="checkbox" checked={spec.copy.captura.pedirWhatsapp} onChange={(e) => updateCaptura({ pedirWhatsapp: e.target.checked })} />
+              Pedir WhatsApp en el formulario de captura
+            </label>
+            {spec.copy.captura.pedirWhatsapp && (
+              <div className="flex flex-col gap-2">
+                <label className={labelClass}>Formato del WhatsApp en el popup</label>
+                {WHATSAPP_FORMATOS.map((f) => {
+                  const activo = spec.copy.captura.whatsappFormato === f.value;
+                  return (
+                    <button
+                      key={f.value}
+                      type="button"
+                      onClick={() => updateCaptura({ whatsappFormato: f.value })}
+                      className={`press text-left rounded-md border p-3 flex flex-col gap-1 transition-colors duration-150 ${
+                        activo ? "border-primary bg-surface-high" : "border-outline hover:border-primary"
+                      }`}
+                    >
+                      <span className="text-[13.5px] font-medium text-on-surface">{f.label}</span>
+                      <span className="text-[12px] text-on-surface-variant">
+                        Ej.: {f.ejemplo} · {f.detalle}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <button type="button" onClick={retroceder} className={botonAtras}>
+              Atrás
+            </button>
+            <button type="button" onClick={avanzar} className={botonSiguiente}>
+              Siguiente
+            </button>
+          </div>
+        </div>
+      )}
+
+      {paso === "colores" && (
         <div className={cardClass}>
           {(
             [
@@ -540,17 +847,17 @@ export default function PaginasBody() {
             </div>
           ))}
           <div className="flex gap-2">
-            <button type="button" onClick={() => setPaso(0)} className="press text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-variant">
+            <button type="button" onClick={retroceder} className={botonAtras}>
               Atrás
             </button>
-            <button type="button" onClick={() => setPaso(2)} className="press bg-primary text-on-primary font-semibold rounded-md px-4 py-2.5 text-[14px] transition-transform duration-150">
+            <button type="button" onClick={avanzar} className={botonSiguiente}>
               Siguiente
             </button>
           </div>
         </div>
       )}
 
-      {paso === 2 && (
+      {paso === "captura" && (
         <div className={cardClass}>
           <div className="flex flex-col gap-1.5">
             <label className={labelClass}>Título</label>
@@ -578,26 +885,22 @@ export default function PaginasBody() {
             <label className={labelClass}>Texto del botón</label>
             <input type="text" value={spec.copy.captura.textoBoton} onChange={(e) => updateCaptura({ textoBoton: e.target.value })} className={inputClass} />
           </div>
-          <label className="flex items-center gap-2 text-[13px] text-on-surface-variant">
-            <input type="checkbox" checked={spec.copy.captura.pedirWhatsapp} onChange={(e) => updateCaptura({ pedirWhatsapp: e.target.checked })} />
-            Pedir WhatsApp además de email
-          </label>
           <div className="flex flex-col gap-1.5">
             <label className={labelClass}>Imagen (URL, opcional)</label>
             <input type="text" value={spec.imagenes.capturaUrl} onChange={(e) => updateImagenes({ capturaUrl: e.target.value })} placeholder="https://…" className={inputClass} />
           </div>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setPaso(1)} className="press text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-variant">
+            <button type="button" onClick={retroceder} className={botonAtras}>
               Atrás
             </button>
-            <button type="button" onClick={() => setPaso(3)} className="press bg-primary text-on-primary font-semibold rounded-md px-4 py-2.5 text-[14px] transition-transform duration-150">
+            <button type="button" onClick={avanzar} className={botonSiguiente}>
               Siguiente
             </button>
           </div>
         </div>
       )}
 
-      {paso === 3 && (
+      {paso === "encuesta" && (
         <div className={cardClass}>
           <div className="flex flex-col gap-1.5">
             <label className={labelClass}>Título de la encuesta</label>
@@ -641,17 +944,17 @@ export default function PaginasBody() {
             <input type="text" value={spec.copy.encuestaIntro.textoBoton} onChange={(e) => updateEncuestaIntro({ textoBoton: e.target.value })} className={inputClass} />
           </div>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setPaso(2)} className="press text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-variant">
+            <button type="button" onClick={retroceder} className={botonAtras}>
               Atrás
             </button>
-            <button type="button" onClick={() => setPaso(4)} className="press bg-primary text-on-primary font-semibold rounded-md px-4 py-2.5 text-[14px] transition-transform duration-150">
+            <button type="button" onClick={avanzar} className={botonSiguiente}>
               Siguiente
             </button>
           </div>
         </div>
       )}
 
-      {paso === 4 && (
+      {paso === "gracias" && (
         <div className={cardClass}>
           <div className="flex flex-col gap-1.5">
             <label className={labelClass}>Título</label>
@@ -674,20 +977,20 @@ export default function PaginasBody() {
             <input type="text" value={spec.imagenes.graciasUrl} onChange={(e) => updateImagenes({ graciasUrl: e.target.value })} placeholder="https://…" className={inputClass} />
           </div>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setPaso(3)} className="press text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-variant">
+            <button type="button" onClick={retroceder} className={botonAtras}>
               Atrás
             </button>
-            <button type="button" onClick={() => setPaso(5)} className="press bg-primary text-on-primary font-semibold rounded-md px-4 py-2.5 text-[14px] transition-transform duration-150">
+            <button type="button" onClick={avanzar} className={botonSiguiente}>
               Siguiente
             </button>
           </div>
         </div>
       )}
 
-      {paso === 5 && (
+      {paso === "revision" && (
         <div className={cardClass}>
           <div className="flex flex-wrap gap-2">
-            {(["captura", "encuesta", "gracias"] as const).map((tab) => (
+            {(conEncuesta ? (["captura", "encuesta", "gracias"] as const) : (["captura", "gracias"] as const)).map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -704,11 +1007,11 @@ export default function PaginasBody() {
             </button>
           </div>
 
-          {preview ? (
+          {preview && preview[previewTab] ? (
             <iframe
               key={previewTab}
               sandbox="allow-scripts allow-forms allow-same-origin"
-              srcDoc={preview[previewTab].html}
+              srcDoc={preview[previewTab]!.html}
               className="w-full rounded-md border border-outline bg-white"
               style={{ height: 520 }}
               title={`Vista previa — ${previewTab}`}
@@ -741,7 +1044,7 @@ export default function PaginasBody() {
           )}
 
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => setPaso(4)} className="press text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-variant">
+            <button type="button" onClick={retroceder} className={botonAtras}>
               Atrás
             </button>
             <button
@@ -753,12 +1056,7 @@ export default function PaginasBody() {
               {guardando ? "Guardando…" : "Guardar borrador"}
             </button>
             {wpEstado?.conectado ? (
-              <button
-                type="button"
-                onClick={guardarYPublicar}
-                disabled={guardando || publicando}
-                className="press bg-primary text-on-primary font-semibold rounded-md px-4 py-2.5 text-[14px] disabled:opacity-50 disabled:active:scale-100 transition-transform duration-150"
-              >
+              <button type="button" onClick={guardarYPublicar} disabled={guardando || publicando} className={botonSiguiente}>
                 {publicando ? "Publicando…" : "Guardar y publicar en WordPress"}
               </button>
             ) : (

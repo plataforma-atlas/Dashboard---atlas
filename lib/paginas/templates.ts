@@ -19,12 +19,15 @@ export const PLANTILLA_ID = "clasica-01";
 
 export type Colores = { primario: string; fondo: string; texto: string };
 
+export type WhatsappFormato = "brasil" | "internacional";
+
 export type CopyCaptura = {
   titulo: string;
   subtitulo: string;
   bullets: string[];
   textoBoton: string;
   pedirWhatsapp: boolean;
+  whatsappFormato: WhatsappFormato;
 };
 
 export type CopyEncuestaIntro = {
@@ -33,7 +36,20 @@ export type CopyEncuestaIntro = {
   textoBoton: string;
 };
 
-export type Copy = { captura: CopyCaptura; encuestaIntro: CopyEncuestaIntro };
+/** Cuántas páginas genera el embudo — sin o con encuesta intermedia. */
+export type Flujo = "captura_gracias" | "captura_encuesta_gracias";
+
+export type SlugsPaginas = { captura: string; encuesta: string; gracias: string };
+
+// `copy` viaja como JSON libre hacia n8n (sin schema del lado del workflow —
+// ver nota de contrato arriba), así que "flujo" y "slugsPaginas" viven acá
+// adentro en vez de agregar columnas nuevas a `landing_pages`.
+export type Copy = {
+  flujo: Flujo;
+  slugsPaginas: SlugsPaginas;
+  captura: CopyCaptura;
+  encuestaIntro: CopyEncuestaIntro;
+};
 
 export type PreguntaEncuesta = { texto: string; tipo: "opciones" | "abierta"; opciones: string[] };
 
@@ -61,12 +77,15 @@ export function paginaSpecVacio(): PaginaSpec {
     plantilla: PLANTILLA_ID,
     colores: { primario: "#7c3aed", fondo: "#f5f3ff", texto: "#1e1b2e" },
     copy: {
+      flujo: "captura_encuesta_gracias",
+      slugsPaginas: { captura: "", encuesta: "", gracias: "" },
       captura: {
         titulo: "Reservá tu lugar",
         subtitulo: "Dejanos tus datos y te enviamos el acceso.",
         bullets: [],
         textoBoton: "Quiero mi lugar",
         pedirWhatsapp: true,
+        whatsappFormato: "internacional",
       },
       encuestaIntro: {
         titulo: "Antes de continuar",
@@ -85,8 +104,8 @@ export function paginaSpecVacio(): PaginaSpec {
   };
 }
 
-/** slugs reales de WordPress derivados del slug base guardado en `landing_pages`. */
-export function slugsDePagina(slugBase: string) {
+/** Sugerencia inicial de slugs por página a partir del slug base — el wizard la usa una sola vez al entrar al paso "Flujo"; de ahí en más el cliente los edita a mano. */
+export function slugsDePagina(slugBase: string): SlugsPaginas {
   const base = slugBase.trim().replace(/\/+$/, "");
   return {
     captura: base,
@@ -172,13 +191,14 @@ const UTM_SCRIPT = `
 
 export function generarHtmlCaptura(
   spec: PaginaSpec,
-  opts: { eventoUrl: string; clienteId: string; paginaId: number | string; urlEncuesta: string }
+  opts: { eventoUrl: string; clienteId: string; paginaId: number | string; urlSiguiente: string }
 ): string {
   const c = spec.copy.captura;
   const bullets = (c.bullets || []).filter((b) => b.trim()).map((b) => `<li>${esc(b)}</li>`).join("");
   const hero = spec.imagenes.capturaUrl
     ? `<img class="hero" src="${esc(spec.imagenes.capturaUrl)}" alt="" />`
     : "";
+  const whatsappPlaceholder = c.whatsappFormato === "brasil" ? "(11) 91234-5678" : "+57 321 8998981";
   const eventoFullUrl = `${opts.eventoUrl}?cliente_id=${encodeURIComponent(opts.clienteId)}&pagina_id=${encodeURIComponent(
     String(opts.paginaId)
   )}`;
@@ -210,7 +230,7 @@ export function generarHtmlCaptura(
         c.pedirWhatsapp
           ? `<div class="campo">
         <label for="whatsapp">WhatsApp</label>
-        <input type="tel" id="whatsapp" name="whatsapp" required />
+        <input type="tel" id="whatsapp" name="whatsapp" placeholder="${esc(whatsappPlaceholder)}" required />
       </div>`
           : ""
       }
@@ -221,7 +241,7 @@ export function generarHtmlCaptura(
   <script>
     ${UTM_SCRIPT}
     var form = document.getElementById('form-captura');
-    var urlEncuesta = ${embedJson(opts.urlEncuesta)};
+    var urlSiguiente = ${embedJson(opts.urlSiguiente)};
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
       var btn = form.querySelector('button.enviar');
@@ -240,7 +260,7 @@ export function generarHtmlCaptura(
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
         .then(function (r) {
           if (!r.ok) throw new Error('error');
-          var next = urlEncuesta + '?email=' + encodeURIComponent(email) + '&whatsapp=' + encodeURIComponent(whatsapp);
+          var next = urlSiguiente + '?email=' + encodeURIComponent(email) + '&whatsapp=' + encodeURIComponent(whatsapp);
           window.location.href = next;
         })
         .catch(function () {
