@@ -109,9 +109,9 @@ export function paginaSpecVacio(): PaginaSpec {
       captura: {
         badge: "Próximo martes a las 7:00 PM hora Colombia",
         titulo: "Reservá tu lugar en la masterclass en vivo",
-        subtitulo: "Aprendé en vivo cómo armar tu propio sistema — sin volver a empezar desde cero cada vez.",
+        subtitulo: "Aprendé en vivo cómo armar tu propio sistema, sin volver a empezar desde cero cada vez.",
         textoBoton: "Quiero mi lugar",
-        trustBullets: ["Clase en vivo · Única sesión", "Cupos limitados", "100% gratuito · En vivo"],
+        trustBullets: ["Clase en vivo, única sesión", "Cupos limitados", "100% gratuito y en vivo"],
         mecanismo: { eyebrow: "LO QUE VAS A VER EN LA CLASE", titulo: "", parrafos: [] },
         checklist: { eyebrow: "PARA QUIÉN ES ESTA CLASE", titulo: "Esta clase es para vos si…", items: [], notaFinal: "Cupos limitados" },
         experto: { eyebrow: "QUIÉN CONDUCE", titulo: "", parrafos: [], fotoUrl: "", fraseDestacada: "", stats: [] },
@@ -379,7 +379,7 @@ function encuestaStyles(colores: Colores, plantilla: PlantillaEncuesta): string 
     comun +
     `
     body { background: var(--fondo); color: var(--texto); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; gap: 16px; }
-    .brand-label { position: absolute; top: 20px; left: 0; right: 0; text-align: center; font-size: 12.5px; font-weight: 700; color: var(--primario); }
+    .brand-label { text-align: center; font-size: 12.5px; font-weight: 700; color: var(--primario); }
     .quiz-card { width: 100%; max-width: 480px; background: rgba(127,127,127,0.06); border: 1px solid rgba(127,127,127,0.15); border-radius: 20px; padding: 32px 28px; display: flex; flex-direction: column; gap: 16px; }
     .saludo { font-size: 13px; opacity: 0.6; margin: 0; }
     .quiz-titulo { font-size: 21px; font-weight: 800; line-height: 1.3; margin: 0; }
@@ -426,10 +426,13 @@ export function generarHtmlCaptura(
   )}`;
 
   const heroBg = spec.imagenes.capturaUrl ? ` style="background-image:url('${esc(spec.imagenes.capturaUrl)}')"` : "";
+  // Sin separador de punto medio entre bullets — el espaciado del contenedor
+  // (gap + flex-wrap) ya los distingue, y varios "·" en una sola línea
+  // ensucian visualmente la fila de confianza.
   const trustRow = (c.trustBullets || [])
     .filter((b) => b.trim())
     .map((b) => `<span>✓ ${esc(b)}</span>`)
-    .join('<span>·</span>');
+    .join("");
 
   const m = c.mecanismo;
   const seccionMecanismo =
