@@ -1135,10 +1135,10 @@ export default function PaginasBody() {
                             value={emojisAlineados(p)[j]}
                             onChange={(e) => setEmoji(i, j, e.target.value)}
                             placeholder="😊"
-                            className={`${inputClass} w-14 text-center shrink-0`}
+                            className="w-12 shrink-0 text-center bg-background border border-outline rounded-md px-2 py-2 text-[14px] text-on-surface focus:border-primary outline-none transition-colors duration-150"
                           />
                         )}
-                        <input type="text" value={o} onChange={(e) => setOpcion(i, j, e.target.value)} className={inputClass} />
+                        <input type="text" value={o} onChange={(e) => setOpcion(i, j, e.target.value)} className={`${inputClass} flex-1 min-w-0`} />
                         <button type="button" onClick={() => removeOpcion(i, j)} className="press text-[12px] px-2.5 py-1.5 rounded-md border border-outline text-on-surface-variant shrink-0">
                           Quitar
                         </button>

@@ -378,7 +378,7 @@ function encuestaStyles(colores: Colores, plantilla: PlantillaEncuesta): string 
   return (
     comun +
     `
-    body { background: var(--fondo); color: var(--texto); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+    body { background: var(--fondo); color: var(--texto); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; gap: 16px; }
     .brand-label { position: absolute; top: 20px; left: 0; right: 0; text-align: center; font-size: 12.5px; font-weight: 700; color: var(--primario); }
     .quiz-card { width: 100%; max-width: 480px; background: rgba(127,127,127,0.06); border: 1px solid rgba(127,127,127,0.15); border-radius: 20px; padding: 32px 28px; display: flex; flex-direction: column; gap: 16px; }
     .saludo { font-size: 13px; opacity: 0.6; margin: 0; }
