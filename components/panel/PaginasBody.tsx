@@ -427,10 +427,6 @@ export default function PaginasBody() {
     const p = spec.encuesta[preguntaIdx];
     setPregunta(preguntaIdx, { emojis: listSet(emojisAlineados(p), opcionIdx, value) });
   }
-  function elegirPlantillaEncuesta(plantilla: PlantillaEncuesta) {
-    updateEncuestaIntro({ plantilla });
-    setPreviewPlantillaEncuesta(plantilla);
-  }
 
   function onNombreChange(value: string) {
     updateSpec({ nombre: value, slug: slugTocado ? spec.slug : slugify(value) });
@@ -1071,29 +1067,43 @@ export default function PaginasBody() {
       {paso === "encuesta" && (
         <div className={cardClass}>
           <div className="flex flex-col gap-1.5">
-            <label className={labelClass}>Modelo de la encuesta — hacé click para ver una vista previa</label>
+            <label className={labelClass}>Modelo de la encuesta</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {PLANTILLAS_ENCUESTA.map((t) => {
                 const activo = spec.copy.encuestaIntro.plantilla === t.id;
                 return (
-                  <button
+                  <div
                     key={t.id}
-                    type="button"
-                    onClick={() => elegirPlantillaEncuesta(t.id)}
-                    className={`press text-left rounded-lg border overflow-hidden flex flex-col transition-colors duration-150 ${
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => updateEncuestaIntro({ plantilla: t.id })}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") updateEncuestaIntro({ plantilla: t.id });
+                    }}
+                    className={`press cursor-pointer text-left rounded-lg border overflow-hidden flex flex-col transition-colors duration-150 ${
                       activo ? "border-primary" : "border-outline hover:border-primary"
                     }`}
                   >
-                    <div className="h-24 flex flex-col justify-center items-center gap-1.5 p-3 shrink-0" style={{ background: t.colorVista }}>
+                    <div className="h-24 relative flex flex-col justify-center items-center gap-1.5 p-3 shrink-0" style={{ background: t.colorVista }}>
                       <div className="h-1 w-2/3 rounded-full bg-white/50" />
                       <div className="h-4 w-4/5 rounded-md bg-white/80" />
                       <div className="h-4 w-4/5 rounded-md bg-white/60" />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewPlantillaEncuesta(t.id);
+                        }}
+                        className="press absolute bottom-2 right-2 text-[11px] px-2 py-1 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors duration-150"
+                      >
+                        Preview
+                      </button>
                     </div>
                     <div className="p-3 flex flex-col gap-1">
                       <span className="text-[13.5px] font-semibold text-on-surface">{t.nombre}</span>
                       <span className="text-[12px] text-on-surface-variant leading-snug">{t.descripcion}</span>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
