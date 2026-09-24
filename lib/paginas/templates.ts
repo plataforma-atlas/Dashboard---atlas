@@ -80,7 +80,14 @@ export type Copy = {
 // `emojis` es paralelo a `opciones` (mismo índice) — solo se usa/muestra con la plantilla "urgencia".
 export type PreguntaEncuesta = { texto: string; tipo: "opciones" | "abierta"; opciones: string[]; emojis: string[] };
 
-export type Gracias = { titulo: string; subtitulo: string; textoBoton: string; linkBoton: string };
+export type Gracias = {
+  titulo: string;
+  subtitulo: string;
+  textoBoton: string;
+  linkBoton: string;
+  /** Texto chico y apagado debajo del botón, ej. "Ya estás en la lista: el grupo garantiza los avisos." */
+  notaConfirmacion: string;
+};
 
 export type Imagenes = { capturaUrl: string; graciasUrl: string };
 
@@ -126,10 +133,11 @@ export function paginaSpecVacio(): PaginaSpec {
     },
     encuesta: [],
     gracias: {
-      titulo: "¡Listo, ya estás dentro!",
-      subtitulo: "Guardá esta página, ahí vas a encontrar todos los próximos pasos.",
-      textoBoton: "Unirme al grupo de WhatsApp",
+      titulo: "Listo, ya estás dentro",
+      subtitulo: "Tu acceso está garantizado. Entrá al grupo de WhatsApp para recibir el enlace y los avisos.",
+      textoBoton: "Unirme al grupo",
       linkBoton: "",
+      notaConfirmacion: "Ya estás en la lista: el grupo garantiza los avisos y el enlace.",
     },
     imagenes: { capturaUrl: "", graciasUrl: "" },
   };
@@ -395,6 +403,46 @@ function encuestaStyles(colores: Colores, plantilla: PlantillaEncuesta): string 
     .input-abierta:focus { border-color: var(--primario); }
   `
   );
+}
+
+// Estilos de la página de gracias — mismo lenguaje visual que la encuesta
+// "Estándar" (brand-label arriba + card centrada en los colores de la
+// página + footer), pero sin mecánica de quiz: solo un ícono de check,
+// título, subtítulo, botón y una nota chica de confirmación abajo.
+function graciasStyles(colores: Colores): string {
+  const textoBoton = colorContraste(colores.primario);
+  return `
+    :root { --primario: ${colores.primario}; --fondo: ${colores.fondo}; --texto: ${colores.texto}; --texto-boton: ${textoBoton}; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--fondo); color: var(--texto); display: flex; flex-direction: column;
+      align-items: center; justify-content: center; min-height: 100vh; padding: 24px; gap: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      text-align: center;
+    }
+    .brand-label { font-size: 12.5px; font-weight: 700; color: var(--primario); }
+    .gracias-card {
+      width: 100%; max-width: 480px; background: rgba(127,127,127,0.06); border: 1px solid rgba(127,127,127,0.15);
+      border-radius: 20px; padding: 40px 32px; display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+    .icono-check {
+      width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--primario); color: var(--primario);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .icono-check svg { width: 28px; height: 28px; }
+    .hero-gracias { width: 100%; max-width: 200px; border-radius: 12px; display: block; }
+    .gracias-titulo { font-size: 24px; font-weight: 800; line-height: 1.3; margin: 0; }
+    .gracias-sub { font-size: 15px; line-height: 1.55; opacity: 0.8; margin: 0; max-width: 380px; }
+    .nota-confirmacion { font-size: 12.5px; opacity: 0.55; margin: 0; max-width: 380px; }
+    .footer-quiz { text-align: center; font-size: 12px; opacity: 0.55; padding: 4px 20px; }
+    .btn-cta {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: none; border-radius: 999px; background: var(--primario); color: var(--texto-boton);
+      font-size: 15.5px; font-weight: 700; padding: 15px 26px; cursor: pointer; text-decoration: none;
+      transition: transform 0.12s ease; width: 100%;
+    }
+    .btn-cta:active { transform: scale(0.98); }
+  `;
 }
 
 const UTM_SCRIPT = `
@@ -717,11 +765,15 @@ export function generarHtmlEncuesta(
 </html>`;
 }
 
+const ICONO_CHECK_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
 export function generarHtmlGracias(spec: PaginaSpec): string {
   const g = spec.gracias;
-  const hero = spec.imagenes.graciasUrl ? `<img class="hero" src="${esc(spec.imagenes.graciasUrl)}" alt="" />` : "";
+  const hero = spec.imagenes.graciasUrl
+    ? `<img class="hero-gracias" src="${esc(spec.imagenes.graciasUrl)}" alt="" />`
+    : `<div class="icono-check">${ICONO_CHECK_SVG}</div>`;
   const boton = g.linkBoton
-    ? `<a class="cta-link" href="${esc(g.linkBoton)}" target="_blank" rel="noopener">${esc(g.textoBoton)}</a>`
+    ? `<a class="btn-cta" href="${esc(g.linkBoton)}" target="_blank" rel="noopener">${esc(g.textoBoton)} →</a>`
     : "";
 
   return `<!DOCTYPE html>
@@ -730,15 +782,18 @@ export function generarHtmlGracias(spec: PaginaSpec): string {
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${esc(g.titulo)}</title>
-<style>${baseStyles(spec.colores)}</style>
+<style>${graciasStyles(spec.colores)}</style>
 </head>
 <body>
-  <div class="card" style="text-align:center;">
+  <div class="brand-label">${esc(spec.nombre)}</div>
+  <div class="gracias-card">
     ${hero}
-    <h1>${esc(g.titulo)}</h1>
-    <p class="sub">${esc(g.subtitulo)}</p>
+    <h1 class="gracias-titulo">${esc(g.titulo)}</h1>
+    <p class="gracias-sub">${esc(g.subtitulo)}</p>
     ${boton}
+    ${g.notaConfirmacion ? `<p class="nota-confirmacion">${esc(g.notaConfirmacion)}</p>` : ""}
   </div>
+  <footer class="footer-quiz">${esc(spec.nombre)} · © ${new Date().getFullYear()}</footer>
 </body>
 </html>`;
 }

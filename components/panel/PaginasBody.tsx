@@ -1200,7 +1200,11 @@ export default function PaginasBody() {
             <input type="text" value={spec.gracias.linkBoton} onChange={(e) => updateGracias({ linkBoton: e.target.value })} placeholder="https://chat.whatsapp.com/…" className={inputClass} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className={labelClass}>Imagen (URL, opcional)</label>
+            <label className={labelClass}>Nota de confirmación (texto chico debajo del botón, opcional)</label>
+            <input type="text" value={spec.gracias.notaConfirmacion} onChange={(e) => updateGracias({ notaConfirmacion: e.target.value })} className={inputClass} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelClass}>Imagen (URL, opcional — si no ponés ninguna, se muestra un ícono de check)</label>
             <input type="text" value={spec.imagenes.graciasUrl} onChange={(e) => updateImagenes({ graciasUrl: e.target.value })} placeholder="https://…" className={inputClass} />
           </div>
           <div className="flex gap-2">
