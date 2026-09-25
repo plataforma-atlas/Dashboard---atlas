@@ -12,7 +12,7 @@ function nuevaFila(): CuentaForm {
   return { id: "", label: "" };
 }
 
-export default function V3ConexoesPage() {
+export default function V3ConexionesPage() {
   const params = useParams<{ clienteId: string }>();
   const clienteId = params.clienteId;
 
@@ -123,7 +123,13 @@ export default function V3ConexoesPage() {
         </div>
         {formAbierto ? null : metaConectado ? (
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[13px] px-3 py-1.5 rounded-full border border-primary text-primary">Conectado</span>
+            <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline-success bg-success-container text-success">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+              </span>
+              Conectado
+            </span>
             <button
               onClick={() => setFormAbierto(true)}
               className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
@@ -132,12 +138,18 @@ export default function V3ConexoesPage() {
             </button>
           </div>
         ) : (
-          <button
-            onClick={() => setFormAbierto(true)}
-            className="press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
-          >
-            Conectar
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-faint">
+              <span className="h-2 w-2 rounded-full bg-on-surface-faint" />
+              No conectado
+            </span>
+            <button
+              onClick={() => setFormAbierto(true)}
+              className="press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
+            >
+              Conectar
+            </button>
+          </div>
         )}
       </div>
 

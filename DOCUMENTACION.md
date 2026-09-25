@@ -582,7 +582,7 @@ El usuario pidió aplicar las reglas de esta skill externa (`npx skills add Leon
 | `/v3/[clienteId]` | Home/Dashboard — hoy reutiliza el mismo dato del embudo de evento presencial que el dashboard clásico para las estrategias que ya soporta; para `webinar_automatizado` todavía muestra un "Próximamente" (`V3ComingSoon`) porque ese módulo no se portó a V3 en esta sesión. |
 | `/v3/[clienteId]/anuncios` | **Administrador de Anuncios** — tabla de Campañas / Conjuntos de anuncios / Anuncios, con pausar/activar en vivo. |
 | `/v3/[clienteId]/analisis` | **Análisis de Anuncios** — tarjetas por creativo, ordenadas por ROAS, con comparación lado a lado. |
-| `/v3/[clienteId]/conexoes` | Conectar Meta Ads (multi-cuenta). |
+| `/v3/[clienteId]/conexiones` | Conectar Meta Ads (multi-cuenta). |
 
 Shell: `app/v3/layout.tsx` monta `V3Sidebar` (fijo a la izquierda) + `V3Topbar` (barra superior sticky) alrededor de `{children}` — cada página hija resuelve su propia sesión/datos, el layout es solo chrome.
 
@@ -590,7 +590,7 @@ Shell: `app/v3/layout.tsx` monta `V3Sidebar` (fijo a la izquierda) + `V3Topbar` 
 
 **`components/v3/V3Topbar.tsx`**: selector de "dashboard" (ver más abajo) + botón "Crear nuevo", visible en **cualquier pantalla de la V3** (vive en el layout, no en una página particular) — aunque hoy solo Administrador de Anuncios y Análisis de Anuncios reaccionan al dashboard elegido; el Home todavía no tiene un campo de nomenclatura de campaña que filtrar (ver "Dashboards" más abajo).
 
-### Conexión de Meta Ads — multi-cuenta (`/v3/[clienteId]/conexoes`)
+### Conexión de Meta Ads — multi-cuenta (`/v3/[clienteId]/conexiones`)
 
 V1 explícitamente **sin OAuth** (decisión tomada con el usuario: OAuth queda como idea a futuro) — el cliente pega manualmente el ID de cada cuenta publicitaria + un nombre para identificarla, y un token de acceso. Reutiliza `client_connections` (misma tabla que GHL/WordPress, sección 13), pero **la forma de `config` para `meta_ads` cambió de un valor único a una lista**:
 
@@ -599,7 +599,7 @@ V1 explícitamente **sin OAuth** (decisión tomada con el usuario: OAuth queda c
 { ad_account_id: "123" }              { ad_accounts: [{ id: "123", label: "CP2 - El Loco" }, ...] }
 ```
 
-`app/api/onboarding/conectar-meta-ads/route.ts` ahora manda `config: { ad_accounts: [...] }`. La compatibilidad hacia atrás vive en el SQL del pull (ver abajo), no en el código de Next.js — no hizo falta migrar filas viejas. La UI de conexión (`app/v3/[clienteId]/conexoes/page.tsx`) permite agregar/quitar filas de cuenta; **reconectar reemplaza la lista completa** (no hay edición ni vista de lo ya guardado — `GET /api/onboarding/estado` no expone `config`, solo el booleano `tiene_credencial`).
+`app/api/onboarding/conectar-meta-ads/route.ts` ahora manda `config: { ad_accounts: [...] }`. La compatibilidad hacia atrás vive en el SQL del pull (ver abajo), no en el código de Next.js — no hizo falta migrar filas viejas. La UI de conexión (`app/v3/[clienteId]/conexiones/page.tsx`) permite agregar/quitar filas de cuenta; **reconectar reemplaza la lista completa** (no hay edición ni vista de lo ya guardado — `GET /api/onboarding/estado` no expone `config`, solo el booleano `tiene_credencial`).
 
 **Permiso del token**: hoy pide `ads_read` **y** `ads_management` (este segundo agregado quando se construyó pausar/activar — ver más abajo). Un token viejo con solo `ads_read` sigue funcionando para todo lo de lectura; al intentar pausar/activar, Meta devuelve un error de permiso real que la UI muestra tal cual.
 

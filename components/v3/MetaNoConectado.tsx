@@ -15,7 +15,7 @@ export default function MetaNoConectado() {
         Todavía no hay una cuenta de Meta Ads conectada. Andá a Conexiones y pegá el ID de la cuenta publicitaria y un
         token de acceso con permiso de lectura de anuncios.
       </p>
-      <a href={`/v3/${clienteId}/conexoes`} className="text-sm text-primary hover:underline">
+      <a href={`/v3/${clienteId}/conexiones`} className="text-sm text-primary hover:underline">
         Ir a Conexiones →
       </a>
     </div>

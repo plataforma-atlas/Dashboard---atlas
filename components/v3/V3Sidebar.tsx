@@ -170,10 +170,10 @@ export default function V3Sidebar() {
       {clienteIdActual && (
         <nav className="flex flex-col gap-1 pt-4 border-t border-outline">
           <a
-            href={`/v3/${clienteIdActual}/conexoes`}
+            href={`/v3/${clienteIdActual}/conexiones`}
             title="Conexiones"
             className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm min-w-0 transition-colors duration-150 ${
-              pathname === `/v3/${clienteIdActual}/conexoes`
+              pathname === `/v3/${clienteIdActual}/conexiones`
                 ? "bg-surface-high text-on-surface"
                 : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"
             } ${collapsed ? "md:justify-center" : ""}`}
