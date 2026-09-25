@@ -26,6 +26,12 @@ export default function V3ConexionesPage() {
   const [guardando, setGuardando] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const [ghlFormAbierto, setGhlFormAbierto] = useState(false);
+  const [ghlLocationId, setGhlLocationId] = useState("");
+  const [ghlToken, setGhlToken] = useState("");
+  const [ghlGuardando, setGhlGuardando] = useState(false);
+  const [ghlFormError, setGhlFormError] = useState<string | null>(null);
+
   async function cargarEstado() {
     setLoading(true);
     setError(null);
@@ -50,6 +56,7 @@ export default function V3ConexionesPage() {
   }, [clienteId]);
 
   const metaConectado = estado.find((e) => e.integration_type === "meta_ads" && e.status === "active" && e.tiene_credencial) || null;
+  const ghlConectado = estado.find((e) => e.integration_type === "ghl" && e.status === "active" && e.tiene_credencial) || null;
 
   function actualizarCuenta(i: number, campo: "id" | "label", valor: string) {
     setCuentas((prev) => prev.map((c, idx) => (idx === i ? { ...c, [campo]: valor } : c)));
@@ -98,6 +105,40 @@ export default function V3ConexionesPage() {
     }
   }
 
+  async function conectarGhl(e: React.FormEvent) {
+    e.preventDefault();
+    setGhlFormError(null);
+    if (!ghlLocationId.trim()) {
+      setGhlFormError("Falta el Location ID de Go High Level.");
+      return;
+    }
+    if (!ghlToken.trim()) {
+      setGhlFormError("Falta el token de Integración Privada.");
+      return;
+    }
+    setGhlGuardando(true);
+    try {
+      const res = await fetch("/api/onboarding/conectar-ghl", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: clienteId, locationId: ghlLocationId.trim(), token: ghlToken.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGhlFormError(data.error || "No se pudo guardar la conexión");
+        return;
+      }
+      setGhlLocationId("");
+      setGhlToken("");
+      setGhlFormAbierto(false);
+      await cargarEstado();
+    } catch {
+      setGhlFormError("No se pudo conectar al servidor");
+    } finally {
+      setGhlGuardando(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -115,6 +156,100 @@ export default function V3ConexionesPage() {
       </header>
 
       {error && <div className="rounded-lg border border-outline-error bg-error-container px-4 py-3 text-sm text-error">{error}</div>}
+
+      <div className="rounded-lg border border-outline bg-surface p-5 flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[14px] font-medium text-on-surface">Go High Level</span>
+          <span className="text-[13px] text-on-surface-variant">Tu CRM — para crear y etiquetar contactos automáticamente cuando captes un lead.</span>
+        </div>
+        {ghlFormAbierto ? null : ghlConectado ? (
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline-success bg-success-container text-success">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+              </span>
+              Conectado
+            </span>
+            <button
+              onClick={() => setGhlFormAbierto(true)}
+              className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+            >
+              Reconectar
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-faint">
+              <span className="h-2 w-2 rounded-full bg-on-surface-faint" />
+              No conectado
+            </span>
+            <button
+              onClick={() => setGhlFormAbierto(true)}
+              className="press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
+            >
+              Conectar
+            </button>
+          </div>
+        )}
+      </div>
+
+      {ghlFormAbierto && (
+        <form onSubmit={conectarGhl} className="animate-fade-in-up rounded-lg border border-outline bg-surface p-5 flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-[14px] font-medium text-on-surface">{ghlConectado ? "Reconectar Go High Level" : "Conectar Go High Level"}</span>
+            <p className="text-[13px] text-on-surface-variant">
+              Necesitamos el <span className="font-mono">Location ID</span> de tu sub-cuenta y un token de{" "}
+              <span className="font-medium">Integración Privada</span> (Settings → Private Integrations en GHL) con permisos de Contacts.
+              {ghlConectado && " Esto reemplaza la conexión guardada."}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Location ID</label>
+            <input
+              type="text"
+              value={ghlLocationId}
+              onChange={(e) => setGhlLocationId(e.target.value)}
+              placeholder="Ej. inP4J6Az84JrpelPM1ZE"
+              className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Token de Integración Privada</label>
+            <input
+              type="password"
+              value={ghlToken}
+              onChange={(e) => setGhlToken(e.target.value)}
+              placeholder="pit-..."
+              className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
+            />
+          </div>
+
+          {ghlFormError && <p className="text-sm text-error">{ghlFormError}</p>}
+
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={ghlGuardando}
+              className="press rounded-md bg-primary text-on-primary text-[14px] font-medium px-4 py-2.5 disabled:opacity-50 disabled:active:scale-100 transition-transform duration-150"
+            >
+              {ghlGuardando ? "Guardando…" : "Guardar conexión"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setGhlFormAbierto(false);
+                setGhlFormError(null);
+              }}
+              className="press text-[14px] text-on-surface-variant hover:text-on-surface transition-colors duration-150"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
 
       <div className="rounded-lg border border-outline bg-surface p-5 flex items-center justify-between gap-4">
         <div className="flex flex-col gap-0.5">
