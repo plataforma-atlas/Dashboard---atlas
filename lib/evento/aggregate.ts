@@ -1,5 +1,13 @@
 import { Campaign, FunnelRow } from "../types";
-import { EventoAdSpendConsolidatedRow, EventoAngleStat, EventoDailyTraficoRow, EventoKpis, EventoTemperaturaRow } from "./types";
+import {
+  EventoAdSpendConsolidatedRow,
+  EventoAdSpendRow,
+  EventoAngleStat,
+  EventoDailyPerformanceRow,
+  EventoDailyTraficoRow,
+  EventoKpis,
+  EventoTemperaturaRow,
+} from "./types";
 
 // Nombres reales de funnel_stages para strategy_type = 'evento_presencial'.
 // Se compara por nombre (no por sort_order) porque esta tabla es compartida entre
@@ -110,4 +118,72 @@ export function toEventoDailyTraficoStats(
       cpl: v.leadsPauta > 0 ? v.spend / v.leadsPauta : null,
     }))
     .sort((a, b) => a.entry_date.localeCompare(b.entry_date));
+}
+
+// Dashboard V3: une, por día, el faturamento real (ingresos de TODAS las campañas
+// evento del cliente en la etapa Confirmación) con el investimento real (gasto de
+// pauta consolidado) y deriva el ROAS. A diferencia de toEventoDailyTraficoStats
+// (leads + CPL, por ángulo orgánico), esta es una vista a nivel cliente completo.
+export function toEventoDailyPerformanceStats(
+  adSpendConsolidated: EventoAdSpendConsolidatedRow[],
+  byAngle: { campaign: Campaign; rows: FunnelRow[] }[]
+): EventoDailyPerformanceRow[] {
+  const byDate = new Map<string, { faturamento: number; investimento: number }>();
+
+  for (const row of adSpendConsolidated) {
+    if (!row.entry_date) continue;
+    const date = row.entry_date.slice(0, 10);
+    const prev = byDate.get(date) ?? { faturamento: 0, investimento: 0 };
+    prev.investimento += Number(row.spend) || 0;
+    byDate.set(date, prev);
+  }
+
+  for (const { rows } of byAngle) {
+    for (const r of rows) {
+      if (r.stagename !== STAGE_CONFIRMACION || !r.event_date) continue;
+      const date = r.event_date.slice(0, 10);
+      const prev = byDate.get(date) ?? { faturamento: 0, investimento: 0 };
+      prev.faturamento += Number(r.total_ingresos) || 0;
+      byDate.set(date, prev);
+    }
+  }
+
+  return Array.from(byDate.entries())
+    .map(([entry_date, v]) => ({
+      entry_date,
+      faturamento: v.faturamento,
+      investimento: v.investimento,
+      roas: v.investimento > 0 ? v.faturamento / v.investimento : null,
+    }))
+    .sort((a, b) => a.entry_date.localeCompare(b.entry_date));
+}
+
+// Dashboard V3 — "Vendas por fuente": suma total_ingresos SOLO de la etapa
+// Confirmación (nunca de otras etapas) agrupado por utm_source. No reusa
+// toSourceBreakdown de lib/aggregate.ts porque esa suma ingresos de todas las
+// filas sin filtrar por stage — acá necesitamos certeza total sobre qué se suma.
+export function toEventoVentasPorFuente(byAngle: { campaign: Campaign; rows: FunnelRow[] }[]): { source: string; ingresos: number }[] {
+  const byFuente = new Map<string, number>();
+  for (const { rows } of byAngle) {
+    for (const r of rows) {
+      if (r.stagename !== STAGE_CONFIRMACION) continue;
+      const fuente = r.utm_source || "sin_fuente";
+      byFuente.set(fuente, (byFuente.get(fuente) ?? 0) + (Number(r.total_ingresos) || 0));
+    }
+  }
+  return Array.from(byFuente.entries())
+    .map(([source, ingresos]) => ({ source, ingresos }))
+    .sort((a, b) => b.ingresos - a.ingresos);
+}
+
+// Dashboard V3 — "Investimento por campaña": suma spend agrupado por campaign_name.
+export function toEventoInvestimentoPorCampana(adSpend: EventoAdSpendRow[]): { campaign: string; spend: number }[] {
+  const byCampana = new Map<string, number>();
+  for (const row of adSpend) {
+    const nombre = row.campaign_name || "Sin nombre";
+    byCampana.set(nombre, (byCampana.get(nombre) ?? 0) + (Number(row.spend) || 0));
+  }
+  return Array.from(byCampana.entries())
+    .map(([campaign, spend]) => ({ campaign, spend }))
+    .sort((a, b) => b.spend - a.spend);
 }

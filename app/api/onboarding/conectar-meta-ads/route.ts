@@ -9,14 +9,21 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
   const clienteId = (body?.cliente_id ?? "").toString().trim();
-  const adAccountId = (body?.adAccountId ?? "").toString().trim().replace(/^act_/, "");
+  const adAccountsRaw = Array.isArray(body?.adAccounts) ? body.adAccounts : [];
+  const adAccounts = adAccountsRaw
+    .map((a: { id?: unknown; label?: unknown }) => ({
+      id: (a?.id ?? "").toString().trim().replace(/^act_/, ""),
+      label: (a?.label ?? "").toString().trim(),
+    }))
+    .filter((a: { id: string }) => a.id.length > 0)
+    .map((a: { id: string; label: string }) => ({ id: a.id, label: a.label || a.id }));
   const accessToken = (body?.accessToken ?? "").toString().trim();
 
   if (!clienteId) return NextResponse.json({ error: "Falta cliente_id" }, { status: 400 });
   if (session.role !== "admin" && !clientesDeSesion(session).includes(clienteId)) {
     return NextResponse.json({ error: "No tienes acceso a este cliente" }, { status: 403 });
   }
-  if (!adAccountId) return NextResponse.json({ error: "Falta el ID de la cuenta publicitaria" }, { status: 400 });
+  if (adAccounts.length === 0) return NextResponse.json({ error: "Falta al menos una cuenta publicitaria" }, { status: 400 });
   if (!accessToken) return NextResponse.json({ error: "Falta el token de acceso de Meta" }, { status: 400 });
 
   const url = process.env.N8N_ONBOARDING_CONECTAR_URL;
@@ -29,7 +36,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         cliente_id: clienteId,
         integration_type: "meta_ads",
-        config: { ad_account_id: adAccountId },
+        config: { ad_accounts: adAccounts },
         credential: accessToken,
       }),
       cache: "no-store",

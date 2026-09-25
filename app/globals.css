@@ -53,6 +53,14 @@ body {
   transform: scale(0.97);
 }
 
+/* Elevación sutil al hover para tarjetas clicables (ej. Análisis de Anuncios). */
+.card-hover {
+  transition: transform 200ms var(--ease-out), border-color 150ms var(--ease-out);
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+}
+
 /* Entrada suave para tarjetas/paneles que aparecen al montar (login, forms,
    popovers) — nunca desde scale/opacity 0 puro, siempre con un origen visible. */
 @keyframes fade-in-up {

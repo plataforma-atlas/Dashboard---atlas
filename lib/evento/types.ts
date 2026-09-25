@@ -66,6 +66,16 @@ export type EventoAdSpendConsolidatedRow = {
   whatsapp: string | number;
 };
 
+// Fila derivada (no viene de ningún webhook directo) para el dashboard V3: une, por
+// día, el faturamento real (ingresos de la etapa Confirmación) con el investimento
+// real (gasto de pauta consolidado) y deriva el ROAS — ver toEventoDailyPerformanceStats.
+export type EventoDailyPerformanceRow = {
+  entry_date: string;
+  faturamento: number;
+  investimento: number;
+  roas: number | null;
+};
+
 // Fila real del webhook "Ver Rendimiento por Anuncio" — una fila por conjunto de anuncios + anuncio + fecha.
 export type EventoAdPerformanceRow = {
   adset_name: string;
