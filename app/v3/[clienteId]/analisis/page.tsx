@@ -7,6 +7,9 @@ import { V3Dashboard } from "@/lib/v3/types";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import MetaNoConectado from "@/components/v3/MetaNoConectado";
 import AdCreativeCard from "@/components/v3/AdCreativeCard";
+import Pagination from "@/components/ui/pagination";
+
+const PAGE_SIZE_OPTIONS = [12, 24, 48];
 
 export default function V3AnalisisPage() {
   const params = useParams<{ clienteId: string }>();
@@ -19,6 +22,8 @@ export default function V3AnalisisPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12);
 
   useEffect(() => {
     if (!clienteId) return;
@@ -57,6 +62,15 @@ export default function V3AnalisisPage() {
     };
   }, [clienteId, dashboardActual?.nomenclatura_filtro]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [clienteId, dashboardActual?.nomenclatura_filtro, pageSize]);
+
+  function cambiarPageSize(size: number) {
+    setPageSize(size);
+    setPage(1);
+  }
+
   function toggleSeleccion(adId: string) {
     setSeleccionados((prev) => (prev.includes(adId) ? prev.filter((id) => id !== adId) : [...prev, adId]));
   }
@@ -83,6 +97,9 @@ export default function V3AnalisisPage() {
 
   const anunciosOrdenados = [...data.anuncios].sort((a, b) => b.roas - a.roas);
   const anunciosSeleccionados = anunciosOrdenados.filter((a) => seleccionados.includes(a.ad_id));
+  const totalPages = Math.max(1, Math.ceil(anunciosOrdenados.length / pageSize));
+  const pageClamped = Math.min(page, totalPages);
+  const visibles = anunciosOrdenados.slice((pageClamped - 1) * pageSize, pageClamped * pageSize);
 
   return (
     <div className="px-4 py-8 md:px-8 max-w-7xl mx-auto flex flex-col gap-6">
@@ -117,11 +134,22 @@ export default function V3AnalisisPage() {
       {anunciosOrdenados.length === 0 ? (
         <p className="text-sm text-on-surface-faint py-6">Sin anuncios en los últimos 30 días.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {anunciosOrdenados.map((ad) => (
-            <AdCreativeCard key={ad.ad_id} ad={ad} selected={seleccionados.includes(ad.ad_id)} onToggle={() => toggleSeleccion(ad.ad_id)} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {visibles.map((ad) => (
+              <AdCreativeCard key={ad.ad_id} ad={ad} selected={seleccionados.includes(ad.ad_id)} onToggle={() => toggleSeleccion(ad.ad_id)} />
+            ))}
+          </div>
+          <Pagination
+            page={pageClamped}
+            pageCount={totalPages}
+            pageSize={pageSize}
+            total={anunciosOrdenados.length}
+            onPageChange={setPage}
+            onPageSizeChange={cambiarPageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+          />
+        </>
       )}
     </div>
   );
