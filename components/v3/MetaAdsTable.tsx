@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { formatMoney, formatNumber } from "@/lib/webinar-os/aggregate";
+import Pagination from "@/components/ui/pagination";
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
 type Row = {
   id: string;
@@ -32,15 +35,25 @@ export default function MetaAdsTable({
   const [erroresPorFila, setErroresPorFila] = useState<Record<string, string>>({});
   const [confirmandoLote, setConfirmandoLote] = useState<"ACTIVE" | "PAUSED" | null>(null);
   const [aplicandoLote, setAplicandoLote] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   if (rows.length === 0) {
     return <p className="text-sm text-on-surface-faint py-6">Sin datos en los últimos 30 días.</p>;
   }
 
   const ordenadas = [...rows].sort((a, b) => b.spend - a.spend);
+  const totalPages = Math.max(1, Math.ceil(ordenadas.length / pageSize));
+  const pageClamped = Math.min(page, totalPages);
+  const visibles = ordenadas.slice((pageClamped - 1) * pageSize, pageClamped * pageSize);
   const puedeAlternar = (r: Row) => r.status === "ACTIVE" || r.status === "PAUSED";
-  const alternables = ordenadas.filter(puedeAlternar);
+  const alternables = visibles.filter(puedeAlternar);
   const todosSeleccionados = alternables.length > 0 && alternables.every((r) => seleccionados.has(r.id));
+
+  function cambiarPageSize(size: number) {
+    setPageSize(size);
+    setPage(1);
+  }
 
   function toggleFila(id: string) {
     setSeleccionados((prev) => {
@@ -115,7 +128,7 @@ export default function MetaAdsTable({
             </tr>
           </thead>
           <tbody>
-            {ordenadas.map((r) => (
+            {visibles.map((r) => (
               <tr key={r.id} className="border-t border-outline align-top">
                 {onToggleEstado && (
                   <>
@@ -196,6 +209,16 @@ export default function MetaAdsTable({
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        page={pageClamped}
+        pageCount={totalPages}
+        pageSize={pageSize}
+        total={ordenadas.length}
+        onPageChange={setPage}
+        onPageSizeChange={cambiarPageSize}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+      />
 
       {onToggleEstado && seleccionados.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 animate-fade-in-up">
