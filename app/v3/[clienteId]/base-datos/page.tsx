@@ -97,20 +97,49 @@ export default function V3BaseDatosPage() {
                   <th className="px-4 py-2.5 font-medium">Nombre</th>
                   <th className="px-4 py-2.5 font-medium">Correo</th>
                   <th className="px-4 py-2.5 font-medium">Teléfono</th>
-                  <th className="px-4 py-2.5 font-medium">Origen</th>
+                  {tab === "comprado" ? (
+                    <>
+                      <th className="px-4 py-2.5 font-medium">Producto</th>
+                      <th className="px-4 py-2.5 font-medium">Monto</th>
+                    </>
+                  ) : (
+                    <th className="px-4 py-2.5 font-medium">Origen</th>
+                  )}
                   <th className="px-4 py-2.5 font-medium">Fecha</th>
                 </tr>
               </thead>
               <tbody>
-                {visibles.map((lead) => (
-                  <tr key={lead.id} className="border-b border-outline last:border-0">
-                    <td className="px-4 py-2.5 text-on-surface">{lead.nombre || "—"}</td>
-                    <td className="px-4 py-2.5 text-on-surface-variant">{lead.correo || "—"}</td>
-                    <td className="px-4 py-2.5 text-on-surface-variant font-mono">{lead.telefono || "—"}</td>
-                    <td className="px-4 py-2.5 text-on-surface-variant truncate max-w-[220px]">{lead.utm_source || lead.pagina_origen || "—"}</td>
-                    <td className="px-4 py-2.5 text-on-surface-faint">{new Date(lead.created_at).toLocaleDateString("es-CO")}</td>
-                  </tr>
-                ))}
+                {visibles.map((lead) => {
+                  const producto = typeof lead.extra?.producto === "string" ? lead.extra.producto : "";
+                  const monto = typeof lead.extra?.monto === "number" ? lead.extra.monto : null;
+                  const moneda = typeof lead.extra?.moneda === "string" ? lead.extra.moneda : "";
+                  const fueraDeEmbudo = lead.extra?.fuera_de_embudo === true;
+                  return (
+                    <tr key={lead.id} className="border-b border-outline last:border-0">
+                      <td className="px-4 py-2.5 text-on-surface">
+                        <div className="flex items-center gap-2">
+                          <span>{lead.nombre || "—"}</span>
+                          {tab === "comprado" && fueraDeEmbudo && (
+                            <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-outline text-on-surface-faint shrink-0">
+                              Sin embudo
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5 text-on-surface-variant">{lead.correo || "—"}</td>
+                      <td className="px-4 py-2.5 text-on-surface-variant font-mono">{lead.telefono || "—"}</td>
+                      {tab === "comprado" ? (
+                        <>
+                          <td className="px-4 py-2.5 text-on-surface-variant truncate max-w-[220px]">{producto || "—"}</td>
+                          <td className="px-4 py-2.5 text-on-surface-variant font-mono">{monto !== null ? `${monto} ${moneda}`.trim() : "—"}</td>
+                        </>
+                      ) : (
+                        <td className="px-4 py-2.5 text-on-surface-variant truncate max-w-[220px]">{lead.utm_source || lead.pagina_origen || "—"}</td>
+                      )}
+                      <td className="px-4 py-2.5 text-on-surface-faint">{new Date(lead.created_at).toLocaleDateString("es-CO")}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

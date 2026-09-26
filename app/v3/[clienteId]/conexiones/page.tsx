@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Plus, X } from "lucide-react";
+import { Check, Link2, Plus, X } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
 
 type EstadoConexion = { integration_type: string; status: string; updated_at: string; tiene_credencial: boolean };
@@ -32,6 +32,13 @@ export default function V3ConexionesPage() {
   const [ghlGuardando, setGhlGuardando] = useState(false);
   const [ghlFormError, setGhlFormError] = useState<string | null>(null);
 
+  const [hotmartFormAbierto, setHotmartFormAbierto] = useState(false);
+  const [hotmartHottok, setHotmartHottok] = useState("");
+  const [hotmartGuardando, setHotmartGuardando] = useState(false);
+  const [hotmartFormError, setHotmartFormError] = useState<string | null>(null);
+  const [hotmartWebhookAbierto, setHotmartWebhookAbierto] = useState(false);
+  const [hotmartCopiado, setHotmartCopiado] = useState(false);
+
   async function cargarEstado() {
     setLoading(true);
     setError(null);
@@ -57,6 +64,8 @@ export default function V3ConexionesPage() {
 
   const metaConectado = estado.find((e) => e.integration_type === "meta_ads" && e.status === "active" && e.tiene_credencial) || null;
   const ghlConectado = estado.find((e) => e.integration_type === "ghl" && e.status === "active" && e.tiene_credencial) || null;
+  const hotmartConectado = estado.find((e) => e.integration_type === "hotmart" && e.status === "active" && e.tiene_credencial) || null;
+  const hotmartWebhookUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/api/hooks/integraciones/hotmart-venta?cliente_id=${clienteId}`;
 
   function actualizarCuenta(i: number, campo: "id" | "label", valor: string) {
     setCuentas((prev) => prev.map((c, idx) => (idx === i ? { ...c, [campo]: valor } : c)));
@@ -137,6 +146,45 @@ export default function V3ConexionesPage() {
     } finally {
       setGhlGuardando(false);
     }
+  }
+
+  async function conectarHotmart(e: React.FormEvent) {
+    e.preventDefault();
+    setHotmartFormError(null);
+    if (!hotmartHottok.trim()) {
+      setHotmartFormError("Falta el Hottok de Hotmart.");
+      return;
+    }
+    setHotmartGuardando(true);
+    try {
+      const res = await fetch("/api/onboarding/conectar-hotmart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: clienteId, hottok: hotmartHottok.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setHotmartFormError(data.error || "No se pudo guardar la conexión");
+        return;
+      }
+      setHotmartHottok("");
+      setHotmartFormAbierto(false);
+      await cargarEstado();
+    } catch {
+      setHotmartFormError("No se pudo conectar al servidor");
+    } finally {
+      setHotmartGuardando(false);
+    }
+  }
+
+  function copiarWebhookHotmart() {
+    navigator.clipboard
+      ?.writeText(hotmartWebhookUrl)
+      .then(() => {
+        setHotmartCopiado(true);
+        setTimeout(() => setHotmartCopiado(false), 2000);
+      })
+      .catch(() => {});
   }
 
   if (loading) {
@@ -365,6 +413,124 @@ export default function V3ConexionesPage() {
               onClick={() => {
                 setFormAbierto(false);
                 setFormError(null);
+              }}
+              className="press text-[14px] text-on-surface-variant hover:text-on-surface transition-colors duration-150"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
+
+      <div className="rounded-lg border border-outline bg-surface p-5 flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[14px] font-medium text-on-surface">Hotmart</span>
+          <span className="text-[13px] text-on-surface-variant">De acá llegan tus ventas — se reflejan solas en Base de datos.</span>
+        </div>
+        {hotmartFormAbierto ? null : hotmartConectado ? (
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline-success bg-success-container text-success">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+              </span>
+              Conectado
+            </span>
+            <button
+              type="button"
+              onClick={() => setHotmartWebhookAbierto((v) => !v)}
+              className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+            >
+              {hotmartWebhookAbierto ? "Ocultar webhook" : "Ver webhook"}
+            </button>
+            <button
+              onClick={() => setHotmartFormAbierto(true)}
+              className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+            >
+              Reconectar
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-faint">
+              <span className="h-2 w-2 rounded-full bg-on-surface-faint" />
+              No conectado
+            </span>
+            <button
+              onClick={() => setHotmartFormAbierto(true)}
+              className="press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
+            >
+              Conectar
+            </button>
+          </div>
+        )}
+      </div>
+
+      {hotmartConectado && hotmartWebhookAbierto && !hotmartFormAbierto && (
+        <div className="animate-fade-in-up rounded-lg border border-outline bg-surface p-5 flex flex-col gap-3">
+          <p className="text-[13px] text-on-surface-variant">
+            Pegá este webhook en tu cuenta de Hotmart (Herramientas → Webhooks) para que cada venta llegue automáticamente.
+          </p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 min-w-0 truncate bg-background border border-outline rounded-md px-3 py-2 text-[13px] text-on-surface font-mono">
+              {hotmartWebhookUrl}
+            </code>
+            <button
+              type="button"
+              onClick={copiarWebhookHotmart}
+              className="press flex items-center gap-1.5 text-[13px] px-3 py-2 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150"
+            >
+              {hotmartCopiado ? (
+                <>
+                  <Check size={14} /> Copiado
+                </>
+              ) : (
+                <>
+                  <Link2 size={14} /> Copiar
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {hotmartFormAbierto && (
+        <form onSubmit={conectarHotmart} className="animate-fade-in-up rounded-lg border border-outline bg-surface p-5 flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-[14px] font-medium text-on-surface">{hotmartConectado ? "Reconectar Hotmart" : "Conectar Hotmart"}</span>
+            <p className="text-[13px] text-on-surface-variant">
+              Necesitamos el <span className="font-medium">Hottok</span> de tu cuenta de Hotmart (Herramientas → Webhooks → Hottok) para
+              verificar que las ventas que lleguen sean realmente tuyas.
+              {hotmartConectado && " Esto reemplaza el Hottok guardado."}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Hottok</label>
+            <input
+              type="password"
+              value={hotmartHottok}
+              onChange={(e) => setHotmartHottok(e.target.value)}
+              placeholder="Tu Hottok"
+              className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
+            />
+          </div>
+
+          {hotmartFormError && <p className="text-sm text-error">{hotmartFormError}</p>}
+
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={hotmartGuardando}
+              className="press rounded-md bg-primary text-on-primary text-[14px] font-medium px-4 py-2.5 disabled:opacity-50 disabled:active:scale-100 transition-transform duration-150"
+            >
+              {hotmartGuardando ? "Guardando…" : "Guardar conexión"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setHotmartFormAbierto(false);
+                setHotmartFormError(null);
               }}
               className="press text-[14px] text-on-surface-variant hover:text-on-surface transition-colors duration-150"
             >

@@ -16,6 +16,7 @@ const ALLOWED_PATHS = new Set([
   "integraciones/embudo-gracias",
   "integraciones/embudo-grupos",
   "integraciones/embudo-mensaje-recibido",
+  "integraciones/hotmart-venta",
 ]);
 
 async function proxy(req: Request, path: string[]) {
