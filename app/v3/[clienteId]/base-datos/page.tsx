@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import VermetricasLoader from "@/components/VermetricasLoader";
+import Pagination from "@/components/ui/pagination";
 import { V3Lead, V3LeadStatus } from "@/lib/v3/types";
 
 const TABS: { status: V3LeadStatus; label: string }[] = [
   { status: "lead", label: "Leads captados" },
   { status: "comprado", label: "Ventas" },
 ];
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
 export default function V3BaseDatosPage() {
   const params = useParams<{ clienteId: string }>();
@@ -18,6 +21,8 @@ export default function V3BaseDatosPage() {
   const [leads, setLeads] = useState<V3Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   async function cargarLeads() {
     setLoading(true);
@@ -41,6 +46,14 @@ export default function V3BaseDatosPage() {
     if (clienteId) cargarLeads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clienteId, tab]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [tab, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(leads.length / pageSize));
+  const pageClamped = Math.min(page, totalPages);
+  const visibles = leads.slice((pageClamped - 1) * pageSize, pageClamped * pageSize);
 
   return (
     <div className="px-4 py-8 md:px-8 max-w-5xl mx-auto flex flex-col gap-6">
@@ -76,29 +89,40 @@ export default function V3BaseDatosPage() {
           {tab === "lead" ? "Todavía no llegó ningún lead." : "Todavía no hay ventas registradas."}
         </p>
       ) : (
-        <div className="rounded-lg border border-outline bg-surface overflow-x-auto">
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr className="text-left text-on-surface-faint uppercase tracking-[0.08em] text-[11px] border-b border-outline">
-                <th className="px-4 py-2.5 font-medium">Nombre</th>
-                <th className="px-4 py-2.5 font-medium">Correo</th>
-                <th className="px-4 py-2.5 font-medium">Teléfono</th>
-                <th className="px-4 py-2.5 font-medium">Origen</th>
-                <th className="px-4 py-2.5 font-medium">Fecha</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leads.map((lead) => (
-                <tr key={lead.id} className="border-b border-outline last:border-0">
-                  <td className="px-4 py-2.5 text-on-surface">{lead.nombre || "—"}</td>
-                  <td className="px-4 py-2.5 text-on-surface-variant">{lead.correo || "—"}</td>
-                  <td className="px-4 py-2.5 text-on-surface-variant font-mono">{lead.telefono || "—"}</td>
-                  <td className="px-4 py-2.5 text-on-surface-variant truncate max-w-[220px]">{lead.utm_source || lead.pagina_origen || "—"}</td>
-                  <td className="px-4 py-2.5 text-on-surface-faint">{new Date(lead.created_at).toLocaleDateString("es-CO")}</td>
+        <div className="flex flex-col gap-3">
+          <div className="rounded-lg border border-outline bg-surface overflow-x-auto">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="text-left text-on-surface-faint uppercase tracking-[0.08em] text-[11px] border-b border-outline">
+                  <th className="px-4 py-2.5 font-medium">Nombre</th>
+                  <th className="px-4 py-2.5 font-medium">Correo</th>
+                  <th className="px-4 py-2.5 font-medium">Teléfono</th>
+                  <th className="px-4 py-2.5 font-medium">Origen</th>
+                  <th className="px-4 py-2.5 font-medium">Fecha</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {visibles.map((lead) => (
+                  <tr key={lead.id} className="border-b border-outline last:border-0">
+                    <td className="px-4 py-2.5 text-on-surface">{lead.nombre || "—"}</td>
+                    <td className="px-4 py-2.5 text-on-surface-variant">{lead.correo || "—"}</td>
+                    <td className="px-4 py-2.5 text-on-surface-variant font-mono">{lead.telefono || "—"}</td>
+                    <td className="px-4 py-2.5 text-on-surface-variant truncate max-w-[220px]">{lead.utm_source || lead.pagina_origen || "—"}</td>
+                    <td className="px-4 py-2.5 text-on-surface-faint">{new Date(lead.created_at).toLocaleDateString("es-CO")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            page={pageClamped}
+            pageCount={totalPages}
+            pageSize={pageSize}
+            total={leads.length}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+          />
         </div>
       )}
     </div>
