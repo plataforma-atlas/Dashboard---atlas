@@ -12,13 +12,23 @@ export type V3Dashboard = {
 };
 
 // Un "punto de captación" es una landing/formulario específico que alimenta a un
-// dashboard de tipo Lanzamiento — cada uno tiene su propio endpoint público
-// (autenticado por `token`, no por sesión) y su propia etiqueta de GHL.
+// dashboard de tipo Lanzamiento. Cada punto trae, además de su propio endpoint
+// de captación, un set fijo de endpoints hermanos para el resto del embudo —
+// todos enmascarados vía /api/hooks (nunca se ve n8n), autenticados por su
+// propio `token`, sin sesión.
+export type V3EndpointTipo = "encuesta" | "gracias" | "grupos" | "mensaje_recibido";
+
+export type V3PuntoEndpoint = {
+  tipo: V3EndpointTipo;
+  token: string;
+};
+
 export type V3CaptacionPunto = {
   id: number;
   nombre: string;
   etiqueta_ghl: string;
-  token: string;
+  token_captacion: string;
+  endpoints: V3PuntoEndpoint[];
   created_at: string;
 };
 
@@ -36,5 +46,6 @@ export type V3Lead = {
   utm_term: string | null;
   pagina_origen: string | null;
   status: V3LeadStatus;
+  extra: Record<string, unknown>;
   created_at: string;
 };

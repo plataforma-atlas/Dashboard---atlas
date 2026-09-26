@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { ChevronDown, Clapperboard, Database, LayoutDashboard, LogOut, Megaphone, Undo2, Users } from "lucide-react";
+import { ChevronDown, Clapperboard, Database, LayoutDashboard, Link2, LogOut, Megaphone, Undo2, Users } from "lucide-react";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
@@ -199,6 +199,20 @@ export default function V3Sidebar() {
               <Database size={13} strokeWidth={2} />
             </span>
             <span className={`truncate ${collapsed ? "md:hidden" : ""}`}>Conexiones</span>
+          </a>
+          <a
+            href={`/v3/${clienteIdActual}/endpoints`}
+            title="Endpoints"
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm min-w-0 transition-colors duration-150 ${
+              pathname === `/v3/${clienteIdActual}/endpoints`
+                ? "bg-surface-high text-on-surface"
+                : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"
+            } ${collapsed ? "md:justify-center" : ""}`}
+          >
+            <span className="w-6 h-6 rounded-lg bg-primary/20 text-primary grid place-items-center shrink-0">
+              <Link2 size={13} strokeWidth={2} />
+            </span>
+            <span className={`truncate ${collapsed ? "md:hidden" : ""}`}>Endpoints</span>
           </a>
         </nav>
       )}

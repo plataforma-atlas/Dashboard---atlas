@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Plus, Link2, X, Check } from "lucide-react";
-import { V3CaptacionPunto, V3Dashboard, V3DashboardTipo } from "@/lib/v3/types";
-
-const CAPTACION_LEAD_URL = process.env.NEXT_PUBLIC_CAPTACION_LEAD_URL ?? "";
+import { Plus } from "lucide-react";
+import { V3Dashboard, V3DashboardTipo } from "@/lib/v3/types";
 
 // Barra global de dashboards (proyectos filtrados por nomenclatura) — vive en
 // el layout de la V3 para que el selector esté disponible en cualquier
@@ -26,17 +24,6 @@ export default function V3Topbar() {
   const [nomenclaturaNueva, setNomenclaturaNueva] = useState("");
   const [creando, setCreando] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-
-  const [puntosAbierto, setPuntosAbierto] = useState(false);
-  const [puntos, setPuntos] = useState<V3CaptacionPunto[]>([]);
-  const [puntosLoading, setPuntosLoading] = useState(false);
-  const [nombrePuntoNuevo, setNombrePuntoNuevo] = useState("");
-  const [etiquetaPuntoNueva, setEtiquetaPuntoNueva] = useState("");
-  const [creandoPunto, setCreandoPunto] = useState(false);
-  const [puntoFormError, setPuntoFormError] = useState<string | null>(null);
-  const [tokenCopiado, setTokenCopiado] = useState<string | null>(null);
-
-  const dashboardSeleccionado = dashboards.find((d) => String(d.id) === dashboardIdParam) || null;
 
   async function cargarDashboards() {
     if (!clienteId) return;
@@ -98,75 +85,6 @@ export default function V3Topbar() {
     }
   }
 
-  async function cargarPuntos() {
-    if (!clienteId || !dashboardSeleccionado) return;
-    setPuntosLoading(true);
-    try {
-      const res = await fetch(`/api/v3/captacion-puntos?cliente_id=${clienteId}&dashboard_id=${dashboardSeleccionado.id}`, { cache: "no-store" });
-      const body = await res.json();
-      setPuntos(res.ok ? body.puntos ?? [] : []);
-    } catch {
-      setPuntos([]);
-    } finally {
-      setPuntosLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (puntosAbierto) cargarPuntos();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [puntosAbierto, dashboardIdParam]);
-
-  async function crearPunto(e: React.FormEvent) {
-    e.preventDefault();
-    setPuntoFormError(null);
-    if (!dashboardSeleccionado) return;
-    if (!nombrePuntoNuevo.trim()) {
-      setPuntoFormError("Ponele un nombre al punto de captación.");
-      return;
-    }
-    if (!etiquetaPuntoNueva.trim()) {
-      setPuntoFormError("Falta la etiqueta que se le va a poner en Go High Level.");
-      return;
-    }
-    setCreandoPunto(true);
-    try {
-      const res = await fetch("/api/v3/captacion-puntos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cliente_id: clienteId,
-          dashboard_id: dashboardSeleccionado.id,
-          nombre: nombrePuntoNuevo.trim(),
-          etiqueta_ghl: etiquetaPuntoNueva.trim(),
-        }),
-      });
-      const nuevo = await res.json();
-      if (!res.ok) {
-        setPuntoFormError(nuevo.error || "No se pudo crear el punto de captación");
-        return;
-      }
-      setNombrePuntoNuevo("");
-      setEtiquetaPuntoNueva("");
-      await cargarPuntos();
-    } catch {
-      setPuntoFormError("No se pudo conectar al servidor");
-    } finally {
-      setCreandoPunto(false);
-    }
-  }
-
-  function copiarEndpoint(punto: V3CaptacionPunto) {
-    const url = `${CAPTACION_LEAD_URL}?token=${punto.token}`;
-    navigator.clipboard
-      ?.writeText(url)
-      .then(() => {
-        setTokenCopiado(punto.token);
-        setTimeout(() => setTokenCopiado((actual) => (actual === punto.token ? null : actual)), 2000);
-      })
-      .catch(() => {});
-  }
-
   return (
     <div className="sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-outline">
       <div className="px-4 md:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -187,30 +105,13 @@ export default function V3Topbar() {
             </select>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          {dashboardSeleccionado?.tipo === "lanzamiento" && (
-            <button
-              type="button"
-              onClick={() => {
-                setPuntosAbierto((v) => !v);
-                setFormAbierto(false);
-              }}
-              className="press flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
-            >
-              <Link2 size={14} /> Puntos de captación
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              setFormAbierto((v) => !v);
-              setPuntosAbierto(false);
-            }}
-            className="press flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
-          >
-            <Plus size={14} /> Crear nuevo
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setFormAbierto((v) => !v)}
+          className="press flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+        >
+          <Plus size={14} /> Crear nuevo
+        </button>
       </div>
 
       {formAbierto && (
@@ -278,87 +179,6 @@ export default function V3Topbar() {
           </div>
           {formError && <p className="text-sm text-error basis-full">{formError}</p>}
         </form>
-      )}
-
-      {puntosAbierto && dashboardSeleccionado && (
-        <div className="animate-fade-in-up px-4 md:px-8 pb-4 flex flex-col gap-3">
-          <p className="text-[13px] text-on-surface-variant">
-            Cada punto es una landing distinta para <span className="font-medium text-on-surface">{dashboardSeleccionado.nombre}</span> — copiá su
-            enlace y pegalo como el webhook de tu página de captación.
-          </p>
-
-          {puntosLoading ? (
-            <p className="text-[13px] text-on-surface-faint">Cargando…</p>
-          ) : puntos.length === 0 ? (
-            <p className="text-[13px] text-on-surface-faint">Todavía no hay puntos de captación para este dashboard.</p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {puntos.map((punto) => (
-                <div key={punto.id} className="rounded-lg border border-outline bg-surface p-3 flex flex-col sm:flex-row sm:items-center gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-on-surface">{punto.nombre}</div>
-                    <div className="text-[12px] text-on-surface-faint font-mono truncate">Etiqueta GHL: {punto.etiqueta_ghl}</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => copiarEndpoint(punto)}
-                    className="press flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150"
-                  >
-                    {tokenCopiado === punto.token ? (
-                      <>
-                        <Check size={14} /> Copiado
-                      </>
-                    ) : (
-                      <>
-                        <Link2 size={14} /> Copiar enlace
-                      </>
-                    )}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <form onSubmit={crearPunto} className="flex flex-col sm:flex-row sm:items-end gap-3 pt-1 border-t border-outline">
-            <div className="flex flex-col gap-1.5 flex-1 min-w-0 mt-3">
-              <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Nombre del punto</label>
-              <input
-                type="text"
-                value={nombrePuntoNuevo}
-                onChange={(e) => setNombrePuntoNuevo(e.target.value)}
-                placeholder="Ej. Landing principal"
-                className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface focus:border-primary outline-none transition-colors duration-150"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5 flex-1 min-w-0 mt-3">
-              <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Etiqueta para Go High Level</label>
-              <input
-                type="text"
-                value={etiquetaPuntoNueva}
-                onChange={(e) => setEtiquetaPuntoNueva(e.target.value)}
-                placeholder="Ej. lanzamiento_octubre_registrado"
-                className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
-              />
-            </div>
-            <div className="flex items-center gap-3 shrink-0 mt-3">
-              <button
-                type="submit"
-                disabled={creandoPunto}
-                className="press rounded-md bg-primary text-on-primary text-[14px] font-medium px-4 py-2 disabled:opacity-50 transition-transform duration-150"
-              >
-                {creandoPunto ? "Creando…" : "Agregar punto"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPuntosAbierto(false)}
-                className="press text-[14px] text-on-surface-variant hover:text-on-surface transition-colors duration-150"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </form>
-          {puntoFormError && <p className="text-sm text-error">{puntoFormError}</p>}
-        </div>
       )}
     </div>
   );

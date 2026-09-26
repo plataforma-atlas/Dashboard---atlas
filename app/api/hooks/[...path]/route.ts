@@ -11,6 +11,11 @@ const ALLOWED_PATHS = new Set([
   "embudo-webinar/whatsapp",
   "embudo-webinar/registro-webinar",
   "dsm-webinarkit",
+  "integraciones/captacion-lead",
+  "integraciones/embudo-encuesta",
+  "integraciones/embudo-gracias",
+  "integraciones/embudo-grupos",
+  "integraciones/embudo-mensaje-recibido",
 ]);
 
 async function proxy(req: Request, path: string[]) {
