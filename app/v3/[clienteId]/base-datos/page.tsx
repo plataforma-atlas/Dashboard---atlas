@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
+import { Download } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import Pagination from "@/components/ui/pagination";
 import { V3Lead, V3LeadStatus } from "@/lib/v3/types";
@@ -16,6 +17,8 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50];
 export default function V3BaseDatosPage() {
   const params = useParams<{ clienteId: string }>();
   const clienteId = params.clienteId;
+  const searchParams = useSearchParams();
+  const dashboardIdParam = searchParams.get("dashboard") ?? "";
 
   const [tab, setTab] = useState<V3LeadStatus>("lead");
   const [leads, setLeads] = useState<V3Lead[]>([]);
@@ -28,7 +31,10 @@ export default function V3BaseDatosPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v3/leads?cliente_id=${encodeURIComponent(clienteId)}&status=${tab}`, { cache: "no-store" });
+      const url = `/api/v3/leads?cliente_id=${encodeURIComponent(clienteId)}&status=${tab}${
+        dashboardIdParam ? `&dashboard_id=${encodeURIComponent(dashboardIdParam)}` : ""
+      }`;
+      const res = await fetch(url, { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "No se pudieron cargar los leads");
@@ -45,7 +51,7 @@ export default function V3BaseDatosPage() {
   useEffect(() => {
     if (clienteId) cargarLeads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clienteId, tab]);
+  }, [clienteId, tab, dashboardIdParam]);
 
   useEffect(() => {
     setPage(1);
@@ -55,6 +61,41 @@ export default function V3BaseDatosPage() {
   const pageClamped = Math.min(page, totalPages);
   const visibles = leads.slice((pageClamped - 1) * pageSize, pageClamped * pageSize);
 
+  function celdaCsv(valor: string) {
+    const texto = valor ?? "";
+    return /[",\n]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
+  }
+
+  function exportarCsv() {
+    const encabezados =
+      tab === "comprado"
+        ? ["Nombre", "Correo", "Teléfono", "Producto", "Monto", "Moneda", "Origen del lead", "Origen de la venta", "Sin embudo", "Fecha"]
+        : ["Nombre", "Correo", "Teléfono", "Origen", "Fecha"];
+    const filas = leads.map((lead) => {
+      const producto = typeof lead.extra?.producto === "string" ? lead.extra.producto : "";
+      const monto = typeof lead.extra?.monto === "number" ? lead.extra.monto : null;
+      const moneda = typeof lead.extra?.moneda === "string" ? lead.extra.moneda : "";
+      const ventaSck = typeof lead.extra?.venta_sck === "string" ? lead.extra.venta_sck : "";
+      const fueraDeEmbudo = lead.extra?.fuera_de_embudo === true;
+      const origen = lead.utm_source || lead.pagina_origen || "";
+      const fecha = new Date(lead.created_at).toLocaleDateString("es-CO");
+      const base = [lead.nombre || "", lead.correo || "", lead.telefono || ""];
+      const resto =
+        tab === "comprado"
+          ? [producto, monto !== null ? String(monto) : "", moneda, origen, ventaSck, fueraDeEmbudo ? "Si" : "No", fecha]
+          : [origen, fecha];
+      return [...base, ...resto].map(celdaCsv).join(",");
+    });
+    const csv = [encabezados.join(","), ...filas].join("\n");
+    const blob = new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${tab === "comprado" ? "ventas" : "leads"}-${clienteId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="px-4 py-8 md:px-8 max-w-5xl mx-auto flex flex-col gap-6">
       <header className="flex flex-col gap-1">
@@ -63,19 +104,30 @@ export default function V3BaseDatosPage() {
         <p className="text-sm text-on-surface-variant">Todo lo que llega por tus puntos de captación de Lanzamientos.</p>
       </header>
 
-      <div className="flex items-center gap-2 border-b border-outline">
-        {TABS.map((t) => (
+      <div className="flex items-center justify-between gap-2 border-b border-outline">
+        <div className="flex items-center gap-2">
+          {TABS.map((t) => (
+            <button
+              key={t.status}
+              type="button"
+              onClick={() => setTab(t.status)}
+              className={`press px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors duration-150 ${
+                tab === t.status ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        {leads.length > 0 && (
           <button
-            key={t.status}
             type="button"
-            onClick={() => setTab(t.status)}
-            className={`press px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors duration-150 ${
-              tab === t.status ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface"
-            }`}
+            onClick={exportarCsv}
+            className="press mb-2 flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface-variant hover:text-on-surface font-medium transition-colors duration-150"
           >
-            {t.label}
+            <Download size={14} /> Exportar CSV
           </button>
-        ))}
+        )}
       </div>
 
       {loading ? (
@@ -101,6 +153,8 @@ export default function V3BaseDatosPage() {
                     <>
                       <th className="px-4 py-2.5 font-medium">Producto</th>
                       <th className="px-4 py-2.5 font-medium">Monto</th>
+                      <th className="px-4 py-2.5 font-medium">Origen del lead</th>
+                      <th className="px-4 py-2.5 font-medium">Origen de la venta</th>
                     </>
                   ) : (
                     <th className="px-4 py-2.5 font-medium">Origen</th>
@@ -113,6 +167,7 @@ export default function V3BaseDatosPage() {
                   const producto = typeof lead.extra?.producto === "string" ? lead.extra.producto : "";
                   const monto = typeof lead.extra?.monto === "number" ? lead.extra.monto : null;
                   const moneda = typeof lead.extra?.moneda === "string" ? lead.extra.moneda : "";
+                  const ventaSck = typeof lead.extra?.venta_sck === "string" ? lead.extra.venta_sck : "";
                   const fueraDeEmbudo = lead.extra?.fuera_de_embudo === true;
                   return (
                     <tr key={lead.id} className="border-b border-outline last:border-0">
@@ -132,6 +187,8 @@ export default function V3BaseDatosPage() {
                         <>
                           <td className="px-4 py-2.5 text-on-surface-variant truncate max-w-[220px]">{producto || "—"}</td>
                           <td className="px-4 py-2.5 text-on-surface-variant font-mono">{monto !== null ? `${monto} ${moneda}`.trim() : "—"}</td>
+                          <td className="px-4 py-2.5 text-on-surface-variant truncate max-w-[160px]">{lead.utm_source || lead.pagina_origen || "—"}</td>
+                          <td className="px-4 py-2.5 text-on-surface-variant truncate max-w-[160px]">{ventaSck || "—"}</td>
                         </>
                       ) : (
                         <td className="px-4 py-2.5 text-on-surface-variant truncate max-w-[220px]">{lead.utm_source || lead.pagina_origen || "—"}</td>

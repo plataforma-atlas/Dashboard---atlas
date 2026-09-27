@@ -170,7 +170,7 @@ export default function V3Sidebar() {
 
         {clienteIdActual && (
           <a
-            href={`/v3/${clienteIdActual}/base-datos`}
+            href={`/v3/${clienteIdActual}/base-datos${dashboardQuery}`}
             title="Base de datos"
             className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm min-w-0 transition-colors duration-150 ${
               pathname === `/v3/${clienteIdActual}/base-datos`

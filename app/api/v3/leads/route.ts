@@ -10,6 +10,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const cliente_id = searchParams.get("cliente_id") ?? "";
   const status = searchParams.get("status") ?? "";
+  const dashboard_id = searchParams.get("dashboard_id") ?? "";
 
   if (session.role !== "admin" && !clientesDeSesion(session).includes(cliente_id)) {
     return NextResponse.json({ error: "Sin acceso a este cliente" }, { status: 403 });
@@ -22,6 +23,7 @@ export async function GET(req: Request) {
     const target = new URL(url);
     target.searchParams.set("cliente_id", cliente_id);
     if (status) target.searchParams.set("status", status);
+    if (dashboard_id) target.searchParams.set("dashboard_id", dashboard_id);
     const res = await fetch(target.toString(), { method: "GET", cache: "no-store" });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));

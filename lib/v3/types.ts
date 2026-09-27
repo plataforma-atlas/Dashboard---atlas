@@ -45,6 +45,7 @@ export type V3Lead = {
   utm_content: string | null;
   utm_term: string | null;
   pagina_origen: string | null;
+  dashboard_id: number | null;
   status: V3LeadStatus;
   extra: Record<string, unknown>;
   created_at: string;
