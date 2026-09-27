@@ -6,13 +6,15 @@ import V3Topbar from "@/components/v3/V3Topbar";
 // resuelve su propia sesión/datos — ver plan en purrfect-humming-backus.md.
 // No tocar los layouts/paginas existentes fuera de /v3.
 //
-// V3Topbar usa useSearchParams(), que Next.js exige envolver en <Suspense>
-// para poder generar /v3 estáticamente — sin esto, `next build` falla en
-// producción (prerender error) aunque `next dev` no lo muestra.
+// V3Sidebar y V3Topbar usan useSearchParams(), que Next.js exige envolver en
+// <Suspense> para poder generar /v3 estáticamente — sin esto, `next build`
+// falla en producción (prerender error) aunque `next dev` no lo muestra.
 export default function V3Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
-      <V3Sidebar />
+      <Suspense fallback={null}>
+        <V3Sidebar />
+      </Suspense>
       <main className="min-h-screen flex-1 md:ml-[var(--sidebar-w,240px)] transition-[margin] duration-200">
         <Suspense fallback={null}>
           <V3Topbar />
