@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, Clapperboard, Database, LayoutDashboard, Link2, LogOut, Megaphone, Undo2, Users } from "lucide-react";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
@@ -17,6 +17,9 @@ export default function V3Sidebar() {
   const pathname = usePathname();
   const params = useParams<{ clienteId?: string }>();
   const clienteIdActual = typeof params?.clienteId === "string" ? params.clienteId : undefined;
+  const searchParams = useSearchParams();
+  const dashboardIdParam = searchParams.get("dashboard");
+  const dashboardQuery = dashboardIdParam ? `?dashboard=${dashboardIdParam}` : "";
 
   const { collapsed, toggleCollapsed } = useSidebarCollapse();
   const { mode, toggleMode } = useThemeMode();
@@ -133,7 +136,7 @@ export default function V3Sidebar() {
 
         {clienteIdActual && (
           <a
-            href={`/v3/${clienteIdActual}/anuncios`}
+            href={`/v3/${clienteIdActual}/anuncios${dashboardQuery}`}
             title="Administrador de Anuncios"
             className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm min-w-0 transition-colors duration-150 ${
               pathname === `/v3/${clienteIdActual}/anuncios`
@@ -150,7 +153,7 @@ export default function V3Sidebar() {
 
         {clienteIdActual && (
           <a
-            href={`/v3/${clienteIdActual}/analisis`}
+            href={`/v3/${clienteIdActual}/analisis${dashboardQuery}`}
             title="Análisis de Anuncios"
             className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm min-w-0 transition-colors duration-150 ${
               pathname === `/v3/${clienteIdActual}/analisis`
@@ -201,7 +204,7 @@ export default function V3Sidebar() {
             <span className={`truncate ${collapsed ? "md:hidden" : ""}`}>Conexiones</span>
           </a>
           <a
-            href={`/v3/${clienteIdActual}/endpoints`}
+            href={`/v3/${clienteIdActual}/endpoints${dashboardQuery}`}
             title="Endpoints"
             className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm min-w-0 transition-colors duration-150 ${
               pathname === `/v3/${clienteIdActual}/endpoints`
