@@ -24,12 +24,15 @@ import {
   toEventoVentasPorFuente,
 } from "@/lib/evento/aggregate";
 import { formatMoney, formatNumber, formatPercent } from "@/lib/webinar-os/aggregate";
+import { RangoRapido, rangoRapido } from "@/lib/webinar-os/control-center/dateRanges";
 import { MetaAdsResponse } from "@/lib/meta-ads/types";
 import { V3Dashboard, V3Lead } from "@/lib/v3/types";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import V3ComingSoon from "@/components/v3/V3ComingSoon";
 import MetaNoConectado from "@/components/v3/MetaNoConectado";
 import KpiCard from "@/components/v3/KpiCard";
+import AnimatedNumber from "@/components/v3/AnimatedNumber";
+import V3PeriodFilter from "@/components/v3/V3PeriodFilter";
 import PerformanceChart from "@/components/v3/PerformanceChart";
 import Tabs from "@/components/v3/Tabs";
 import DailyDetailTable from "@/components/v3/DailyDetailTable";
@@ -68,6 +71,11 @@ export default function V3ClientePage() {
   const [metaLoading, setMetaLoading] = useState(true);
   const [leads, setLeads] = useState<V3Lead[]>([]);
   const [leadsLoading, setLeadsLoading] = useState(true);
+  // Filtra leads/ventas propios por fecha — Meta Ads (inversión/impresiones/
+  // clics) sigue fijo en los últimos 30 días, el pull de n8n todavía no
+  // acepta un rango custom.
+  const [periodo, setPeriodo] = useState<Exclude<RangoRapido, "custom">>("30days");
+  const rangoPeriodo = useMemo(() => rangoRapido(periodo), [periodo]);
 
   const [eventoByAngle, setEventoByAngle] = useState<{ campaign: Campaign; rows: FunnelRow[] }[]>([]);
   const [adSpend, setAdSpend] = useState<EventoAdSpendRow[]>([]);
@@ -184,7 +192,10 @@ export default function V3ClientePage() {
     if (!esLanzamiento || !dashboardActual) return;
     let cancelled = false;
     setLeadsLoading(true);
-    fetch(`/api/v3/leads?cliente_id=${clienteId}&dashboard_id=${dashboardActual.id}`, { cache: "no-store" })
+    const qs = new URLSearchParams({ cliente_id: clienteId, dashboard_id: String(dashboardActual.id) });
+    if (rangoPeriodo.fecha_inicio) qs.set("fecha_inicio", rangoPeriodo.fecha_inicio);
+    if (rangoPeriodo.fecha_fin) qs.set("fecha_fin", rangoPeriodo.fecha_fin);
+    fetch(`/api/v3/leads?${qs.toString()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((body: { leads?: V3Lead[] }) => {
         if (!cancelled) setLeads(body.leads ?? []);
@@ -198,7 +209,7 @@ export default function V3ClientePage() {
     return () => {
       cancelled = true;
     };
-  }, [esLanzamiento, dashboardActual, clienteId]);
+  }, [esLanzamiento, dashboardActual, clienteId, rangoPeriodo.fecha_inicio, rangoPeriodo.fecha_fin]);
 
   // Métricas de la sección Meta del Home de Lanzamiento. "Facturación bruta"
   // y "neta"/cash-collect son hoy la misma suma de extra.monto de Hotmart —
@@ -342,6 +353,10 @@ export default function V3ClientePage() {
     }
 
     const m = lanzamientoMetrics!;
+    // "—" no se anima (no hay nada que contar hacia un guion) — solo los
+    // valores reales suben desde el anterior.
+    const numeroOGuion = (valor: number | null, formato: (n: number) => string) =>
+      valor == null ? "—" : <AnimatedNumber value={valor} format={formato} />;
 
     return (
       <div className="px-4 py-8 md:px-8 max-w-7xl mx-auto flex flex-col gap-6">
@@ -351,36 +366,45 @@ export default function V3ClientePage() {
           <p className="text-sm text-on-surface-variant">{clienteNombre}</p>
         </header>
 
+        <V3PeriodFilter value={periodo} onChange={(p) => setPeriodo(p)} />
+
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold text-on-surface">Meta Ads</h2>
+          <h2 className="text-sm font-semibold text-on-surface">
+            Meta Ads <span className="text-on-surface-faint font-normal">· inversión/impresiones/clics siempre últimos 30 días</span>
+          </h2>
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            <KpiCard icon={Wallet} label="Inversión publicitaria" value={formatMoney(m.inversion)} accent="primary" />
-            <KpiCard icon={Eye} label="Impresiones" value={formatNumber(m.impresiones)} accent="primary" />
-            <KpiCard icon={MousePointerClick} label="Clics" value={formatNumber(m.clics)} accent="primary" />
+            <KpiCard icon={Wallet} label="Inversión publicitaria" value={numeroOGuion(m.inversion, formatMoney)} accent="primary" />
+            <KpiCard icon={Eye} label="Impresiones" value={numeroOGuion(m.impresiones, formatNumber)} accent="primary" />
+            <KpiCard icon={MousePointerClick} label="Clics" value={numeroOGuion(m.clics, formatNumber)} accent="primary" />
             <KpiCard
               icon={Filter}
               label="% Conversión"
-              value={formatPercent(m.conversionPagina ?? undefined)}
+              value={numeroOGuion(m.conversionPagina, formatPercent)}
               sub="Clics → Leads (página de captación)"
               accent="primary"
             />
             <KpiCard
               icon={Percent}
               label="% Conversión global"
-              value={formatPercent(m.conversionGlobal ?? undefined)}
+              value={numeroOGuion(m.conversionGlobal, formatPercent)}
               sub="Leads → Ventas (embudo completo)"
               accent="primary"
             />
-            <KpiCard icon={DollarSign} label="Facturación bruta" value={formatMoneyEnMoneda(m.facturacion, m.moneda)} accent="success" />
+            <KpiCard
+              icon={DollarSign}
+              label="Facturación bruta"
+              value={numeroOGuion(m.facturacion, (n) => formatMoneyEnMoneda(n, m.moneda))}
+              accent="success"
+            />
             <KpiCard
               icon={Banknote}
               label="Cash collect (facturación neta)"
-              value={formatMoneyEnMoneda(m.facturacion, m.moneda)}
+              value={numeroOGuion(m.facturacion, (n) => formatMoneyEnMoneda(n, m.moneda))}
               accent="success"
             />
-            <KpiCard icon={TrendingUp} label="ROAS bruto" value={m.roas != null ? `${m.roas.toFixed(2)}x` : "—"} accent="primary" />
-            <KpiCard icon={BarChart3} label="ROAS neto" value={m.roas != null ? `${m.roas.toFixed(2)}x` : "—"} accent="primary" />
-            <KpiCard icon={ShoppingCart} label="Ventas" value={formatNumber(m.ventasCount)} accent="success" />
+            <KpiCard icon={TrendingUp} label="ROAS bruto" value={numeroOGuion(m.roas, (n) => `${n.toFixed(2)}x`)} accent="primary" />
+            <KpiCard icon={BarChart3} label="ROAS neto" value={numeroOGuion(m.roas, (n) => `${n.toFixed(2)}x`)} accent="primary" />
+            <KpiCard icon={ShoppingCart} label="Ventas" value={numeroOGuion(m.ventasCount, formatNumber)} accent="success" />
           </div>
         </section>
       </div>

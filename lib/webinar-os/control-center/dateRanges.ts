@@ -2,12 +2,14 @@ function toISODate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-export type RangoRapido = "all" | "today" | "7days" | "1month" | "custom";
+export type RangoRapido = "all" | "today" | "7days" | "30days" | "90days" | "1month" | "custom";
 
 export const RANGO_RAPIDO_LABEL: Record<Exclude<RangoRapido, "custom">, string> = {
   all: "Todo el período",
   today: "Hoy",
   "7days": "Últimos 7 días",
+  "30days": "Últimos 30 días",
+  "90days": "Últimos 90 días",
   "1month": "Último mes",
 };
 
@@ -32,6 +34,16 @@ export function rangoRapido(preset: Exclude<RangoRapido, "custom">): { fecha_ini
   if (preset === "7days") {
     const inicio = new Date(hoy);
     inicio.setDate(inicio.getDate() - 6);
+    return { fecha_inicio: toISODate(inicio), fecha_fin: toISODate(hoy) };
+  }
+  if (preset === "30days") {
+    const inicio = new Date(hoy);
+    inicio.setDate(inicio.getDate() - 29);
+    return { fecha_inicio: toISODate(inicio), fecha_fin: toISODate(hoy) };
+  }
+  if (preset === "90days") {
+    const inicio = new Date(hoy);
+    inicio.setDate(inicio.getDate() - 89);
     return { fecha_inicio: toISODate(inicio), fecha_fin: toISODate(hoy) };
   }
   // "1month"

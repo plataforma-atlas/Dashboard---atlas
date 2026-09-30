@@ -15,7 +15,7 @@ export default function KpiCard({
 }: {
   icon: LucideIcon;
   label: string;
-  value: string;
+  value: React.ReactNode;
   sub?: string;
   accent?: "primary" | "success" | "error";
 }) {

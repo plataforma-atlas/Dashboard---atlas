@@ -11,6 +11,8 @@ export async function GET(req: Request) {
   const cliente_id = searchParams.get("cliente_id") ?? "";
   const status = searchParams.get("status") ?? "";
   const dashboard_id = searchParams.get("dashboard_id") ?? "";
+  const fecha_inicio = searchParams.get("fecha_inicio") ?? "";
+  const fecha_fin = searchParams.get("fecha_fin") ?? "";
 
   if (session.role !== "admin" && !clientesDeSesion(session).includes(cliente_id)) {
     return NextResponse.json({ error: "Sin acceso a este cliente" }, { status: 403 });
@@ -24,6 +26,8 @@ export async function GET(req: Request) {
     target.searchParams.set("cliente_id", cliente_id);
     if (status) target.searchParams.set("status", status);
     if (dashboard_id) target.searchParams.set("dashboard_id", dashboard_id);
+    if (fecha_inicio) target.searchParams.set("fecha_inicio", fecha_inicio);
+    if (fecha_fin) target.searchParams.set("fecha_fin", fecha_fin);
     const res = await fetch(target.toString(), { method: "GET", cache: "no-store" });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
