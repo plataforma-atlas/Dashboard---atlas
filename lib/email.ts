@@ -48,7 +48,7 @@ export async function sendPasswordResetEmail({ to, resetUrl }: { to: string; res
             </tr>
             <tr>
               <td style="padding:28px 40px 0 40px;" align="center">
-                <a href="${resetUrl}" style="display:inline-block; background-color:#5B5BF7; color:#FFFFFF; text-decoration:none; font-size:14px; font-weight:600; padding:12px 32px; border-radius:8px;">
+                <a href="${resetUrl}" style="display:inline-block; background-color:#00A7B9; color:#FFFFFF; text-decoration:none; font-size:14px; font-weight:600; padding:12px 32px; border-radius:8px;">
                   Crear nueva contraseña
                 </a>
               </td>

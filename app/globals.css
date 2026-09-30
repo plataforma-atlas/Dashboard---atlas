@@ -11,8 +11,8 @@ html {
   --color-surface: #181A22;
   --color-surface-high: #1F222C;
   --color-outline: #272A35;
-  --color-primary: #7C7CFB;
-  --color-secondary: #A5A0FF;
+  --color-primary: #00A7B9;
+  --color-secondary: #6EFFF4;
   --color-on-surface: #F3F4F6;
   --color-on-surface-variant: #9CA3AF;
   --color-on-surface-faint: #6B7280;
@@ -20,8 +20,8 @@ html {
   --color-error: #F04438;
   --color-success: #16834A;
   --color-warning: #D97706;
-  /* Texto sobre un botón/píldora sólida de --color-primary. Índigo es un tono
-     medio-oscuro en ambos modos, así que blanco fijo es lo que mejor contrasta
+  /* Texto sobre un botón/píldora sólida de --color-primary. El teal de marca es un
+     tono medio-oscuro en ambos modos, así que blanco fijo es lo que mejor contrasta
      (mismo criterio que --wos-on-primary en webinar-os-theme.css). */
   --color-on-primary: #FFFFFF;
 

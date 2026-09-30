@@ -10,8 +10,8 @@
   --wos-ink: #17191F;
   --wos-ink-muted: #707684;
   --wos-ink-faint: #9CA3AF;
-  --wos-primary: #5B5BF7;
-  --wos-primary-soft: #EEEEFF;
+  --wos-primary: #00A7B9;
+  --wos-primary-soft: #E0F7F6;
   --wos-on-primary: #FFFFFF;
   --wos-positive: #16834A;
   --wos-negative: #C0392B;
@@ -30,8 +30,8 @@
   --wos-ink: #F3F4F6;
   --wos-ink-muted: #9CA3AF;
   --wos-ink-faint: #6B7280;
-  --wos-primary: #7C7CFB;
-  --wos-primary-soft: color-mix(in srgb, #7C7CFB 18%, #181A22);
+  --wos-primary: #00A7B9;
+  --wos-primary-soft: color-mix(in srgb, #00A7B9 18%, #181A22);
   --wos-on-primary: #FFFFFF;
   --wos-positive: #34D399;
   --wos-negative: #F87171;

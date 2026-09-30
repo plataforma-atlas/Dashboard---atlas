@@ -19,7 +19,7 @@ export default function LoginGridCanvas() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const COL = { base: "#0E1018", low: "#181A2D", mid: "#5B5BF7", hot: "#A5A0FF" };
+    const COL = { base: "#0E1015", low: "#181A22", mid: "#00A7B9", hot: "#6EFFF4" };
     const cfg = {
       rows: 6,
       gapX: 7,

@@ -597,8 +597,8 @@ function Home() {
     const avatarAccents = [
       "from-primary to-secondary",
       "from-secondary to-primary",
-      "from-[#7C7CFB] to-[#A5A0FF]",
-      "from-[#A5A0FF] to-[#7C7CFB]",
+      "from-[#007A87] to-[#6EFFF4]",
+      "from-[#6EFFF4] to-[#007A87]",
     ];
     return (
       <main className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-background">

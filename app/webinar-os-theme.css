@@ -14,10 +14,10 @@
   --wos-ink: var(--color-on-surface, #111827);
   --wos-ink-muted: var(--color-on-surface-variant, #6B7280);
   --wos-ink-faint: var(--color-on-surface-faint, #9CA3AF);
-  --wos-primary: var(--color-primary, #4F46E5);
-  --wos-primary-soft: color-mix(in srgb, var(--color-primary, #4F46E5) 12%, var(--wos-surface));
+  --wos-primary: var(--color-primary, #00A7B9);
+  --wos-primary-soft: color-mix(in srgb, var(--color-primary, #00A7B9) 12%, var(--wos-surface));
   /* Texto sobre una píldora sólida de --wos-primary. Fijo (no var) a propósito: la
-     identidad única del sistema es índigo (#5b5bf7 claro / #7c7cfb oscuro) — un tono
+     identidad única del sistema es teal (#00A7B9 en ambos modos) — un tono
      medio-oscuro donde texto blanco siempre contrasta mejor que tinta oscura. */
   --wos-on-primary: #FFFFFF;
   --wos-positive: var(--color-success, #16A34A);
@@ -37,8 +37,8 @@
   --wos-ink: var(--color-on-surface, #F3F4F6);
   --wos-ink-muted: var(--color-on-surface-variant, #9CA3AF);
   --wos-ink-faint: var(--color-on-surface-faint, #6B7280);
-  --wos-primary: var(--color-primary, #818CF8);
-  --wos-primary-soft: color-mix(in srgb, var(--color-primary, #818CF8) 16%, var(--wos-surface));
+  --wos-primary: var(--color-primary, #00A7B9);
+  --wos-primary-soft: color-mix(in srgb, var(--color-primary, #00A7B9) 16%, var(--wos-surface));
   --wos-on-primary: #FFFFFF;
   --wos-positive: var(--color-success, #34D399);
   --wos-negative: var(--color-error, #F87171);

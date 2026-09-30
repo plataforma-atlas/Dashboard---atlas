@@ -24,8 +24,8 @@ export const agencyTheme: ClientTheme = {
   surface: "#181A22",
   surfaceHigh: "#1F222C",
   outline: "#272A35",
-  primary: "#7C7CFB",
-  secondary: "#A5A0FF",
+  primary: "#00A7B9",
+  secondary: "#6EFFF4",
   onSurface: "#F3F4F6",
   onSurfaceVariant: "#9CA3AF",
   onSurfaceFaint: "#6B7280",
@@ -47,8 +47,11 @@ export function toLightTheme(_theme: ClientTheme): ClientTheme {
     surface: "#FFFFFF",
     surfaceHigh: "#F1F2F6",
     outline: "#E5E7EE",
-    primary: "#5B5BF7",
-    secondary: "#8B86FF",
+    primary: "#00A7B9",
+    // El secondary de marca (#6EFFF4) es casi blanco — sin contraste sobre fondo
+    // claro. Esta variante más saturada mantiene la familia verde-azulada y sigue
+    // leyéndose como "más vivo" que el primary (mismo rol que en modo oscuro).
+    secondary: "#00BFAE",
     onSurface: "#17191F",
     onSurfaceVariant: "#707684",
     onSurfaceFaint: "#9CA3AF",
