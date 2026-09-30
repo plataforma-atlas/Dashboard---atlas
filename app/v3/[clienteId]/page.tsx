@@ -74,8 +74,12 @@ export default function V3ClientePage() {
   // Filtra leads/ventas propios por fecha — Meta Ads (inversión/impresiones/
   // clics) sigue fijo en los últimos 30 días, el pull de n8n todavía no
   // acepta un rango custom.
-  const [periodo, setPeriodo] = useState<Exclude<RangoRapido, "custom">>("30days");
-  const rangoPeriodo = useMemo(() => rangoRapido(periodo), [periodo]);
+  const [periodo, setPeriodo] = useState<RangoRapido>("30days");
+  const [rangoPeriodo, setRangoPeriodo] = useState(() => rangoRapido("30days"));
+  function aplicarPeriodo(p: RangoRapido, r: { fecha_inicio: string; fecha_fin: string }) {
+    setPeriodo(p);
+    setRangoPeriodo(r);
+  }
 
   const [eventoByAngle, setEventoByAngle] = useState<{ campaign: Campaign; rows: FunnelRow[] }[]>([]);
   const [adSpend, setAdSpend] = useState<EventoAdSpendRow[]>([]);
@@ -366,7 +370,7 @@ export default function V3ClientePage() {
           <p className="text-sm text-on-surface-variant">{clienteNombre}</p>
         </header>
 
-        <V3PeriodFilter value={periodo} onChange={(p) => setPeriodo(p)} />
+        <V3PeriodFilter periodo={periodo} rango={rangoPeriodo} onAplicar={aplicarPeriodo} />
 
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-on-surface">
