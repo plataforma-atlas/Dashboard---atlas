@@ -120,7 +120,7 @@ export default function V3Sidebar() {
           const dashboardActive = clienteIdActual ? pathname === `/v3/${clienteIdActual}` : true;
           return (
             <a
-              href={clienteIdActual ? `/v3/${clienteIdActual}` : "/v3"}
+              href={clienteIdActual ? `/v3/${clienteIdActual}${dashboardQuery}` : "/v3"}
               title="Dashboard"
               className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm min-w-0 transition-colors duration-150 ${
                 dashboardActive ? "bg-surface-high text-on-surface" : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"

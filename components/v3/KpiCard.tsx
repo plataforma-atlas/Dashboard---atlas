@@ -10,11 +10,13 @@ export default function KpiCard({
   icon: Icon,
   label,
   value,
+  sub,
   accent = "primary",
 }: {
   icon: LucideIcon;
   label: string;
   value: string;
+  sub?: string;
   accent?: "primary" | "success" | "error";
 }) {
   return (
@@ -23,7 +25,10 @@ export default function KpiCard({
         <Icon size={14} strokeWidth={2} />
         <span className="text-[11px] uppercase tracking-wide font-medium">{label}</span>
       </div>
-      <div className="text-2xl font-semibold text-on-surface tabular">{value}</div>
+      <div className="flex flex-col gap-0.5">
+        <div className="text-2xl font-semibold text-on-surface tabular">{value}</div>
+        {sub && <div className="text-[11px] text-on-surface-faint">{sub}</div>}
+      </div>
     </div>
   );
 }

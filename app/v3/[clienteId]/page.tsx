@@ -1,8 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { DollarSign, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import {
+  Banknote,
+  BarChart3,
+  DollarSign,
+  Eye,
+  Filter,
+  MousePointerClick,
+  Percent,
+  ShoppingCart,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
 import { Campaign, FunnelRow } from "@/lib/types";
 import { EventoAdSpendConsolidatedRow, EventoAdSpendRow } from "@/lib/evento/types";
 import {
@@ -11,14 +23,27 @@ import {
   toEventoKpis,
   toEventoVentasPorFuente,
 } from "@/lib/evento/aggregate";
-import { formatMoney } from "@/lib/webinar-os/aggregate";
+import { formatMoney, formatNumber, formatPercent } from "@/lib/webinar-os/aggregate";
+import { MetaAdsResponse } from "@/lib/meta-ads/types";
+import { V3Dashboard, V3Lead } from "@/lib/v3/types";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import V3ComingSoon from "@/components/v3/V3ComingSoon";
+import MetaNoConectado from "@/components/v3/MetaNoConectado";
 import KpiCard from "@/components/v3/KpiCard";
 import PerformanceChart from "@/components/v3/PerformanceChart";
 import Tabs from "@/components/v3/Tabs";
 import DailyDetailTable from "@/components/v3/DailyDetailTable";
 import HorizontalBarPanel from "@/components/v3/HorizontalBarPanel";
+
+// formatMoney (lib/webinar-os/aggregate.ts) fuerza USD — las ventas de Hotmart
+// traen su propia moneda real (extra.moneda), así que acá formateamos con esa.
+function formatMoneyEnMoneda(amount: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat("es-CO", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
+  } catch {
+    return `${currency} ${amount.toLocaleString("es-CO")}`;
+  }
+}
 
 type Session = { authenticated: boolean; role?: "admin" | "client"; clientes?: string[] };
 type FunnelResponse = { source: "n8n" | "error"; rows: FunnelRow[]; message?: string };
@@ -27,11 +52,22 @@ export default function V3ClientePage() {
   const router = useRouter();
   const params = useParams<{ clienteId: string }>();
   const clienteId = params.clienteId;
+  const searchParams = useSearchParams();
+  const dashboardIdParam = searchParams.get("dashboard") ?? "";
 
   const [session, setSession] = useState<Session | null>(null);
   const [clientes, setClientes] = useState<{ id: string; name: string }[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignsLoading, setCampaignsLoading] = useState(true);
+
+  // Dashboards de tipo Lanzamiento (v3_dashboards) — el selector vive en la
+  // barra global (V3Topbar), acá solo leemos cuál está elegido vía ?dashboard=.
+  const [dashboards, setDashboards] = useState<V3Dashboard[]>([]);
+  const [dashboardsLoading, setDashboardsLoading] = useState(true);
+  const [metaData, setMetaData] = useState<MetaAdsResponse | null>(null);
+  const [metaLoading, setMetaLoading] = useState(true);
+  const [leads, setLeads] = useState<V3Lead[]>([]);
+  const [leadsLoading, setLeadsLoading] = useState(true);
 
   const [eventoByAngle, setEventoByAngle] = useState<{ campaign: Campaign; rows: FunnelRow[] }[]>([]);
   const [adSpend, setAdSpend] = useState<EventoAdSpendRow[]>([]);
@@ -92,6 +128,104 @@ export default function V3ClientePage() {
       cancelled = true;
     };
   }, [session?.authenticated, clienteId]);
+
+  // 4b. Dashboards de Lanzamiento (v3_dashboards) — independiente del sistema
+  // viejo de Campaign/strategy_type de arriba.
+  useEffect(() => {
+    if (!session?.authenticated || !clienteId) return;
+    let cancelled = false;
+    setDashboardsLoading(true);
+    fetch(`/api/v3/dashboards?cliente_id=${clienteId}`, { cache: "no-store" })
+      .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
+      .then(({ ok, body }) => {
+        if (!cancelled) setDashboards(ok ? body.dashboards ?? [] : []);
+      })
+      .catch(() => {
+        if (!cancelled) setDashboards([]);
+      })
+      .finally(() => {
+        if (!cancelled) setDashboardsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.authenticated, clienteId]);
+
+  const dashboardActual = useMemo(
+    () => dashboards.find((d) => String(d.id) === dashboardIdParam) ?? null,
+    [dashboards, dashboardIdParam]
+  );
+  const esLanzamiento = dashboardActual?.tipo === "lanzamiento";
+
+  // 4c. Meta Ads + leads/ventas propios, solo si hay un dashboard de Lanzamiento elegido.
+  useEffect(() => {
+    if (!esLanzamiento || !dashboardActual) return;
+    let cancelled = false;
+    setMetaLoading(true);
+    const qs = new URLSearchParams({ cliente_id: clienteId });
+    if (dashboardActual.nomenclatura_filtro) qs.set("nomenclatura", dashboardActual.nomenclatura_filtro);
+    fetch(`/api/anuncios/meta?${qs.toString()}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((body: MetaAdsResponse) => {
+        if (!cancelled) setMetaData(body);
+      })
+      .catch(() => {
+        if (!cancelled) setMetaData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setMetaLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [esLanzamiento, dashboardActual, clienteId]);
+
+  useEffect(() => {
+    if (!esLanzamiento || !dashboardActual) return;
+    let cancelled = false;
+    setLeadsLoading(true);
+    fetch(`/api/v3/leads?cliente_id=${clienteId}&dashboard_id=${dashboardActual.id}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((body: { leads?: V3Lead[] }) => {
+        if (!cancelled) setLeads(body.leads ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setLeads([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLeadsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [esLanzamiento, dashboardActual, clienteId]);
+
+  // Métricas de la sección Meta del Home de Lanzamiento. "Facturación bruta"
+  // y "neta"/cash-collect son hoy la misma suma de extra.monto de Hotmart —
+  // quedan como dos tarjetas separadas porque a futuro pueden divergir
+  // (comisiones, pagos en cuotas), sin que haya que rehacer la UI.
+  const lanzamientoMetrics = useMemo(() => {
+    if (!metaData || !metaData.conectado) return null;
+    const inversion = metaData.campanas.reduce((acc, c) => acc + c.spend, 0);
+    const impresiones = metaData.campanas.reduce((acc, c) => acc + c.impressions, 0);
+    const clics = metaData.campanas.reduce((acc, c) => acc + c.clicks, 0);
+
+    const ventas = leads.filter((l) => l.status === "comprado");
+    const leadsCount = leads.length;
+    const ventasCount = ventas.length;
+    const facturacion = ventas.reduce((acc, l) => acc + (typeof l.extra?.monto === "number" ? l.extra.monto : 0), 0);
+    // Las ventas de Hotmart traen su propia moneda (extra.moneda) — no asumir USD.
+    // Si hubiera ventas en más de una moneda, tomamos la de la primera; sumarlas
+    // directo ya sería incorrecto y queda fuera de alcance de esta entrega.
+    const primeraMoneda = ventas.find((l) => typeof l.extra?.moneda === "string" && l.extra.moneda);
+    const moneda = typeof primeraMoneda?.extra?.moneda === "string" ? primeraMoneda.extra.moneda : "USD";
+
+    const roas = inversion > 0 ? facturacion / inversion : null;
+    const conversionPagina = clics > 0 ? (leadsCount / clics) * 100 : null;
+    const conversionGlobal = leadsCount > 0 ? (ventasCount / leadsCount) * 100 : null;
+
+    return { inversion, impresiones, clics, leadsCount, ventasCount, facturacion, moneda, roas, conversionPagina, conversionGlobal };
+  }, [metaData, leads]);
 
   const selectedCampaign = useMemo(() => {
     const preferred = campaigns.find((c) => c.status === "active") ?? campaigns[0];
@@ -186,10 +320,69 @@ export default function V3ClientePage() {
 
   const clienteNombre = clientes.find((c) => c.id === clienteId)?.name ?? clienteId;
 
-  if (!session || !session.authenticated || campaignsLoading) {
+  if (!session || !session.authenticated || campaignsLoading || dashboardsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <VermetricasLoader />
+      </div>
+    );
+  }
+
+  if (esLanzamiento && dashboardActual) {
+    if (metaLoading || leadsLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <VermetricasLoader />
+        </div>
+      );
+    }
+
+    if (!metaData || !metaData.conectado) {
+      return <MetaNoConectado />;
+    }
+
+    const m = lanzamientoMetrics!;
+
+    return (
+      <div className="px-4 py-8 md:px-8 max-w-7xl mx-auto flex flex-col gap-6">
+        <header className="flex flex-col gap-1">
+          <span className="text-xs uppercase tracking-[0.14em] text-primary font-mono">Dashboard · Lanzamiento</span>
+          <h1 className="font-display text-2xl text-on-surface font-semibold">{dashboardActual.nombre}</h1>
+          <p className="text-sm text-on-surface-variant">{clienteNombre}</p>
+        </header>
+
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold text-on-surface">Meta Ads</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <KpiCard icon={Wallet} label="Inversión publicitaria" value={formatMoney(m.inversion)} accent="primary" />
+            <KpiCard icon={Eye} label="Impresiones" value={formatNumber(m.impresiones)} accent="primary" />
+            <KpiCard icon={MousePointerClick} label="Clics" value={formatNumber(m.clics)} accent="primary" />
+            <KpiCard
+              icon={Filter}
+              label="% Conversión"
+              value={formatPercent(m.conversionPagina ?? undefined)}
+              sub="Clics → Leads (página de captación)"
+              accent="primary"
+            />
+            <KpiCard
+              icon={Percent}
+              label="% Conversión global"
+              value={formatPercent(m.conversionGlobal ?? undefined)}
+              sub="Leads → Ventas (embudo completo)"
+              accent="primary"
+            />
+            <KpiCard icon={DollarSign} label="Facturación bruta" value={formatMoneyEnMoneda(m.facturacion, m.moneda)} accent="success" />
+            <KpiCard
+              icon={Banknote}
+              label="Cash collect (facturación neta)"
+              value={formatMoneyEnMoneda(m.facturacion, m.moneda)}
+              accent="success"
+            />
+            <KpiCard icon={TrendingUp} label="ROAS bruto" value={m.roas != null ? `${m.roas.toFixed(2)}x` : "—"} accent="primary" />
+            <KpiCard icon={BarChart3} label="ROAS neto" value={m.roas != null ? `${m.roas.toFixed(2)}x` : "—"} accent="primary" />
+            <KpiCard icon={ShoppingCart} label="Ventas" value={formatNumber(m.ventasCount)} accent="success" />
+          </div>
+        </section>
       </div>
     );
   }
