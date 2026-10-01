@@ -220,18 +220,42 @@ export default function V3ClientePage() {
     const ventas = leads.filter((l) => l.status === "comprado");
     const leadsCount = leads.length;
     const ventasCount = ventas.length;
-    const facturacion = ventas.reduce((acc, l) => acc + (typeof l.extra?.monto === "number" ? l.extra.monto : 0), 0);
+    // Hotmart manda el bruto (lo que pagó el comprador) y, cuando el payload
+    // trae el desglose de comisión, también el neto que de verdad le queda al
+    // cliente (extra.monto_neto) — si una venta no tiene ese desglose (venta
+    // vieja de antes de este campo, o payload sin commissions), neto = bruto
+    // en vez de 0, para no subestimar el cash collect real.
+    const facturacionBruta = ventas.reduce((acc, l) => acc + (typeof l.extra?.monto === "number" ? l.extra.monto : 0), 0);
+    const facturacionNeta = ventas.reduce((acc, l) => {
+      const bruto = typeof l.extra?.monto === "number" ? l.extra.monto : 0;
+      const neto = typeof l.extra?.monto_neto === "number" ? l.extra.monto_neto : bruto;
+      return acc + neto;
+    }, 0);
     // Las ventas de Hotmart traen su propia moneda (extra.moneda) — no asumir USD.
     // Si hubiera ventas en más de una moneda, tomamos la de la primera; sumarlas
     // directo ya sería incorrecto y queda fuera de alcance de esta entrega.
     const primeraMoneda = ventas.find((l) => typeof l.extra?.moneda === "string" && l.extra.moneda);
     const moneda = typeof primeraMoneda?.extra?.moneda === "string" ? primeraMoneda.extra.moneda : "USD";
 
-    const roas = inversion > 0 ? facturacion / inversion : null;
+    const roasBruto = inversion > 0 ? facturacionBruta / inversion : null;
+    const roasNeto = inversion > 0 ? facturacionNeta / inversion : null;
     const conversionPagina = clics > 0 ? (leadsCount / clics) * 100 : null;
     const conversionGlobal = leadsCount > 0 ? (ventasCount / leadsCount) * 100 : null;
 
-    return { inversion, impresiones, clics, leadsCount, ventasCount, facturacion, moneda, roas, conversionPagina, conversionGlobal };
+    return {
+      inversion,
+      impresiones,
+      clics,
+      leadsCount,
+      ventasCount,
+      facturacionBruta,
+      facturacionNeta,
+      moneda,
+      roasBruto,
+      roasNeto,
+      conversionPagina,
+      conversionGlobal,
+    };
   }, [metaData, leads]);
 
   // Desempeño por día para el gráfico de abajo: Facturación/Ventas se arman
@@ -421,17 +445,19 @@ export default function V3ClientePage() {
             <KpiCard
               icon={DollarSign}
               label="Facturación bruta"
-              value={numeroOGuion(m.facturacion, (n) => formatMoneyEnMoneda(n, m.moneda))}
+              value={numeroOGuion(m.facturacionBruta, (n) => formatMoneyEnMoneda(n, m.moneda))}
+              sub="Lo que pagó el comprador"
               accent="success"
             />
             <KpiCard
               icon={Banknote}
               label="Cash collect (facturación neta)"
-              value={numeroOGuion(m.facturacion, (n) => formatMoneyEnMoneda(n, m.moneda))}
+              value={numeroOGuion(m.facturacionNeta, (n) => formatMoneyEnMoneda(n, m.moneda))}
+              sub="Después de la comisión de Hotmart"
               accent="success"
             />
-            <KpiCard icon={TrendingUp} label="ROAS bruto" value={numeroOGuion(m.roas, (n) => `${n.toFixed(2)}x`)} accent="primary" />
-            <KpiCard icon={BarChart3} label="ROAS neto" value={numeroOGuion(m.roas, (n) => `${n.toFixed(2)}x`)} accent="primary" />
+            <KpiCard icon={TrendingUp} label="ROAS bruto" value={numeroOGuion(m.roasBruto, (n) => `${n.toFixed(2)}x`)} accent="primary" />
+            <KpiCard icon={BarChart3} label="ROAS neto" value={numeroOGuion(m.roasNeto, (n) => `${n.toFixed(2)}x`)} accent="primary" />
             <KpiCard icon={ShoppingCart} label="Ventas" value={numeroOGuion(m.ventasCount, formatNumber)} accent="success" />
           </div>
 
