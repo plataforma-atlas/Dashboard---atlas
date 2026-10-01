@@ -261,12 +261,19 @@ export default function V3ClientePage() {
   // Desempeño por día para el gráfico de abajo: Facturación/Ventas se arman
   // agrupando por día los leads con status='comprado' (respetan el filtro de
   // fecha de la V3); Inversión viene del nuevo desglose diario de Meta
-  // (metaData.diario, siempre últimos 30 días, igual que el resto del bloque
-  // Meta Ads) — se mergean por fecha y de ahí sale el ROAS real por día.
+  // (metaData.diario, que trae siempre el total de los últimos 30 días desde
+  // Meta — eso no cambia, es la misma limitación que ya tiene la tarjeta
+  // "Inversión publicitaria"). Lo que sí hacemos acá es recortar esos días al
+  // rango elegido en el filtro antes de graficar, para que el gráfico (a
+  // diferencia de la tarjeta, que siempre resume el total fijo) de verdad
+  // haga zoom al período que la persona seleccionó.
   const desempenoPorDia = useMemo(() => {
     const porFecha = new Map<string, { inversion: number; facturacion: number }>();
+    const { fecha_inicio, fecha_fin } = rangoPeriodo;
+    const dentroDelRango = (fecha: string) => (!fecha_inicio || fecha >= fecha_inicio) && (!fecha_fin || fecha <= fecha_fin);
     if (metaData?.conectado) {
       for (const d of metaData.diario) {
+        if (!dentroDelRango(d.fecha)) continue;
         const actual = porFecha.get(d.fecha) ?? { inversion: 0, facturacion: 0 };
         actual.inversion += d.inversion;
         porFecha.set(d.fecha, actual);
@@ -288,7 +295,7 @@ export default function V3ClientePage() {
         facturacion: v.facturacion,
         roas: v.inversion > 0 ? v.facturacion / v.inversion : null,
       }));
-  }, [metaData, leads]);
+  }, [metaData, leads, rangoPeriodo]);
 
   const selectedCampaign = useMemo(() => {
     const preferred = campaigns.find((c) => c.status === "active") ?? campaigns[0];
