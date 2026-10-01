@@ -58,6 +58,21 @@ export type V3Lead = {
 // cuántas veces se registró, en qué lanzamientos, y en cuál terminó
 // comprando. dashboard_nombre viene null para ventas de Hotmart que llegan
 // sin pasar por ningún punto de captación (fuera_de_embudo).
+// Análisis agregado de "cuántos contactos le toma a la gente comprar",
+// cruzando TODOS los dashboards del cliente (no se filtra por uno solo,
+// porque el recorrido de una persona puede abarcar varios lanzamientos).
+// Cada "interacción" cuenta igual que en V3LeadHistorialRow: un registro,
+// cada sub-evento del embudo (encuesta/gracias/grupo/mensaje), y la propia
+// compra como la última interacción de esa persona.
+export type V3AnalisisRecorrido = {
+  total_compradores: number;
+  promedio: number | null;
+  mediana: number | null;
+  minimo: number | null;
+  maximo: number | null;
+  distribucion: { interacciones: number; cantidad: number }[];
+};
+
 export type V3LeadHistorialRow = {
   id: number;
   dashboard_id: number | null;

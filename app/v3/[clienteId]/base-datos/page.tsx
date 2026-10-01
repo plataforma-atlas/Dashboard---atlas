@@ -6,12 +6,15 @@ import { Download, History } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import Pagination from "@/components/ui/pagination";
 import LeadHistorialPanel from "@/components/v3/LeadHistorialPanel";
-import { V3Lead, V3LeadStatus } from "@/lib/v3/types";
+import RecorridoCompraChart from "@/components/v3/RecorridoCompraChart";
+import { V3AnalisisRecorrido, V3Lead, V3LeadStatus } from "@/lib/v3/types";
 
 const TABS: { status: V3LeadStatus; label: string }[] = [
   { status: "lead", label: "Leads captados" },
   { status: "comprado", label: "Ventas" },
 ];
+
+const TAB_RECORRIDO = "recorrido" as const;
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
@@ -21,19 +24,22 @@ export default function V3BaseDatosPage() {
   const searchParams = useSearchParams();
   const dashboardIdParam = searchParams.get("dashboard") ?? "";
 
-  const [tab, setTab] = useState<V3LeadStatus>("lead");
+  const [tab, setTab] = useState<V3LeadStatus | typeof TAB_RECORRIDO>("lead");
   const [leads, setLeads] = useState<V3Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [historialDe, setHistorialDe] = useState<{ correo: string | null; telefono: string | null } | null>(null);
+  const [analisis, setAnalisis] = useState<V3AnalisisRecorrido | null>(null);
+  const [analisisLoading, setAnalisisLoading] = useState(false);
+  const [analisisError, setAnalisisError] = useState<string | null>(null);
 
-  async function cargarLeads() {
+  async function cargarLeads(status: V3LeadStatus) {
     setLoading(true);
     setError(null);
     try {
-      const url = `/api/v3/leads?cliente_id=${encodeURIComponent(clienteId)}&status=${tab}${
+      const url = `/api/v3/leads?cliente_id=${encodeURIComponent(clienteId)}&status=${status}${
         dashboardIdParam ? `&dashboard_id=${encodeURIComponent(dashboardIdParam)}` : ""
       }`;
       const res = await fetch(url, { cache: "no-store" });
@@ -51,9 +57,29 @@ export default function V3BaseDatosPage() {
   }
 
   useEffect(() => {
-    if (clienteId) cargarLeads();
+    if (clienteId && tab !== TAB_RECORRIDO) cargarLeads(tab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clienteId, tab, dashboardIdParam]);
+
+  // El recorrido de compra cruza TODOS los dashboards del cliente (no tiene
+  // sentido filtrarlo por el lanzamiento seleccionado arriba), así que se
+  // carga una sola vez por cliente, no por dashboardIdParam.
+  useEffect(() => {
+    if (tab !== TAB_RECORRIDO || !clienteId || analisis) return;
+    setAnalisisLoading(true);
+    setAnalisisError(null);
+    fetch(`/api/v3/leads/analisis-recorrido?cliente_id=${encodeURIComponent(clienteId)}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data: V3AnalisisRecorrido & { error?: string }) => {
+        if (data.error) {
+          setAnalisisError(data.error);
+          return;
+        }
+        setAnalisis(data);
+      })
+      .catch(() => setAnalisisError("No se pudo conectar al servidor"))
+      .finally(() => setAnalisisLoading(false));
+  }, [tab, clienteId, analisis]);
 
   useEffect(() => {
     setPage(1);
@@ -120,8 +146,17 @@ export default function V3BaseDatosPage() {
               {t.label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setTab(TAB_RECORRIDO)}
+            className={`press px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors duration-150 ${
+              tab === TAB_RECORRIDO ? "border-primary text-primary" : "border-transparent text-on-surface-variant hover:text-on-surface"
+            }`}
+          >
+            Recorrido de compra
+          </button>
         </div>
-        {leads.length > 0 && (
+        {tab !== TAB_RECORRIDO && leads.length > 0 && (
           <button
             type="button"
             onClick={exportarCsv}
@@ -132,7 +167,43 @@ export default function V3BaseDatosPage() {
         )}
       </div>
 
-      {loading ? (
+      {tab === TAB_RECORRIDO ? (
+        analisisLoading ? (
+          <div className="min-h-[30vh] flex items-center justify-center">
+            <VermetricasLoader />
+          </div>
+        ) : analisisError ? (
+          <div className="rounded-lg border border-outline-error bg-error-container px-4 py-3 text-sm text-error">{analisisError}</div>
+        ) : analisis ? (
+          <div className="flex flex-col gap-5">
+            <p className="text-sm text-on-surface-variant">
+              Cuántos contactos (registros, encuestas, grupos, mensajes) le toman a las personas comprar — cruzando todos los
+              lanzamientos en los que participaron, no solo el que está seleccionado arriba.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-1">
+                <span className="text-[11px] uppercase tracking-wide text-on-surface-faint">Compradores analizados</span>
+                <span className="text-xl font-semibold text-on-surface">{analisis.total_compradores}</span>
+              </div>
+              <div className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-1">
+                <span className="text-[11px] uppercase tracking-wide text-on-surface-faint">Promedio</span>
+                <span className="text-xl font-semibold text-on-surface">{analisis.promedio ?? "—"}</span>
+              </div>
+              <div className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-1">
+                <span className="text-[11px] uppercase tracking-wide text-on-surface-faint">Mediana</span>
+                <span className="text-xl font-semibold text-on-surface">{analisis.mediana ?? "—"}</span>
+              </div>
+              <div className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-1">
+                <span className="text-[11px] uppercase tracking-wide text-on-surface-faint">Rango</span>
+                <span className="text-xl font-semibold text-on-surface">
+                  {analisis.minimo ?? "—"}–{analisis.maximo ?? "—"}
+                </span>
+              </div>
+            </div>
+            <RecorridoCompraChart datos={analisis} />
+          </div>
+        ) : null
+      ) : loading ? (
         <div className="min-h-[30vh] flex items-center justify-center">
           <VermetricasLoader />
         </div>
