@@ -2,9 +2,8 @@
 
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatMoneyEnMoneda } from "@/lib/v3/format";
-import { formatNumber } from "@/lib/webinar-os/aggregate";
 
-export type VentaPorDia = { fecha: string; ventas: number; facturacion: number };
+export type DesempenoDiaRow = { fecha: string; inversion: number; facturacion: number; roas: number | null };
 
 function formatFecha(iso: string) {
   if (!iso) return "—";
@@ -12,9 +11,9 @@ function formatFecha(iso: string) {
   return d.toLocaleDateString("es-CO", { day: "2-digit", month: "short" });
 }
 
-export default function VentasDiarioChart({ rows, moneda }: { rows: VentaPorDia[]; moneda: string }) {
+export default function DesempenoDiarioChart({ rows, moneda }: { rows: DesempenoDiaRow[]; moneda: string }) {
   if (rows.length === 0) {
-    return <p className="text-sm text-on-surface-faint">Sin ventas todavía en el período.</p>;
+    return <p className="text-sm text-on-surface-faint">Sin datos todavía en el período.</p>;
   }
 
   const data = rows.map((r) => ({ ...r, fechaLabel: formatFecha(r.fecha) }));
@@ -39,13 +38,13 @@ export default function VentasDiarioChart({ rows, moneda }: { rows: VentaPorDia[
             tickFormatter={(v) => formatMoneyEnMoneda(v, moneda)}
           />
           <YAxis
-            yAxisId="ventas"
+            yAxisId="roas"
             orientation="right"
             tick={{ fill: "var(--color-on-surface-faint)", fontSize: 11 }}
             axisLine={false}
             tickLine={false}
-            width={36}
-            allowDecimals={false}
+            width={40}
+            tickFormatter={(v) => `${v}x`}
           />
           <Tooltip
             contentStyle={{
@@ -57,20 +56,21 @@ export default function VentasDiarioChart({ rows, moneda }: { rows: VentaPorDia[
             }}
             labelStyle={{ color: "var(--color-on-surface-variant)" }}
             formatter={(value: number, name: string) => {
-              if (name === "Ventas") return [formatNumber(value), name];
+              if (name === "ROAS") return [value != null ? `${value.toFixed(2)}x` : "—", name];
               return [formatMoneyEnMoneda(value, moneda), name];
             }}
           />
           <Legend wrapperStyle={{ fontSize: 12, color: "var(--color-on-surface-variant)" }} />
-          <Bar yAxisId="dinero" dataKey="facturacion" name="Facturación" fill="var(--color-success)" radius={[3, 3, 0, 0]} />
+          <Bar yAxisId="dinero" dataKey="facturacion" name="Facturación" fill="var(--color-secondary)" radius={[3, 3, 0, 0]} />
+          <Bar yAxisId="dinero" dataKey="inversion" name="Inversión" fill="var(--color-primary)" radius={[3, 3, 0, 0]} />
           <Line
-            yAxisId="ventas"
+            yAxisId="roas"
             type="monotone"
-            dataKey="ventas"
-            name="Ventas"
-            stroke="var(--color-primary)"
+            dataKey="roas"
+            name="ROAS"
+            stroke="var(--color-success)"
             strokeWidth={2}
-            dot={{ r: 3, fill: "var(--color-primary)" }}
+            dot={{ r: 3, fill: "var(--color-success)" }}
             connectNulls
           />
         </ComposedChart>

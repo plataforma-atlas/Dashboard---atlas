@@ -34,7 +34,7 @@ import KpiCard from "@/components/v3/KpiCard";
 import AnimatedNumber from "@/components/v3/AnimatedNumber";
 import V3PeriodFilter from "@/components/v3/V3PeriodFilter";
 import PerformanceChart from "@/components/v3/PerformanceChart";
-import VentasDiarioChart from "@/components/v3/VentasDiarioChart";
+import DesempenoDiarioChart from "@/components/v3/DesempenoDiarioChart";
 import Tabs from "@/components/v3/Tabs";
 import DailyDetailTable from "@/components/v3/DailyDetailTable";
 import HorizontalBarPanel from "@/components/v3/HorizontalBarPanel";
@@ -234,25 +234,37 @@ export default function V3ClientePage() {
     return { inversion, impresiones, clics, leadsCount, ventasCount, facturacion, moneda, roas, conversionPagina, conversionGlobal };
   }, [metaData, leads]);
 
-  // Ventas/facturación agrupadas por día para el gráfico de abajo — a
-  // diferencia de inversión/impresiones/clics (que hoy solo vienen como
-  // total agregado de Meta, sin desglose diario), esto sí se puede armar
-  // directo desde los leads que ya tenemos, sin tocar n8n.
-  const ventasPorDia = useMemo(() => {
-    const porDia = new Map<string, { ventas: number; facturacion: number }>();
+  // Desempeño por día para el gráfico de abajo: Facturación/Ventas se arman
+  // agrupando por día los leads con status='comprado' (respetan el filtro de
+  // fecha de la V3); Inversión viene del nuevo desglose diario de Meta
+  // (metaData.diario, siempre últimos 30 días, igual que el resto del bloque
+  // Meta Ads) — se mergean por fecha y de ahí sale el ROAS real por día.
+  const desempenoPorDia = useMemo(() => {
+    const porFecha = new Map<string, { inversion: number; facturacion: number }>();
+    if (metaData?.conectado) {
+      for (const d of metaData.diario) {
+        const actual = porFecha.get(d.fecha) ?? { inversion: 0, facturacion: 0 };
+        actual.inversion += d.inversion;
+        porFecha.set(d.fecha, actual);
+      }
+    }
     for (const l of leads) {
       if (l.status !== "comprado") continue;
       const fecha = l.created_at.slice(0, 10);
       const monto = typeof l.extra?.monto === "number" ? l.extra.monto : 0;
-      const actual = porDia.get(fecha) ?? { ventas: 0, facturacion: 0 };
-      actual.ventas += 1;
+      const actual = porFecha.get(fecha) ?? { inversion: 0, facturacion: 0 };
       actual.facturacion += monto;
-      porDia.set(fecha, actual);
+      porFecha.set(fecha, actual);
     }
-    return Array.from(porDia.entries())
+    return Array.from(porFecha.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([fecha, v]) => ({ fecha, ...v }));
-  }, [leads]);
+      .map(([fecha, v]) => ({
+        fecha,
+        inversion: v.inversion,
+        facturacion: v.facturacion,
+        roas: v.inversion > 0 ? v.facturacion / v.inversion : null,
+      }));
+  }, [metaData, leads]);
 
   const selectedCampaign = useMemo(() => {
     const preferred = campaigns.find((c) => c.status === "active") ?? campaigns[0];
@@ -425,9 +437,10 @@ export default function V3ClientePage() {
 
           <div className="flex flex-col gap-3 mt-2">
             <h3 className="text-sm font-semibold text-on-surface">
-              Ventas por día <span className="text-on-surface-faint font-normal">· inversión/ROAS por día llega en una próxima entrega</span>
+              Desempeño por día{" "}
+              <span className="text-on-surface-faint font-normal">· inversión siempre últimos 30 días, facturación según el período elegido</span>
             </h3>
-            <VentasDiarioChart rows={ventasPorDia} moneda={m.moneda} />
+            <DesempenoDiarioChart rows={desempenoPorDia} moneda={m.moneda} />
           </div>
         </section>
       </div>

@@ -60,6 +60,16 @@ export type MetaAdRow = {
   ad_account_label: string;
 };
 
+// Inversión/impresiones/clics por día, sumados entre todas las campañas que
+// matchean la nomenclatura — siempre últimos 30 días (misma ventana fija que
+// usa el resto del pull), independiente del filtro de fecha de la V3.
+export type MetaDiarioRow = {
+  fecha: string;
+  inversion: number;
+  impresiones: number;
+  clics: number;
+};
+
 export type MetaAdsResponse =
-  | { conectado: true; campanas: MetaCampaignRow[]; conjuntos: MetaAdsetRow[]; anuncios: MetaAdRow[] }
+  | { conectado: true; campanas: MetaCampaignRow[]; conjuntos: MetaAdsetRow[]; anuncios: MetaAdRow[]; diario: MetaDiarioRow[] }
   | { conectado: false };
