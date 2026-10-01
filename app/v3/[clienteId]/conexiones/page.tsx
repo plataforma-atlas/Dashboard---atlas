@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Check, Link2, Plus, X } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
 
 type EstadoConexion = { integration_type: string; status: string; updated_at: string; tiene_credencial: boolean };
 type CuentaForm = { id: string; label: string };
+type CuentaOAuth = { id: string; label: string };
+
+// Mientras no exista una app de Meta con "Facebook Login for Business" ya
+// aprobada, esta variable no está seteada en ningún entorno y el botón
+// simplemente no aparece — se sigue usando el método manual de abajo.
+const META_OAUTH_HABILITADO = !!process.env.NEXT_PUBLIC_META_APP_ID;
 
 function nuevaFila(): CuentaForm {
   return { id: "", label: "" };
@@ -15,10 +21,17 @@ function nuevaFila(): CuentaForm {
 export default function V3ConexionesPage() {
   const params = useParams<{ clienteId: string }>();
   const clienteId = params.clienteId;
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [estado, setEstado] = useState<EstadoConexion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [oauthCuentas, setOauthCuentas] = useState<CuentaOAuth[] | null>(null);
+  const [oauthSeleccionadas, setOauthSeleccionadas] = useState<Set<string>>(new Set());
+  const [oauthError, setOauthError] = useState<string | null>(null);
+  const [oauthConfirmando, setOauthConfirmando] = useState(false);
 
   const [formAbierto, setFormAbierto] = useState(false);
   const [cuentas, setCuentas] = useState<CuentaForm[]>([nuevaFila()]);
@@ -61,6 +74,67 @@ export default function V3ConexionesPage() {
     if (clienteId) cargarEstado();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clienteId]);
+
+  // Al volver del login de Facebook: traemos la lista de cuentas que la
+  // persona autorizó (nunca el token, ver /api/oauth/meta/pendiente) para
+  // que elija cuáles activar antes de guardar nada.
+  useEffect(() => {
+    if (!META_OAUTH_HABILITADO || !clienteId) return;
+    const errorMsg = searchParams.get("meta_oauth_error");
+    if (errorMsg) {
+      setOauthError(errorMsg);
+      router.replace(`/v3/${clienteId}/conexiones`);
+      return;
+    }
+    if (searchParams.get("meta_oauth") !== "listo") return;
+    fetch(`/api/oauth/meta/pendiente?cliente_id=${encodeURIComponent(clienteId)}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data: { cuentas?: CuentaOAuth[]; error?: string }) => {
+        if (data.error) {
+          setOauthError(data.error);
+          return;
+        }
+        const cuentas = data.cuentas ?? [];
+        setOauthCuentas(cuentas);
+        setOauthSeleccionadas(new Set(cuentas.map((c) => c.id)));
+      })
+      .catch(() => setOauthError("No se pudo recuperar la conexión con Meta"))
+      .finally(() => router.replace(`/v3/${clienteId}/conexiones`));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteId, searchParams]);
+
+  function toggleCuentaOAuth(id: string) {
+    setOauthSeleccionadas((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function confirmarOAuth() {
+    if (!clienteId || oauthSeleccionadas.size === 0) return;
+    setOauthConfirmando(true);
+    setOauthError(null);
+    try {
+      const res = await fetch("/api/oauth/meta/confirmar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: clienteId, cuentaIds: Array.from(oauthSeleccionadas) }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setOauthError(data.error || "No se pudo guardar la conexión");
+        return;
+      }
+      setOauthCuentas(null);
+      cargarEstado();
+    } catch {
+      setOauthError("No se pudo conectar al servidor");
+    } finally {
+      setOauthConfirmando(false);
+    }
+  }
 
   const metaConectado = estado.find((e) => e.integration_type === "meta_ads" && e.status === "active" && e.tiene_credencial) || null;
   const ghlConectado = estado.find((e) => e.integration_type === "ghl" && e.status === "active" && e.tiene_credencial) || null;
@@ -326,6 +400,14 @@ export default function V3ConexionesPage() {
               <span className="h-2 w-2 rounded-full bg-on-surface-faint" />
               No conectado
             </span>
+            {META_OAUTH_HABILITADO && (
+              <a
+                href={`/api/oauth/meta/start?cliente_id=${encodeURIComponent(clienteId)}`}
+                className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+              >
+                Continuar con Facebook
+              </a>
+            )}
             <button
               onClick={() => setFormAbierto(true)}
               className="press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
@@ -335,6 +417,50 @@ export default function V3ConexionesPage() {
           </div>
         )}
       </div>
+
+      {oauthError && (
+        <div className="rounded-lg border border-outline-error bg-error-container px-4 py-3 text-sm text-error flex items-center justify-between gap-3">
+          <span>{oauthError}</span>
+          <button onClick={() => setOauthError(null)} className="press shrink-0">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {oauthCuentas && (
+        <div className="animate-fade-in-up rounded-lg border border-outline bg-surface p-5 flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-[14px] font-medium text-on-surface">Elegí qué cuentas activar</span>
+            <p className="text-[13px] text-on-surface-variant">Facebook nos dio acceso a estas cuentas publicitarias — elegí cuáles querés ver en el panel.</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            {oauthCuentas.map((c) => (
+              <label key={c.id} className="flex items-center gap-2.5 text-[14px] text-on-surface cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={oauthSeleccionadas.has(c.id)}
+                  onChange={() => toggleCuentaOAuth(c.id)}
+                  className="accent-primary w-4 h-4"
+                />
+                {c.label} <span className="text-on-surface-faint font-mono text-[12px]">({c.id})</span>
+              </label>
+            ))}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={confirmarOAuth}
+              disabled={oauthConfirmando || oauthSeleccionadas.size === 0}
+              className="press rounded-md bg-primary text-on-primary text-[14px] font-medium px-4 py-2.5 disabled:opacity-50 disabled:active:scale-100 transition-transform duration-150"
+            >
+              {oauthConfirmando ? "Guardando…" : "Confirmar"}
+            </button>
+            <button type="button" onClick={() => setOauthCuentas(null)} className="press text-[14px] text-on-surface-variant hover:text-on-surface transition-colors duration-150">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       {formAbierto && (
         <form onSubmit={conectarMeta} className="animate-fade-in-up rounded-lg border border-outline bg-surface p-5 flex flex-col gap-4">
