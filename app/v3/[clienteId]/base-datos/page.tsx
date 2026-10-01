@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { Download } from "lucide-react";
+import { Download, History } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import Pagination from "@/components/ui/pagination";
+import LeadHistorialPanel from "@/components/v3/LeadHistorialPanel";
 import { V3Lead, V3LeadStatus } from "@/lib/v3/types";
 
 const TABS: { status: V3LeadStatus; label: string }[] = [
@@ -26,6 +27,7 @@ export default function V3BaseDatosPage() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [historialDe, setHistorialDe] = useState<{ correo: string | null; telefono: string | null } | null>(null);
 
   async function cargarLeads() {
     setLoading(true);
@@ -160,6 +162,7 @@ export default function V3BaseDatosPage() {
                     <th className="px-4 py-2.5 font-medium">Origen</th>
                   )}
                   <th className="px-4 py-2.5 font-medium">Fecha</th>
+                  <th className="px-4 py-2.5 font-medium"></th>
                 </tr>
               </thead>
               <tbody>
@@ -194,6 +197,18 @@ export default function V3BaseDatosPage() {
                         <td className="px-4 py-2.5 text-on-surface-variant truncate max-w-[220px]">{lead.utm_source || lead.pagina_origen || "—"}</td>
                       )}
                       <td className="px-4 py-2.5 text-on-surface-faint">{new Date(lead.created_at).toLocaleDateString("es-CO")}</td>
+                      <td className="px-4 py-2.5">
+                        {(lead.correo || lead.telefono) && (
+                          <button
+                            type="button"
+                            onClick={() => setHistorialDe({ correo: lead.correo, telefono: lead.telefono })}
+                            title="Ver historial completo de este contacto"
+                            className="press text-on-surface-faint hover:text-primary"
+                          >
+                            <History size={15} />
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
@@ -210,6 +225,15 @@ export default function V3BaseDatosPage() {
             pageSizeOptions={PAGE_SIZE_OPTIONS}
           />
         </div>
+      )}
+
+      {historialDe && (
+        <LeadHistorialPanel
+          clienteId={clienteId}
+          correo={historialDe.correo}
+          telefono={historialDe.telefono}
+          onClose={() => setHistorialDe(null)}
+        />
       )}
     </div>
   );

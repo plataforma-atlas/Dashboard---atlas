@@ -50,3 +50,24 @@ export type V3Lead = {
   extra: Record<string, unknown>;
   created_at: string;
 };
+
+// Una fila del historial completo de una persona (por correo o teléfono) a
+// través de TODOS los dashboards de Lanzamiento en los que haya participado
+// — a diferencia de V3Lead (que siempre se consulta ya filtrado a un
+// dashboard), esto es justamente lo que permite ver el recorrido completo:
+// cuántas veces se registró, en qué lanzamientos, y en cuál terminó
+// comprando. dashboard_nombre viene null para ventas de Hotmart que llegan
+// sin pasar por ningún punto de captación (fuera_de_embudo).
+export type V3LeadHistorialRow = {
+  id: number;
+  dashboard_id: number | null;
+  dashboard_nombre: string | null;
+  nombre: string | null;
+  correo: string | null;
+  telefono: string | null;
+  utm_source: string | null;
+  utm_campaign: string | null;
+  status: V3LeadStatus;
+  extra: Record<string, unknown>;
+  created_at: string;
+};
