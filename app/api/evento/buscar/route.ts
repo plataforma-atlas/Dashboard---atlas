@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   const checkinPublico = process.env.EVENTO_CHECKIN_PUBLICO === "true";
   if (!checkinPublico) {
     if (!session) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-    if (session.role !== "admin" && session.role !== "checkin" && !clientesDeSesion(session).includes("atlas")) {
+    if (session.role !== "admin" && session.role !== "checkin" && !clientesDeSesion(session).includes("60cdff2636680f6f8cfd9677")) {
       return NextResponse.json({ error: "Sin acceso al evento" }, { status: 403 });
     }
   }
