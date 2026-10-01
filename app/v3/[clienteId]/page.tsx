@@ -34,19 +34,11 @@ import KpiCard from "@/components/v3/KpiCard";
 import AnimatedNumber from "@/components/v3/AnimatedNumber";
 import V3PeriodFilter from "@/components/v3/V3PeriodFilter";
 import PerformanceChart from "@/components/v3/PerformanceChart";
+import VentasDiarioChart from "@/components/v3/VentasDiarioChart";
 import Tabs from "@/components/v3/Tabs";
 import DailyDetailTable from "@/components/v3/DailyDetailTable";
 import HorizontalBarPanel from "@/components/v3/HorizontalBarPanel";
-
-// formatMoney (lib/webinar-os/aggregate.ts) fuerza USD — las ventas de Hotmart
-// traen su propia moneda real (extra.moneda), así que acá formateamos con esa.
-function formatMoneyEnMoneda(amount: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat("es-CO", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
-  } catch {
-    return `${currency} ${amount.toLocaleString("es-CO")}`;
-  }
-}
+import { formatMoneyEnMoneda } from "@/lib/v3/format";
 
 type Session = { authenticated: boolean; role?: "admin" | "client"; clientes?: string[] };
 type FunnelResponse = { source: "n8n" | "error"; rows: FunnelRow[]; message?: string };
@@ -242,6 +234,26 @@ export default function V3ClientePage() {
     return { inversion, impresiones, clics, leadsCount, ventasCount, facturacion, moneda, roas, conversionPagina, conversionGlobal };
   }, [metaData, leads]);
 
+  // Ventas/facturación agrupadas por día para el gráfico de abajo — a
+  // diferencia de inversión/impresiones/clics (que hoy solo vienen como
+  // total agregado de Meta, sin desglose diario), esto sí se puede armar
+  // directo desde los leads que ya tenemos, sin tocar n8n.
+  const ventasPorDia = useMemo(() => {
+    const porDia = new Map<string, { ventas: number; facturacion: number }>();
+    for (const l of leads) {
+      if (l.status !== "comprado") continue;
+      const fecha = l.created_at.slice(0, 10);
+      const monto = typeof l.extra?.monto === "number" ? l.extra.monto : 0;
+      const actual = porDia.get(fecha) ?? { ventas: 0, facturacion: 0 };
+      actual.ventas += 1;
+      actual.facturacion += monto;
+      porDia.set(fecha, actual);
+    }
+    return Array.from(porDia.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([fecha, v]) => ({ fecha, ...v }));
+  }, [leads]);
+
   const selectedCampaign = useMemo(() => {
     const preferred = campaigns.find((c) => c.status === "active") ?? campaigns[0];
     return preferred ?? null;
@@ -409,6 +421,13 @@ export default function V3ClientePage() {
             <KpiCard icon={TrendingUp} label="ROAS bruto" value={numeroOGuion(m.roas, (n) => `${n.toFixed(2)}x`)} accent="primary" />
             <KpiCard icon={BarChart3} label="ROAS neto" value={numeroOGuion(m.roas, (n) => `${n.toFixed(2)}x`)} accent="primary" />
             <KpiCard icon={ShoppingCart} label="Ventas" value={numeroOGuion(m.ventasCount, formatNumber)} accent="success" />
+          </div>
+
+          <div className="flex flex-col gap-3 mt-2">
+            <h3 className="text-sm font-semibold text-on-surface">
+              Ventas por día <span className="text-on-surface-faint font-normal">· inversión/ROAS por día llega en una próxima entrega</span>
+            </h3>
+            <VentasDiarioChart rows={ventasPorDia} moneda={m.moneda} />
           </div>
         </section>
       </div>
