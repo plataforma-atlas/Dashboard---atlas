@@ -2,6 +2,7 @@
 
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatMoneyEnMoneda } from "@/lib/v3/format";
+import { formatNumber } from "@/lib/webinar-os/aggregate";
 
 export type DesempenoDiaRow = { fecha: string; inversion: number; facturacion: number; roas: number | null };
 
@@ -18,10 +19,17 @@ export default function DesempenoDiarioChart({ rows, moneda }: { rows: Desempeno
 
   const data = rows.map((r) => ({ ...r, fechaLabel: formatFecha(r.fecha) }));
 
+  // Ancho del eje de dinero calculado a partir del valor más grande que de
+  // verdad va a mostrar (no un ancho fijo) — así, si la facturación/inversión
+  // crece a 6-7 cifras, la etiqueta sigue cabiendo en vez de cortarse contra
+  // el borde izquierdo.
+  const valorMax = Math.max(0, ...data.map((r) => Math.max(r.inversion, r.facturacion)));
+  const anchoEjeDinero = Math.max(48, formatNumber(valorMax).length * 7 + 12);
+
   return (
     <div className="h-80 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={data} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
+        <ComposedChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-outline)" vertical={false} />
           <XAxis
             dataKey="fechaLabel"
@@ -34,8 +42,8 @@ export default function DesempenoDiarioChart({ rows, moneda }: { rows: Desempeno
             tick={{ fill: "var(--color-on-surface-faint)", fontSize: 11 }}
             axisLine={false}
             tickLine={false}
-            width={60}
-            tickFormatter={(v) => formatMoneyEnMoneda(v, moneda)}
+            width={anchoEjeDinero}
+            tickFormatter={(v) => formatNumber(v)}
           />
           <YAxis
             yAxisId="roas"
