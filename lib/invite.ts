@@ -4,6 +4,11 @@ export type InvitePayload = {
   purpose: "client_invite";
   cliente_id: string;
   cliente_nombre: string;
+  // A dónde mandar al invitado después de crear su cuenta (ver uso en
+  // app/api/auth/registro-invitado/route.ts). Sin esto, cae al destino
+  // histórico (/panel/conexiones) — las invitaciones de equipo de la V3 lo
+  // setean a /v3/{clienteId}.
+  redirect?: string;
 };
 
 function getSecretKey() {
@@ -12,8 +17,8 @@ function getSecretKey() {
   return new TextEncoder().encode(secret);
 }
 
-export async function signInviteToken(clienteId: string, clienteNombre: string): Promise<string> {
-  return new SignJWT({ purpose: "client_invite", cliente_id: clienteId, cliente_nombre: clienteNombre })
+export async function signInviteToken(clienteId: string, clienteNombre: string, redirect?: string): Promise<string> {
+  return new SignJWT({ purpose: "client_invite", cliente_id: clienteId, cliente_nombre: clienteNombre, redirect })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")

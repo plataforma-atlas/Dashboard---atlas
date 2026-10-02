@@ -59,7 +59,7 @@ export default function InvitacionPage({ params }: { params: { token: string } }
         return;
       }
       if (data.autoLogin) {
-        router.push("/panel/conexiones");
+        router.push(data.redirect || "/panel/conexiones");
         router.refresh();
       } else {
         router.push("/login");

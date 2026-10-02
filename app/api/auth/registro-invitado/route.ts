@@ -39,13 +39,13 @@ export async function POST(req: Request) {
     const sessionToken = dataLogin?.token as string | undefined;
     if (!resLogin.ok || !sessionToken) {
       // La cuenta sí se creó; el usuario puede iniciar sesión manualmente.
-      return NextResponse.json({ ok: true, autoLogin: false });
+      return NextResponse.json({ ok: true, autoLogin: false, redirect: invite.redirect });
     }
 
     const session = await verifySession(sessionToken);
-    if (!session) return NextResponse.json({ ok: true, autoLogin: false });
+    if (!session) return NextResponse.json({ ok: true, autoLogin: false, redirect: invite.redirect });
 
-    const response = NextResponse.json({ ok: true, autoLogin: true });
+    const response = NextResponse.json({ ok: true, autoLogin: true, redirect: invite.redirect });
     response.cookies.set(COOKIE_NAME, sessionToken, {
       httpOnly: true,
       secure: true,

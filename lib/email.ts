@@ -75,3 +75,63 @@ export async function sendPasswordResetEmail({ to, resetUrl }: { to: string; res
 
   await sendEmail({ to, subject: "Restablece tu contraseña — Vermetricas", html });
 }
+
+export async function sendTeamInviteEmail({
+  to,
+  inviteUrl,
+  clienteNombre,
+}: {
+  to: string;
+  inviteUrl: string;
+  clienteNombre: string;
+}) {
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
+  <body style="margin:0; padding:0; background-color:#F1F1F8; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F1F1F8; padding:40px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px; width:100%; background-color:#FFFFFF; border-radius:16px; overflow:hidden; box-shadow:0 4px 24px rgba(91,91,247,0.08);">
+            <tr>
+              <td style="padding:36px 40px 8px 40px;" align="center">
+                <img src="${LOGO_URL}" alt="Vermetricas" width="220" style="display:block; max-width:220px; height:auto;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 40px 0 40px;">
+                <h1 style="margin:0; font-size:20px; line-height:1.3; color:#14151A; font-weight:600;">Te invitaron a un equipo</h1>
+                <p style="margin:16px 0 0 0; font-size:14px; line-height:1.6; color:#54566B;">
+                  Te invitaron a sumarte al dashboard de <strong>${clienteNombre}</strong> en Vermetricas, con el mismo acceso que el resto del equipo. Hacé clic abajo para crear tu cuenta.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px 40px 0 40px;" align="center">
+                <a href="${inviteUrl}" style="display:inline-block; background-color:#00A7B9; color:#FFFFFF; text-decoration:none; font-size:14px; font-weight:600; padding:12px 32px; border-radius:8px;">
+                  Crear mi cuenta
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 40px 0 40px;">
+                <p style="margin:0; font-size:12px; line-height:1.6; color:#9294A6;">
+                  Este enlace expira en 7 días. Si no esperabas esta invitación, podés ignorar este correo.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px 40px 32px 40px;">
+                <hr style="border:none; border-top:1px solid #ECECF3; margin:0 0 16px 0;" />
+                <p style="margin:0; font-size:11px; letter-spacing:0.04em; text-transform:uppercase; color:#B7B8C7;">Vermetricas · Datos que te llevan más lejos</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`.trim();
+
+  await sendEmail({ to, subject: `Te invitaron al equipo de ${clienteNombre} — Vermetricas`, html });
+}

@@ -6,5 +6,5 @@ export async function GET() {
   const token = cookies().get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
   if (!session) return NextResponse.json({ authenticated: false }, { status: 401 });
-  return NextResponse.json({ authenticated: true, role: session.role, clientes: clientesDeSesion(session) });
+  return NextResponse.json({ authenticated: true, role: session.role, clientes: clientesDeSesion(session), user_id: session.user_id });
 }
