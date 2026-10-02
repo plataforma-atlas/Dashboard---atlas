@@ -19,8 +19,8 @@ export default function EliminarDatosPage() {
         <ol className="list-decimal pl-5 flex flex-col gap-2 text-[15px] leading-relaxed text-on-surface-variant">
           <li>
             Escribinos a{" "}
-            <a href="mailto:plataformas@sebasklinkert.com" className="text-primary hover:underline">
-              plataformas@sebasklinkert.com
+            <a href="mailto:soporte@vermetricas.com" className="text-primary hover:underline">
+              soporte@vermetricas.com
             </a>{" "}
             desde el correo con el que iniciás sesión en Vermetricas, pidiendo la eliminación de tus datos.
           </li>

@@ -86,8 +86,8 @@ export default function PoliticaPrivacidadPage() {
           <p className="text-[15px] leading-relaxed text-on-surface-variant">
             Podés pedirnos en cualquier momento acceder a tus datos, corregirlos, o eliminarlos por completo (incluyendo
             desconectar cualquier integración, como Meta Ads), escribiendo a{" "}
-            <a href="mailto:plataformas@sebasklinkert.com" className="text-primary hover:underline">
-              plataformas@sebasklinkert.com
+            <a href="mailto:soporte@vermetricas.com" className="text-primary hover:underline">
+              soporte@vermetricas.com
             </a>
             . Respondemos estas solicitudes en un plazo máximo de 30 días.
           </p>
@@ -97,8 +97,8 @@ export default function PoliticaPrivacidadPage() {
           <h2 className="text-lg font-semibold text-on-surface">Contacto</h2>
           <p className="text-[15px] leading-relaxed text-on-surface-variant">
             Si tenés preguntas sobre esta política o sobre el tratamiento de tus datos, escribinos a{" "}
-            <a href="mailto:plataformas@sebasklinkert.com" className="text-primary hover:underline">
-              plataformas@sebasklinkert.com
+            <a href="mailto:soporte@vermetricas.com" className="text-primary hover:underline">
+              soporte@vermetricas.com
             </a>
             .
           </p>
