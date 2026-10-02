@@ -50,6 +50,9 @@ export function calcularEmbudo(leads: V3Lead[]) {
   const compraron = reales.filter((l) => l.status === "comprado").length;
   const carritoAbandonado = calcularEventoHotmart(leads, "carrito_abandonado_at");
   const tarjetaRechazada = calcularEventoHotmart(leads, "tarjeta_rechazada_at");
+  // extra.cuotas = purchase.payment.installments_number de Hotmart — 1 cuota
+  // es pago único, así que solo cuenta como "pago a cuotas" si es más de 1.
+  const pagosACuotas = leads.filter((l) => l.status === "comprado" && typeof l.extra?.cuotas === "number" && l.extra.cuotas > 1).length;
 
   const porFuente = new Map<string, number>();
   for (const l of reales) {
@@ -60,5 +63,5 @@ export function calcularEmbudo(leads: V3Lead[]) {
     .map(([label, value]) => ({ label, value }))
     .sort((a, b) => b.value - a.value);
 
-  return { etapas, compraron, fuentes, carritoAbandonado, tarjetaRechazada };
+  return { etapas, compraron, fuentes, carritoAbandonado, tarjetaRechazada, pagosACuotas };
 }

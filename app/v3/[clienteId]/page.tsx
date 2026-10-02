@@ -532,7 +532,7 @@ export default function V3ClientePage() {
                     sub={subRecuperacion(embudo.tarjetaRechazada)}
                     accent="primary"
                   />
-                  <KpiCard icon={CalendarClock} label="Pagos a cuotas" value={PENDIENTE} sub="Falta en Hotmart (pendiente)" accent="primary" />
+                  <KpiCard icon={CalendarClock} label="Pagos a cuotas" value={formatNumber(embudo.pagosACuotas)} accent="primary" />
                 </div>
               </>
             );
