@@ -27,9 +27,9 @@ const GUIAS = [
     disponible: false,
   },
   {
-    href: "/soporte/conectar-webinarkit",
+    href: "/soporte/conectar-clasespecial",
     icono: Radio,
-    titulo: "Conectar WebinarKit",
+    titulo: "Conectar ClaseEspecial",
     descripcion: "Para traer asistencia y % de reproducción de tus webinars.",
     disponible: false,
   },
