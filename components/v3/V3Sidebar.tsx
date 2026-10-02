@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, Clapperboard, Database, LayoutDashboard, Link2, LogOut, Megaphone, Undo2, Users } from "lucide-react";
+import { ChevronDown, Clapperboard, Database, LayoutDashboard, Link2, LogOut, Megaphone, Undo2, Users, X } from "lucide-react";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
@@ -12,7 +12,13 @@ import V3ClientSwitcher from "@/components/v3/V3ClientSwitcher";
 type Session = { authenticated: boolean; role?: "admin" | "client"; clientes?: string[] };
 type Cliente = { id: string; name: string };
 
-export default function V3Sidebar() {
+export default function V3Sidebar({
+  mobileOpen = false,
+  onCloseMobile,
+}: {
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams<{ clienteId?: string }>();
@@ -47,6 +53,14 @@ export default function V3Sidebar() {
   const clienteActual = clientes.find((c) => c.id === clienteIdActual);
   const puedeCambiarCliente = isAdmin && clientes.length > 1;
 
+  // Cada link de acá abajo es un <a> normal (navegación real, no SPA), así
+  // que el layout no se desmonta entre páginas del mismo /v3/* — sin esto el
+  // panel mobile quedaría abierto después de tocar un link.
+  useEffect(() => {
+    onCloseMobile?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -54,27 +68,46 @@ export default function V3Sidebar() {
   }
 
   return (
-    <aside className="bg-surface border-r border-outline md:w-[var(--sidebar-w,240px)] md:fixed md:inset-y-0 md:left-0 md:h-screen p-4 md:p-5 flex flex-col gap-4 overflow-y-auto overflow-x-hidden transition-[width,background-color,border-color] duration-200">
-      <div
-        className={`pb-4 border-b border-outline flex items-center justify-between gap-2.5 ${
-          collapsed ? "md:flex-col md:items-center md:gap-2" : ""
-        }`}
+    <>
+      {/* Backdrop mobile — solo existe cuando el panel está abierto, toca afuera para cerrar. */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-30 bg-black/60" onClick={onCloseMobile} aria-hidden="true" />
+      )}
+      <aside
+        className={`bg-surface border-r border-outline w-[240px] fixed inset-y-0 left-0 z-40 h-screen p-4 flex flex-col gap-4 overflow-y-auto overflow-x-hidden transition-transform duration-200 md:transition-[width,background-color,border-color] ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0 md:w-[var(--sidebar-w,240px)] md:p-5`}
       >
-        <div className="flex items-center gap-2.5 min-w-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/vermetricas-icon.png" alt="" className="w-9 h-9 rounded-xl shrink-0" />
-          <div className={`min-w-0 ${collapsed ? "md:hidden" : ""}`}>
-            <div className="text-sm font-semibold text-on-surface flex items-center gap-1.5 min-w-0">
-              <span className="truncate">Vermetricas</span>
-              <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-primary bg-surface-high px-1.5 py-0.5 rounded leading-none">
-                V3
-              </span>
+        <div
+          className={`pb-4 border-b border-outline flex items-center justify-between gap-2.5 ${
+            collapsed ? "md:flex-col md:items-center md:gap-2" : ""
+          }`}
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/vermetricas-icon.png" alt="" className="w-9 h-9 rounded-xl shrink-0" />
+            <div className={`min-w-0 ${collapsed ? "md:hidden" : ""}`}>
+              <div className="text-sm font-semibold text-on-surface flex items-center gap-1.5 min-w-0">
+                <span className="truncate">Vermetricas</span>
+                <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-primary bg-surface-high px-1.5 py-0.5 rounded leading-none">
+                  V3
+                </span>
+              </div>
+              <div className="text-[11px] text-on-surface-faint truncate">Nuevo dashboard</div>
             </div>
-            <div className="text-[11px] text-on-surface-faint truncate">Nuevo dashboard</div>
+          </div>
+          <button
+            type="button"
+            onClick={onCloseMobile}
+            aria-label="Cerrar menú"
+            className="press md:hidden w-8 h-8 rounded-lg bg-surface-high grid place-items-center text-on-surface-variant shrink-0"
+          >
+            <X size={16} strokeWidth={2} />
+          </button>
+          <div className="hidden md:block">
+            <SidebarCollapseButton collapsed={collapsed} onToggle={toggleCollapsed} />
           </div>
         </div>
-        <SidebarCollapseButton collapsed={collapsed} onToggle={toggleCollapsed} />
-      </div>
 
       {clienteIdActual && (
         <div className="relative">
@@ -238,5 +271,6 @@ export default function V3Sidebar() {
         </button>
       </div>
     </aside>
+    </>
   );
 }

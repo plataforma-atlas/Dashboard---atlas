@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Menu, Plus } from "lucide-react";
 import { V3Dashboard, V3DashboardTipo } from "@/lib/v3/types";
 
 // Letras de página de testeo (A, B, C...) — el usuario confirmó que no espera
@@ -23,7 +23,7 @@ function slugify(s: string): string {
 // el layout de la V3 para que el selector esté disponible en cualquier
 // pantalla, no solo en Administrador de Anuncios. Hoy solo esa pantalla
 // reacciona al dashboard elegido; ver plan en purrfect-humming-backus.md.
-export default function V3Topbar() {
+export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () => void }) {
   const params = useParams<{ clienteId?: string }>();
   const clienteId = typeof params?.clienteId === "string" ? params.clienteId : undefined;
   const router = useRouter();
@@ -140,7 +140,15 @@ export default function V3Topbar() {
   return (
     <div className="sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-outline">
       <div className="px-4 md:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            type="button"
+            onClick={onOpenMobileMenu}
+            aria-label="Abrir menú"
+            className="press md:hidden w-8 h-8 rounded-lg border border-outline grid place-items-center text-on-surface-variant shrink-0"
+          >
+            <Menu size={16} strokeWidth={2} />
+          </button>
           <span className="text-xs uppercase tracking-[0.1em] text-on-surface-faint hidden sm:inline">Dashboard</span>
           {!loading && (
             <select

@@ -301,13 +301,13 @@ export default function V3ConexionesPage() {
 
       {error && <div className="rounded-lg border border-outline-error bg-error-container px-4 py-3 text-sm text-error">{error}</div>}
 
-      <div className="rounded-lg border border-outline bg-surface p-5 flex items-center justify-between gap-4">
+      <div className="rounded-lg border border-outline bg-surface p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-0.5">
           <span className="text-[14px] font-medium text-on-surface">Go High Level</span>
           <span className="text-[13px] text-on-surface-variant">Tu CRM — para crear y etiquetar contactos automáticamente cuando captes un lead.</span>
         </div>
         {ghlFormAbierto ? null : ghlConectado ? (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center flex-wrap gap-2 shrink-0">
             <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline-success bg-success-container text-success">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
@@ -332,7 +332,7 @@ export default function V3ConexionesPage() {
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center flex-wrap gap-2 shrink-0">
             <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-faint">
               <span className="h-2 w-2 rounded-full bg-on-surface-faint" />
               No conectado
@@ -443,13 +443,13 @@ export default function V3ConexionesPage() {
         </form>
       )}
 
-      <div className="rounded-lg border border-outline bg-surface p-5 flex items-center justify-between gap-4">
+      <div className="rounded-lg border border-outline bg-surface p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-0.5">
           <span className="text-[14px] font-medium text-on-surface">Meta Ads</span>
           <span className="text-[13px] text-on-surface-variant">Para traer el gasto, impresiones y clics de tus campañas y anuncios.</span>
         </div>
         {formAbierto ? null : metaConectado ? (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center flex-wrap gap-2 shrink-0">
             <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline-success bg-success-container text-success">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
@@ -465,7 +465,7 @@ export default function V3ConexionesPage() {
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center flex-wrap gap-2 shrink-0">
             <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-faint">
               <span className="h-2 w-2 rounded-full bg-on-surface-faint" />
               No conectado
@@ -626,13 +626,13 @@ export default function V3ConexionesPage() {
         </form>
       )}
 
-      <div className="rounded-lg border border-outline bg-surface p-5 flex items-center justify-between gap-4">
+      <div className="rounded-lg border border-outline bg-surface p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-0.5">
           <span className="text-[14px] font-medium text-on-surface">Hotmart</span>
           <span className="text-[13px] text-on-surface-variant">De acá llegan tus ventas — se reflejan solas en Base de datos.</span>
         </div>
         {hotmartFormAbierto ? null : hotmartConectado ? (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center flex-wrap gap-2 shrink-0">
             <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline-success bg-success-container text-success">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
@@ -655,7 +655,7 @@ export default function V3ConexionesPage() {
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center flex-wrap gap-2 shrink-0">
             <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-faint">
               <span className="h-2 w-2 rounded-full bg-on-surface-faint" />
               No conectado
