@@ -1,4 +1,4 @@
-import { Building2, Users, KeyRound, Hash, Link2, Lightbulb, CircleCheck, Clock } from "lucide-react";
+import { Building2, Users, KeyRound, Hash, Link2, Lightbulb, CircleCheck, Clock, UserCog } from "lucide-react";
 
 export const metadata = {
   title: "Cómo conectar Meta Ads — Soporte Vermetricas",
@@ -128,14 +128,28 @@ export default function ConectarMetaAdsGuiaPage() {
             { texto: <>En la ventana que se abre, elegí la pestaña <Boton>Cuentas publicitarias</Boton>, buscá y seleccioná la cuenta (o cuentas) que querés conectar.</> },
             { texto: <>A la derecha, activá el permiso de <Boton>Control total</Boton> (o como mínimo &quot;Gestionar la cuenta&quot;) para esa cuenta.</> },
             { texto: "Guardá los cambios." },
+          ]}
+        />
+
+        <SeccionGuia
+          numero={3}
+          icono={UserCog}
+          titulo="Darle al Usuario del Sistema un rol en la app"
+          descripcion="Esto se hace en la pantalla de la app (la misma de la Parte 1), no en Business Settings — por eso es un paso aparte."
+          pasos={[
             {
               texto: (
                 <>
-                  <span className="font-medium text-on-surface">Antes de pasar a generar el token</span>, hay un paso que se salta fácil: el Usuario del Sistema necesita además un{" "}
-                  <span className="font-medium text-on-surface">rol dentro de la app</span> que creaste en la Parte 1 (esto es distinto de los activos que le diste arriba). Sin esto, al
-                  generar el token te va a decir &quot;No hay permisos disponibles&quot;. Andá a <Codigo>developers.facebook.com</Codigo> → tu app (&quot;Conexión Vermetricas&quot;) → en el
-                  menú de la izquierda, <Boton>Roles de la app</Boton> → pestaña <Boton>Usuarios del sistema</Boton> → <Boton>Agregar usuarios del sistema</Boton> → seleccioná el usuario
-                  del sistema que creaste (ej. &quot;Vermetricas API&quot;) con rol <Boton>Administrador</Boton>.
+                  Volvé a <Codigo>developers.facebook.com</Codigo> → tu app (&quot;Conexión Vermetricas&quot;) — vas a terminar en el mismo Panel donde quedaste al crearla en la Parte 1.
+                </>
+              ),
+            },
+            { texto: <>En el menú de la izquierda, abrí <Boton>Roles de la app</Boton> → <Boton>Roles</Boton>.</> },
+            {
+              texto: (
+                <>
+                  Agregá ahí al Usuario del Sistema que creaste en el paso anterior (ej. &quot;Vermetricas API&quot;) con rol <Boton>Administrador</Boton>. Esto es distinto de los activos
+                  (cuentas publicitarias) que ya le diste en Business Settings — sin este rol en la app, al generar el token te va a decir &quot;No hay permisos disponibles&quot;.
                 </>
               ),
             },
@@ -143,7 +157,7 @@ export default function ConectarMetaAdsGuiaPage() {
         />
 
         <SeccionGuia
-          numero={3}
+          numero={4}
           icono={KeyRound}
           titulo="Generar el token de acceso"
           pasos={[
@@ -173,7 +187,7 @@ export default function ConectarMetaAdsGuiaPage() {
         />
 
         <SeccionGuia
-          numero={4}
+          numero={5}
           icono={Hash}
           titulo="Conseguir el ID de tu cuenta publicitaria"
           pasos={[
@@ -191,7 +205,7 @@ export default function ConectarMetaAdsGuiaPage() {
         />
 
         <SeccionGuia
-          numero={5}
+          numero={6}
           icono={Link2}
           titulo="Conectar en Vermetricas"
           pasos={[
