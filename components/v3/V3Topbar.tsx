@@ -5,6 +5,20 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { V3Dashboard, V3DashboardTipo } from "@/lib/v3/types";
 
+// Letras de página de testeo (A, B, C...) — el usuario confirmó que no espera
+// testear más de 5 páginas a la vez en un mismo lanzamiento.
+const LETRAS_PAGINA = ["A", "B", "C", "D", "E"];
+
+function slugify(s: string): string {
+  return (s || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/(^_|_$)/g, "");
+}
+
 // Barra global de dashboards (proyectos filtrados por nomenclatura) — vive en
 // el layout de la V3 para que el selector esté disponible en cualquier
 // pantalla, no solo en Administrador de Anuncios. Hoy solo esa pantalla
@@ -22,6 +36,11 @@ export default function V3Topbar() {
   const [tipoNuevo, setTipoNuevo] = useState<V3DashboardTipo>("lanzamiento");
   const [nombreNuevo, setNombreNuevo] = useState("");
   const [nomenclaturaNueva, setNomenclaturaNueva] = useState("");
+  // Cuántas páginas de testeo (A, B, C...) va a correr este lanzamiento — se
+  // preguntan al crear el dashboard para crear de una vez sus puntos de
+  // captación (y los endpoints de cada uno), en vez de agregarlos uno por uno
+  // a mano después desde Endpoints.
+  const [paginasTesteo, setPaginasTesteo] = useState(1);
   const [creando, setCreando] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -72,12 +91,45 @@ export default function V3Topbar() {
         setFormError(nuevo.error || "No se pudo crear el dashboard");
         return;
       }
+
+      // Para Lanzamiento, crear de una vez sus páginas de testeo (puntos de
+      // captación "Página A"/"Página B"/...) — cada una ya trae sus 4
+      // endpoints hermanos generados solos (ver Núcleo — V3 Puntos de
+      // Captación). La etiqueta de GHL se arma sola a partir del nombre del
+      // dashboard; se puede ajustar a mano más adelante si hiciera falta.
+      const erroresPaginas: string[] = [];
+      if (tipoNuevo === "lanzamiento") {
+        for (let i = 0; i < paginasTesteo; i++) {
+          const letra = LETRAS_PAGINA[i];
+          try {
+            const rPunto = await fetch("/api/v3/captacion-puntos", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                cliente_id: clienteId,
+                dashboard_id: nuevo.id,
+                nombre: `Página ${letra}`,
+                etiqueta_ghl: `${slugify(nombreNuevo)}_pagina_${letra.toLowerCase()}`,
+              }),
+            });
+            if (!rPunto.ok) erroresPaginas.push(letra);
+          } catch {
+            erroresPaginas.push(letra);
+          }
+        }
+      }
+
       setNombreNuevo("");
       setNomenclaturaNueva("");
       setTipoNuevo("lanzamiento");
-      setFormAbierto(false);
+      setPaginasTesteo(1);
       await cargarDashboards();
       seleccionarDashboard(String(nuevo.id));
+      if (erroresPaginas.length > 0) {
+        setFormError(`El dashboard se creó, pero fallaron estas páginas: ${erroresPaginas.join(", ")}. Agregalas a mano desde Endpoints.`);
+      } else {
+        setFormAbierto(false);
+      }
     } catch {
       setFormError("No se pudo conectar al servidor");
     } finally {
@@ -138,6 +190,28 @@ export default function V3Topbar() {
               ))}
             </div>
           </div>
+          {tipoNuevo === "lanzamiento" && (
+            <div className="flex flex-col gap-1.5 shrink-0">
+              <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Páginas de testeo</label>
+              <div className="flex items-center gap-1.5">
+                {LETRAS_PAGINA.map((letra, i) => (
+                  <button
+                    key={letra}
+                    type="button"
+                    onClick={() => setPaginasTesteo(i + 1)}
+                    title={`${i + 1} página${i + 1 > 1 ? "s" : ""} de testeo (A${i > 0 ? `–${letra}` : ""})`}
+                    className={`press text-[13px] w-9 h-9 rounded-md border font-medium transition-colors duration-150 ${
+                      paginasTesteo === i + 1
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-outline text-on-surface-variant hover:border-primary hover:text-on-surface"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
             <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Nombre del dashboard</label>
             <input
