@@ -27,12 +27,20 @@ export type V3PuntoEndpoint = {
   token: string;
 };
 
+// Nivel de la entidad de Meta a la que un punto de captación ("página de
+// testeo") puede vincularse, para traer sus "Clics en el enlace" como proxy
+// de visitas — ver lib/v3/embudo.ts, calcularPaginasTesteo().
+export type V3MetaNivel = "campana" | "conjunto" | "anuncio";
+
 export type V3CaptacionPunto = {
   id: number;
   nombre: string;
   etiqueta_ghl: string;
   token_captacion: string;
   endpoints: V3PuntoEndpoint[];
+  meta_nivel: V3MetaNivel | null;
+  meta_entity_id: string | null;
+  meta_entity_nombre: string | null;
   created_at: string;
 };
 
@@ -50,6 +58,7 @@ export type V3Lead = {
   utm_term: string | null;
   pagina_origen: string | null;
   dashboard_id: number | null;
+  punto_captacion_id: number | null;
   status: V3LeadStatus;
   extra: Record<string, unknown>;
   created_at: string;

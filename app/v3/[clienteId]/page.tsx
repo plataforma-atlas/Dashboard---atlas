@@ -36,7 +36,7 @@ import {
 import { formatMoney, formatNumber, formatPercent } from "@/lib/webinar-os/aggregate";
 import { RangoRapido, rangoRapido } from "@/lib/webinar-os/control-center/dateRanges";
 import { MetaAdsResponse } from "@/lib/meta-ads/types";
-import { V3Dashboard, V3Lead } from "@/lib/v3/types";
+import { V3CaptacionPunto, V3Dashboard, V3Lead } from "@/lib/v3/types";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import V3ComingSoon from "@/components/v3/V3ComingSoon";
 import MetaNoConectado from "@/components/v3/MetaNoConectado";
@@ -50,8 +50,9 @@ import DailyDetailTable from "@/components/v3/DailyDetailTable";
 import HorizontalBarPanel from "@/components/v3/HorizontalBarPanel";
 import EmbudoFunnelChart from "@/components/v3/EmbudoFunnelChart";
 import TendenciaHotmartChart from "@/components/v3/TendenciaHotmartChart";
+import PaginasTesteoTable from "@/components/v3/PaginasTesteoTable";
 import { formatMoneyEnMoneda } from "@/lib/v3/format";
-import { calcularEmbudo } from "@/lib/v3/embudo";
+import { calcularEmbudo, calcularPaginasTesteo } from "@/lib/v3/embudo";
 
 type Session = { authenticated: boolean; role?: "admin" | "client"; clientes?: string[] };
 type FunnelResponse = { source: "n8n" | "error"; rows: FunnelRow[]; message?: string };
@@ -76,6 +77,9 @@ export default function V3ClientePage() {
   const [metaLoading, setMetaLoading] = useState(true);
   const [leads, setLeads] = useState<V3Lead[]>([]);
   const [leadsLoading, setLeadsLoading] = useState(true);
+  // Puntos de captación del dashboard elegido — alimenta "Páginas de testeo"
+  // (comparación A/B), ver lib/v3/embudo.ts, calcularPaginasTesteo().
+  const [puntos, setPuntos] = useState<V3CaptacionPunto[]>([]);
   // Filtra leads/ventas propios por fecha — Meta Ads (inversión/impresiones/
   // clics) sigue fijo en los últimos 30 días, el pull de n8n todavía no
   // acepta un rango custom.
@@ -220,6 +224,23 @@ export default function V3ClientePage() {
     };
   }, [esLanzamiento, dashboardActual, clienteId, rangoPeriodo.fecha_inicio, rangoPeriodo.fecha_fin]);
 
+  useEffect(() => {
+    if (!esLanzamiento || !dashboardActual) return;
+    let cancelled = false;
+    const qs = new URLSearchParams({ cliente_id: clienteId, dashboard_id: String(dashboardActual.id) });
+    fetch(`/api/v3/captacion-puntos?${qs.toString()}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((body: { puntos?: V3CaptacionPunto[] }) => {
+        if (!cancelled) setPuntos(body.puntos ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setPuntos([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [esLanzamiento, dashboardActual, clienteId]);
+
   // Métricas de la sección Meta del Home de Lanzamiento. "Facturación bruta"
   // y "neta"/cash-collect son hoy la misma suma de extra.monto de Hotmart —
   // quedan como dos tarjetas separadas porque a futuro pueden divergir
@@ -344,6 +365,8 @@ export default function V3ClientePage() {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([fecha, v]) => ({ fecha, ...v }));
   }, [leads, rangoPeriodo]);
+
+  const paginasTesteo = useMemo(() => calcularPaginasTesteo(leads, puntos, metaData), [leads, puntos, metaData]);
 
   const selectedCampaign = useMemo(() => {
     const preferred = campaigns.find((c) => c.status === "active") ?? campaigns[0];
@@ -599,6 +622,13 @@ export default function V3ClientePage() {
                     Tendencia de Hotmart <span className="text-on-surface-faint font-normal">· ventas, carrito abandonado y tarjetas rechazadas por día</span>
                   </h3>
                   <TendenciaHotmartChart rows={tendenciaHotmart} />
+                </div>
+
+                <div className="flex flex-col gap-3 mt-2">
+                  <h3 className="text-sm font-semibold text-on-surface">
+                    Páginas de testeo <span className="text-on-surface-faint font-normal">· comparación de registrados/conversión por landing (cada "página" se vincula a un anuncio de Meta en Endpoints)</span>
+                  </h3>
+                  <PaginasTesteoTable rows={paginasTesteo} />
                 </div>
               </>
             );

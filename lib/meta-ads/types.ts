@@ -8,6 +8,12 @@ export type MetaCampaignRow = {
   spend: number;
   impressions: number;
   clicks: number;
+  // "Clics en el enlace" (Meta: inline_link_clicks) — a diferencia de `clicks`
+  // (todo clic sobre el anuncio, incluye likes/comentarios/etc.), esto es lo
+  // que de verdad llevó a alguien a la página de destino. Usado por "Páginas
+  // de testeo" (lib/v3/embudo.ts) como proxy de "visitas" cuando un punto de
+  // captación está vinculado a esta campaña/conjunto/anuncio.
+  link_clicks: number;
   ctr: number;
   cpm: number;
   cpc: number;
@@ -26,6 +32,7 @@ export type MetaAdsetRow = {
   spend: number;
   impressions: number;
   clicks: number;
+  link_clicks: number;
   ctr: number;
   cpm: number;
   cpc: number;
@@ -48,6 +55,7 @@ export type MetaAdRow = {
   spend: number;
   impressions: number;
   clicks: number;
+  link_clicks: number;
   ctr: number;
   cpm: number;
   leads: number;
