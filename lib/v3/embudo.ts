@@ -68,6 +68,11 @@ export function calcularEmbudo(leads: V3Lead[]) {
   // es pago único, así que solo cuenta como "pago a cuotas" si es más de 1.
   const pagosACuotas = leads.filter((l) => l.status === "comprado" && typeof l.extra?.cuotas === "number" && l.extra.cuotas > 1).length;
   const cuotaPendiente = calcularPagoPendiente(leads);
+  // "Contactaron a soporte": lo manda GHL vía integraciones/soporte-contacto
+  // (a nivel de cliente completo, no por punto de captación) — a diferencia
+  // de carrito/tarjeta, no es algo que se "recupere", así que es un conteo
+  // simple sobre `reales` (igual que las demás etapas del embudo).
+  const contactaronSoporte = reales.filter(tieneExtra("contacto_soporte_at")).length;
 
   // Facturación de pago único vs. facturación que entró en cuotas — mismas
   // ventas que ya cuenta `compraron`, solo partidas por `extra.cuotas`.
@@ -99,5 +104,6 @@ export function calcularEmbudo(leads: V3Lead[]) {
     cuotaPendiente,
     facturacionPagoUnico,
     facturacionEnCuotas,
+    contactaronSoporte,
   };
 }

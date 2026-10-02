@@ -544,7 +544,7 @@ export default function V3ClientePage() {
                   <KpiCard icon={LogIn} label="Ingresaron a los grupos" value={formatNumber(ingresaronGrupos)} sub={subGrupos} accent="primary" />
                   <KpiCard icon={Presentation} label="Vieron la clase" value={PENDIENTE} sub="Falta trackear asistencia (pendiente)" accent="primary" />
                   <KpiCard icon={PlayCircle} label="Vio replay" value={PENDIENTE} sub="Falta trackear asistencia (pendiente)" accent="primary" />
-                  <KpiCard icon={LifeBuoy} label="Contactaron a soporte" value={PENDIENTE} sub="Falta endpoint de GHL (pendiente)" accent="primary" />
+                  <KpiCard icon={LifeBuoy} label="Contactaron a soporte" value={formatNumber(embudo.contactaronSoporte)} accent="primary" />
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
