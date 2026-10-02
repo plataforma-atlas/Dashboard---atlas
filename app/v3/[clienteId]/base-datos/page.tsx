@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { Download, History, ClipboardList } from "lucide-react";
+import { Download, History, ClipboardList, Gem } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import Pagination from "@/components/ui/pagination";
 import LeadHistorialPanel from "@/components/v3/LeadHistorialPanel";
@@ -34,6 +34,7 @@ export default function V3BaseDatosPage() {
   const [pageSize, setPageSize] = useState(10);
   const [historialDe, setHistorialDe] = useState<{ correo: string | null; telefono: string | null } | null>(null);
   const [encuestaDe, setEncuestaDe] = useState<V3Lead | null>(null);
+  const [soloAltoValor, setSoloAltoValor] = useState(false);
   const [analisis, setAnalisis] = useState<V3AnalisisRecorrido | null>(null);
   const [analisisLoading, setAnalisisLoading] = useState(false);
   const [analisisError, setAnalisisError] = useState<string | null>(null);
@@ -86,11 +87,12 @@ export default function V3BaseDatosPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [tab, pageSize]);
+  }, [tab, pageSize, soloAltoValor]);
 
-  const totalPages = Math.max(1, Math.ceil(leads.length / pageSize));
+  const leadsFiltrados = soloAltoValor ? leads.filter(esLeadAltoValor) : leads;
+  const totalPages = Math.max(1, Math.ceil(leadsFiltrados.length / pageSize));
   const pageClamped = Math.min(page, totalPages);
-  const visibles = leads.slice((pageClamped - 1) * pageSize, pageClamped * pageSize);
+  const visibles = leadsFiltrados.slice((pageClamped - 1) * pageSize, pageClamped * pageSize);
 
   function celdaCsv(valor: string) {
     const texto = valor ?? "";
@@ -102,7 +104,7 @@ export default function V3BaseDatosPage() {
       tab === "comprado"
         ? ["Nombre", "Correo", "Teléfono", "Producto", "Monto", "Moneda", "Origen del lead", "Origen de la venta", "Sin embudo", "Fecha"]
         : ["Nombre", "Correo", "Teléfono", "Origen", "Sin match", "Fecha"];
-    const filas = leads.map((lead) => {
+    const filas = leadsFiltrados.map((lead) => {
       const producto = typeof lead.extra?.producto === "string" ? lead.extra.producto : "";
       const monto = typeof lead.extra?.monto === "number" ? lead.extra.monto : null;
       const moneda = typeof lead.extra?.moneda === "string" ? lead.extra.moneda : "";
@@ -161,13 +163,27 @@ export default function V3BaseDatosPage() {
           </button>
         </div>
         {tab !== TAB_RECORRIDO && leads.length > 0 && (
-          <button
-            type="button"
-            onClick={exportarCsv}
-            className="press mb-2 flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface-variant hover:text-on-surface font-medium transition-colors duration-150"
-          >
-            <Download size={14} /> Exportar CSV
-          </button>
+          <div className="flex items-center gap-2 mb-2">
+            <button
+              type="button"
+              onClick={() => setSoloAltoValor((v) => !v)}
+              title="Según la encuesta, respondieron la opción de mayor disposición a invertir"
+              className={`press flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-md border font-medium transition-colors duration-150 ${
+                soloAltoValor
+                  ? "border-success text-success bg-success/10"
+                  : "border-outline hover:border-success text-on-surface-variant hover:text-success"
+              }`}
+            >
+              <Gem size={14} /> Solo alto valor ({leads.filter(esLeadAltoValor).length})
+            </button>
+            <button
+              type="button"
+              onClick={exportarCsv}
+              className="press flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface-variant hover:text-on-surface font-medium transition-colors duration-150"
+            >
+              <Download size={14} /> Exportar CSV
+            </button>
+          </div>
         )}
       </div>
 
@@ -217,6 +233,8 @@ export default function V3BaseDatosPage() {
         <p className="text-[13px] text-on-surface-faint py-8 text-center">
           {tab === "lead" ? "Todavía no llegó ningún lead." : "Todavía no hay ventas registradas."}
         </p>
+      ) : leadsFiltrados.length === 0 ? (
+        <p className="text-[13px] text-on-surface-faint py-8 text-center">Ningún lead de este período quedó marcado como alto valor.</p>
       ) : (
         <div className="flex flex-col gap-3">
           <div className="rounded-lg border border-outline bg-surface overflow-x-auto">
@@ -325,7 +343,7 @@ export default function V3BaseDatosPage() {
             page={pageClamped}
             pageCount={totalPages}
             pageSize={pageSize}
-            total={leads.length}
+            total={leadsFiltrados.length}
             onPageChange={setPage}
             onPageSizeChange={setPageSize}
             pageSizeOptions={PAGE_SIZE_OPTIONS}
