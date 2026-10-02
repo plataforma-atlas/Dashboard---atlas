@@ -39,11 +39,15 @@ export default function V3ConexionesPage() {
   const [guardando, setGuardando] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const [ghlFormAbierto, setGhlFormAbierto] = useState(false);
   const [ghlLocationId, setGhlLocationId] = useState("");
   const [ghlToken, setGhlToken] = useState("");
   const [ghlGuardando, setGhlGuardando] = useState(false);
   const [ghlFormError, setGhlFormError] = useState<string | null>(null);
+  const [soporteWebhookAbierto, setSoporteWebhookAbierto] = useState(false);
+  const [soporteCopiado, setSoporteCopiado] = useState(false);
 
   const [hotmartFormAbierto, setHotmartFormAbierto] = useState(false);
   const [hotmartHottok, setHotmartHottok] = useState("");
@@ -74,6 +78,13 @@ export default function V3ConexionesPage() {
     if (clienteId) cargarEstado();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clienteId]);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => (res.ok ? res.json() : { authenticated: false }))
+      .then((data) => setIsAdmin(data?.role === "admin"))
+      .catch(() => setIsAdmin(false));
+  }, []);
 
   // Al volver del login de Facebook: traemos la lista de cuentas que la
   // persona autorizó (nunca el token, ver /api/oauth/meta/pendiente) para
@@ -140,6 +151,7 @@ export default function V3ConexionesPage() {
   const ghlConectado = estado.find((e) => e.integration_type === "ghl" && e.status === "active" && e.tiene_credencial) || null;
   const hotmartConectado = estado.find((e) => e.integration_type === "hotmart" && e.status === "active" && e.tiene_credencial) || null;
   const hotmartWebhookUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/api/hooks/integraciones/hotmart-venta?cliente_id=${clienteId}`;
+  const soporteWebhookUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/api/hooks/integraciones/soporte-contacto?cliente_id=${clienteId}`;
 
   function actualizarCuenta(i: number, campo: "id" | "label", valor: string) {
     setCuentas((prev) => prev.map((c, idx) => (idx === i ? { ...c, [campo]: valor } : c)));
@@ -261,6 +273,16 @@ export default function V3ConexionesPage() {
       .catch(() => {});
   }
 
+  function copiarWebhookSoporte() {
+    navigator.clipboard
+      ?.writeText(soporteWebhookUrl)
+      .then(() => {
+        setSoporteCopiado(true);
+        setTimeout(() => setSoporteCopiado(false), 2000);
+      })
+      .catch(() => {});
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -293,6 +315,15 @@ export default function V3ConexionesPage() {
               </span>
               Conectado
             </span>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setSoporteWebhookAbierto((v) => !v)}
+                className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+              >
+                {soporteWebhookAbierto ? "Ocultar webhook de soporte" : "Ver webhook de soporte"}
+              </button>
+            )}
             <button
               onClick={() => setGhlFormAbierto(true)}
               className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
@@ -306,6 +337,15 @@ export default function V3ConexionesPage() {
               <span className="h-2 w-2 rounded-full bg-on-surface-faint" />
               No conectado
             </span>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setSoporteWebhookAbierto((v) => !v)}
+                className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+              >
+                {soporteWebhookAbierto ? "Ocultar webhook de soporte" : "Ver webhook de soporte"}
+              </button>
+            )}
             <button
               onClick={() => setGhlFormAbierto(true)}
               className="press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
@@ -315,6 +355,36 @@ export default function V3ConexionesPage() {
           </div>
         )}
       </div>
+
+      {soporteWebhookAbierto && !ghlFormAbierto && (
+        <div className="animate-fade-in-up rounded-lg border border-outline bg-surface p-5 flex flex-col gap-3">
+          <p className="text-[13px] text-on-surface-variant">
+            Pegá este webhook dentro del workflow de GHL que atiende los mensajes de soporte (un paso de "Webhook" que lo llame cuando un
+            contacto escribe) — a nivel de todo el cliente, no por punto de captación. Body esperado:{" "}
+            <code className="font-mono">{"{ correo?, telefono? }"}</code>.
+          </p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 min-w-0 truncate bg-background border border-outline rounded-md px-3 py-2 text-[13px] text-on-surface font-mono">
+              {soporteWebhookUrl}
+            </code>
+            <button
+              type="button"
+              onClick={copiarWebhookSoporte}
+              className="press flex items-center gap-1.5 text-[13px] px-3 py-2 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150"
+            >
+              {soporteCopiado ? (
+                <>
+                  <Check size={14} /> Copiado
+                </>
+              ) : (
+                <>
+                  <Link2 size={14} /> Copiar
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {ghlFormAbierto && (
         <form onSubmit={conectarGhl} className="animate-fade-in-up rounded-lg border border-outline bg-surface p-5 flex flex-col gap-4">
