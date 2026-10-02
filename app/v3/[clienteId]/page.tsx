@@ -5,11 +5,17 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   Banknote,
   BarChart3,
+  CalendarClock,
+  CreditCard,
   DollarSign,
   Eye,
   Filter,
+  LogIn,
   MousePointerClick,
   Percent,
+  PlayCircle,
+  Presentation,
+  ShoppingBag,
   ShoppingCart,
   TrendingDown,
   TrendingUp,
@@ -490,6 +496,31 @@ export default function V3ClientePage() {
             <EmbudoFunnelChart etapas={embudo.etapas} compraron={embudo.compraron} />
             <HorizontalBarPanel title="Origen del tráfico" rows={embudo.fuentes} formatValue={formatNumber} />
           </div>
+
+          {(() => {
+            const etapaGrupo = embudo.etapas.find((e) => e.key === "grupo");
+            const ingresaronGrupos = (etapaGrupo?.count ?? 0) + (etapaGrupo?.sinMatch ?? 0);
+            const subGrupos = etapaGrupo?.sinMatch
+              ? `${formatNumber(etapaGrupo.count)} con match + ${formatNumber(etapaGrupo.sinMatch)} sin match`
+              : undefined;
+            const PENDIENTE = "—";
+            return (
+              <>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+                  <KpiCard icon={LogIn} label="Ingresaron a los grupos" value={formatNumber(ingresaronGrupos)} sub={subGrupos} accent="primary" />
+                  <KpiCard icon={Presentation} label="Vieron la clase" value={PENDIENTE} sub="Falta trackear asistencia (pendiente)" accent="primary" />
+                  <KpiCard icon={PlayCircle} label="Vio replay" value={PENDIENTE} sub="Falta trackear asistencia (pendiente)" accent="primary" />
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
+                  <KpiCard icon={ShoppingCart} label="Compras" value={formatNumber(m.ventasCount)} accent="success" />
+                  <KpiCard icon={ShoppingBag} label="Carrito abandonado" value={PENDIENTE} sub="Falta en Hotmart (pendiente)" accent="primary" />
+                  <KpiCard icon={CreditCard} label="Tarjetas rechazadas" value={PENDIENTE} sub="Falta en Hotmart (pendiente)" accent="primary" />
+                  <KpiCard icon={CalendarClock} label="Pagos a cuotas" value={PENDIENTE} sub="Falta en Hotmart (pendiente)" accent="primary" />
+                </div>
+              </>
+            );
+          })()}
         </section>
       </div>
     );
