@@ -8,6 +8,10 @@ export type V3Dashboard = {
   nombre: string;
   tipo: V3DashboardTipo;
   nomenclatura_filtro: string | null;
+  // URL real de destino por "tipo" de enlace corto (ver lib/v3/embudo.ts y
+  // app/r/[token]/route.ts) — hoy "clase"/"replay", pero es un objeto libre
+  // a propósito para poder sumar tipos nuevos sin migrar nada.
+  url_enlaces: Record<string, string>;
   created_at: string;
 };
 

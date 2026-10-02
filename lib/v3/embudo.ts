@@ -73,6 +73,11 @@ export function calcularEmbudo(leads: V3Lead[]) {
   // de carrito/tarjeta, no es algo que se "recupere", así que es un conteo
   // simple sobre `reales` (igual que las demás etapas del embudo).
   const contactaronSoporte = reales.filter(tieneExtra("contacto_soporte_at")).length;
+  // "Vieron la clase"/"Vio replay": vienen del acortador de enlaces propio
+  // (app/r/[token]/route.ts) — igual que soporte, conteo simple, no se
+  // "recupera" nada acá.
+  const vieronClase = reales.filter(tieneExtra("vio_clase_at")).length;
+  const vioReplay = reales.filter(tieneExtra("vio_replay_at")).length;
 
   // Facturación de pago único vs. facturación que entró en cuotas — mismas
   // ventas que ya cuenta `compraron`, solo partidas por `extra.cuotas`.
@@ -105,5 +110,7 @@ export function calcularEmbudo(leads: V3Lead[]) {
     facturacionPagoUnico,
     facturacionEnCuotas,
     contactaronSoporte,
+    vieronClase,
+    vioReplay,
   };
 }

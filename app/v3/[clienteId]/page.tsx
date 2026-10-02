@@ -535,15 +535,14 @@ export default function V3ClientePage() {
             const subGrupos = etapaGrupo?.sinMatch
               ? `${formatNumber(etapaGrupo.count)} con match + ${formatNumber(etapaGrupo.sinMatch)} sin match`
               : undefined;
-            const PENDIENTE = "—";
             const subRecuperacion = (ev: { recuperados: number; porcentajeRecuperacion: number | null }) =>
               ev.recuperados > 0 ? `${formatNumber(ev.recuperados)} se recuperaron (${Math.round(ev.porcentajeRecuperacion ?? 0)}%)` : undefined;
             return (
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
                   <KpiCard icon={LogIn} label="Ingresaron a los grupos" value={formatNumber(ingresaronGrupos)} sub={subGrupos} accent="primary" />
-                  <KpiCard icon={Presentation} label="Vieron la clase" value={PENDIENTE} sub="Falta trackear asistencia (pendiente)" accent="primary" />
-                  <KpiCard icon={PlayCircle} label="Vio replay" value={PENDIENTE} sub="Falta trackear asistencia (pendiente)" accent="primary" />
+                  <KpiCard icon={Presentation} label="Vieron la clase" value={formatNumber(embudo.vieronClase)} accent="primary" />
+                  <KpiCard icon={PlayCircle} label="Vio replay" value={formatNumber(embudo.vioReplay)} accent="primary" />
                   <KpiCard icon={LifeBuoy} label="Contactaron a soporte" value={formatNumber(embudo.contactaronSoporte)} accent="primary" />
                 </div>
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { Check, Link2, Plus } from "lucide-react";
+import { Check, Link2, Plus, Save } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import { V3CaptacionPunto, V3Dashboard, V3EndpointTipo } from "@/lib/v3/types";
 
@@ -45,6 +45,12 @@ export default function V3EndpointsPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [copiado, setCopiado] = useState<string | null>(null);
 
+  const [urlClase, setUrlClase] = useState("");
+  const [urlReplay, setUrlReplay] = useState("");
+  const [guardandoTipo, setGuardandoTipo] = useState<"clase" | "replay" | null>(null);
+  const [enlaceError, setEnlaceError] = useState<string | null>(null);
+  const [enlaceGuardado, setEnlaceGuardado] = useState<"clase" | "replay" | null>(null);
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then((res) => (res.ok ? res.json() : { authenticated: false }))
@@ -63,6 +69,41 @@ export default function V3EndpointsPage() {
   }, [clienteId]);
 
   const dashboardActual = dashboards.find((d) => String(d.id) === dashboardIdParam) ?? null;
+
+  useEffect(() => {
+    setUrlClase(dashboardActual?.url_enlaces?.clase ?? "");
+    setUrlReplay(dashboardActual?.url_enlaces?.replay ?? "");
+    setEnlaceError(null);
+  }, [dashboardActual?.id]);
+
+  async function guardarUrlEnlace(tipo: "clase" | "replay", url: string) {
+    if (!dashboardActual) return;
+    if (!url.trim()) {
+      setEnlaceError("Pegá la URL antes de guardar.");
+      return;
+    }
+    setGuardandoTipo(tipo);
+    setEnlaceError(null);
+    try {
+      const res = await fetch("/api/v3/dashboards", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: clienteId, dashboard_id: dashboardActual.id, tipo, url: url.trim() }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setEnlaceError(body.error || "No se pudo guardar");
+        return;
+      }
+      setDashboards((actuales) => actuales.map((d) => (d.id === dashboardActual.id ? { ...d, url_enlaces: { ...d.url_enlaces, [tipo]: url.trim() } } : d)));
+      setEnlaceGuardado(tipo);
+      setTimeout(() => setEnlaceGuardado((actual) => (actual === tipo ? null : actual)), 2000);
+    } catch {
+      setEnlaceError("No se pudo conectar al servidor");
+    } finally {
+      setGuardandoTipo(null);
+    }
+  }
 
   async function cargarPuntos() {
     if (!dashboardActual) return;
@@ -154,6 +195,80 @@ export default function V3EndpointsPage() {
         <p className="text-[13px] text-on-surface-faint py-8 text-center">Los endpoints son para dashboards de tipo Lanzamiento.</p>
       ) : (
         <>
+          <div className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-3">
+            <div>
+              <div className="text-[14px] font-medium text-on-surface">Enlace corto — clase y replay</div>
+              <div className="text-[12px] text-on-surface-variant">
+                Pegá acá la URL real de la clase en vivo y del replay. Vermetricas genera un enlace propio por lead (para saber quién entró) que redirige a esto.
+              </div>
+            </div>
+            {([
+              { tipo: "clase" as const, label: "URL de la clase", valor: urlClase, set: setUrlClase },
+              { tipo: "replay" as const, label: "URL del replay", valor: urlReplay, set: setUrlReplay },
+            ]).map((campo) => (
+              <div key={campo.tipo} className="flex flex-col gap-1.5">
+                <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">{campo.label}</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={campo.valor}
+                    onChange={(e) => campo.set(e.target.value)}
+                    placeholder="https://..."
+                    className="flex-1 min-w-0 bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface focus:border-primary outline-none transition-colors duration-150"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => guardarUrlEnlace(campo.tipo, campo.valor)}
+                    disabled={guardandoTipo === campo.tipo}
+                    className="press flex items-center gap-1.5 text-[12px] px-3 py-2 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150 disabled:opacity-50"
+                  >
+                    {enlaceGuardado === campo.tipo ? (
+                      <>
+                        <Check size={12} /> Guardado
+                      </>
+                    ) : (
+                      <>
+                        <Save size={12} /> {guardandoTipo === campo.tipo ? "Guardando…" : "Guardar"}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ))}
+            {enlaceError && <p className="text-sm text-error">{enlaceError}</p>}
+            {isAdmin && (
+              <div className="flex items-center justify-between gap-3 rounded-md bg-background px-3 py-2 mt-1">
+                <span className="text-[13px] text-on-surface-variant shrink-0">Webhook para GHL (pedir enlace por lead)</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = `${typeof window !== "undefined" ? window.location.origin : ""}/api/hooks/integraciones/generar-enlace?cliente_id=${clienteId}`;
+                    navigator.clipboard?.writeText(url).then(() => {
+                      setCopiado("generar-enlace");
+                      setTimeout(() => setCopiado((actual) => (actual === "generar-enlace" ? null : actual)), 2000);
+                    });
+                  }}
+                  className="press flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150"
+                >
+                  {copiado === "generar-enlace" ? (
+                    <>
+                      <Check size={12} /> Copiado
+                    </>
+                  ) : (
+                    <>
+                      <Link2 size={12} /> Copiar
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+            {isAdmin && (
+              <p className="text-[11px] text-on-surface-faint">
+                Body: <code className="font-mono">{"{ telefono, correo, tipo: \"clase\" | \"replay\" }"}</code> — responde <code className="font-mono">{"{ url }"}</code> para insertar en el mensaje.
+              </p>
+            )}
+          </div>
+
           {puntosLoading ? (
             <p className="text-[13px] text-on-surface-faint">Cargando…</p>
           ) : puntos.length === 0 ? (
