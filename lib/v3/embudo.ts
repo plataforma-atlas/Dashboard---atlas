@@ -251,18 +251,23 @@ export const ENCUESTA_PREGUNTAS: { clave: string; pregunta: string; opciones: st
 
 export type EncuestaResultado = { clave: string; pregunta: string; total: number; opciones: { label: string; count: number }[] };
 
+// `extra.respuestas` llega tal cual lo mergeó el endpoint `embudo-encuesta` —
+// puede faltar, venir vacío `{}`, o no ser un objeto. Único punto de lectura
+// para no repetir el type-guard en cada lugar que necesita las respuestas.
+export function obtenerRespuestasLead(lead: V3Lead): Record<string, string> | null {
+  const r = lead.extra?.respuestas;
+  if (r && typeof r === "object" && Object.keys(r as object).length > 0) return r as Record<string, string>;
+  return null;
+}
+
 export function calcularEncuesta(leads: V3Lead[]): EncuestaResultado[] {
-  const respondieron = leads.filter((l) => {
-    const r = l.extra?.respuestas;
-    return r && typeof r === "object" && Object.keys(r as object).length > 0;
-  });
+  const respondieron = leads.map((l) => obtenerRespuestasLead(l)).filter((r): r is Record<string, string> => r !== null);
 
   return ENCUESTA_PREGUNTAS.map(({ clave, pregunta, opciones }) => {
     const conteo = new Map<string, number>(opciones.map((o) => [o, 0]));
     let total = 0;
-    for (const l of respondieron) {
-      const respuestas = l.extra?.respuestas as Record<string, string> | undefined;
-      const valor = respuestas?.[clave];
+    for (const respuestas of respondieron) {
+      const valor = respuestas[clave];
       if (valor && conteo.has(valor)) {
         conteo.set(valor, (conteo.get(valor) ?? 0) + 1);
         total += 1;
@@ -270,4 +275,16 @@ export function calcularEncuesta(leads: V3Lead[]): EncuestaResultado[] {
     }
     return { clave, pregunta, total, opciones: opciones.map((label) => ({ label, count: conteo.get(label) ?? 0 })) };
   });
+}
+
+// La mayoría de las encuestas de este tipo de embudo traen una pregunta sobre
+// disposición a invertir — se usa su opción de mayor monto como señal de
+// "lead con más poder adquisitivo" para destacarlo en Base de datos. Si algún
+// lanzamiento arma una encuesta sin esta pregunta, simplemente nadie queda
+// marcado (no se inventa una señal que la encuesta no tiene).
+export const PREGUNTA_VALOR_ALTO = { clave: "inversion", opcion: "Más de $1.000 USD si veo mucho valor" } as const;
+
+export function esLeadAltoValor(lead: V3Lead): boolean {
+  const respuestas = obtenerRespuestasLead(lead);
+  return respuestas?.[PREGUNTA_VALOR_ALTO.clave] === PREGUNTA_VALOR_ALTO.opcion;
 }

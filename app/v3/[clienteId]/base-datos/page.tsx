@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { Download, History } from "lucide-react";
+import { Download, History, ClipboardList } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import Pagination from "@/components/ui/pagination";
 import LeadHistorialPanel from "@/components/v3/LeadHistorialPanel";
+import LeadEncuestaPanel from "@/components/v3/LeadEncuestaPanel";
 import RecorridoCompraChart from "@/components/v3/RecorridoCompraChart";
+import { obtenerRespuestasLead, esLeadAltoValor } from "@/lib/v3/embudo";
 import { V3AnalisisRecorrido, V3Lead, V3LeadStatus } from "@/lib/v3/types";
 
 const TABS: { status: V3LeadStatus; label: string }[] = [
@@ -31,6 +33,7 @@ export default function V3BaseDatosPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [historialDe, setHistorialDe] = useState<{ correo: string | null; telefono: string | null } | null>(null);
+  const [encuestaDe, setEncuestaDe] = useState<V3Lead | null>(null);
   const [analisis, setAnalisis] = useState<V3AnalisisRecorrido | null>(null);
   const [analisisLoading, setAnalisisLoading] = useState(false);
   const [analisisError, setAnalisisError] = useState<string | null>(null);
@@ -245,11 +248,21 @@ export default function V3BaseDatosPage() {
                   const ventaSck = typeof lead.extra?.venta_sck === "string" ? lead.extra.venta_sck : "";
                   const fueraDeEmbudo = lead.extra?.fuera_de_embudo === true;
                   const sinMatch = lead.extra?.sin_match === true;
+                  const respuestas = obtenerRespuestasLead(lead);
+                  const altoValor = esLeadAltoValor(lead);
                   return (
                     <tr key={lead.id} className="border-b border-outline last:border-0">
                       <td className="px-4 py-2.5 text-on-surface">
                         <div className="flex items-center gap-2">
                           <span>{lead.nombre || "—"}</span>
+                          {altoValor && (
+                            <span
+                              title="Según la encuesta, respondió la opción de mayor disposición a invertir"
+                              className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-success text-success bg-success/10 shrink-0"
+                            >
+                              Alto valor
+                            </span>
+                          )}
                           {tab === "comprado" && fueraDeEmbudo && (
                             <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-outline text-on-surface-faint shrink-0">
                               Sin embudo
@@ -279,16 +292,28 @@ export default function V3BaseDatosPage() {
                       )}
                       <td className="px-4 py-2.5 text-on-surface-faint">{new Date(lead.created_at).toLocaleDateString("es-CO")}</td>
                       <td className="px-4 py-2.5">
-                        {(lead.correo || lead.telefono) && (
-                          <button
-                            type="button"
-                            onClick={() => setHistorialDe({ correo: lead.correo, telefono: lead.telefono })}
-                            title="Ver historial completo de este contacto"
-                            className="press text-on-surface-faint hover:text-primary"
-                          >
-                            <History size={15} />
-                          </button>
-                        )}
+                        <div className="flex items-center gap-2.5">
+                          {respuestas && (
+                            <button
+                              type="button"
+                              onClick={() => setEncuestaDe(lead)}
+                              title="Ver respuestas de la encuesta"
+                              className="press text-on-surface-faint hover:text-primary"
+                            >
+                              <ClipboardList size={15} />
+                            </button>
+                          )}
+                          {(lead.correo || lead.telefono) && (
+                            <button
+                              type="button"
+                              onClick={() => setHistorialDe({ correo: lead.correo, telefono: lead.telefono })}
+                              title="Ver historial completo de este contacto"
+                              className="press text-on-surface-faint hover:text-primary"
+                            >
+                              <History size={15} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -314,6 +339,14 @@ export default function V3BaseDatosPage() {
           correo={historialDe.correo}
           telefono={historialDe.telefono}
           onClose={() => setHistorialDe(null)}
+        />
+      )}
+
+      {encuestaDe && obtenerRespuestasLead(encuestaDe) && (
+        <LeadEncuestaPanel
+          nombre={encuestaDe.nombre}
+          respuestas={obtenerRespuestasLead(encuestaDe)!}
+          onClose={() => setEncuestaDe(null)}
         />
       )}
     </div>
