@@ -22,6 +22,20 @@ function calcularEventoHotmart(leads: V3Lead[], campo: string): EventoHotmart {
   };
 }
 
+// "Cuotas pendientes": boleto/cuota vencida (evento PURCHASE_DELAYED o
+// purchase.status OVERDUE de Hotmart) — mismo criterio de "se excluye si ya
+// compró" que carrito/tarjeta, más la suma del monto todavía sin cobrar de
+// los que siguen pendientes (no se suma el de los que ya se recuperaron).
+export type PagoPendiente = EventoHotmart & { montoPendiente: number };
+
+function calcularPagoPendiente(leads: V3Lead[]): PagoPendiente {
+  const base = calcularEventoHotmart(leads, "cuota_pendiente_at");
+  const montoPendiente = leads
+    .filter((l) => tieneExtra("cuota_pendiente_at")(l) && l.status !== "comprado")
+    .reduce((acc, l) => acc + (typeof l.extra?.monto_pendiente === "number" ? l.extra.monto_pendiente : 0), 0);
+  return { ...base, montoPendiente };
+}
+
 // Las filas `sin_match: true` son pings (hoy solo de "Entró al grupo") que no
 // matchearon ningún lead por teléfono/correo — se guardan igual (ver
 // Integraciones — Eventos de Embudo) para no perder el dato, pero nunca deben
@@ -53,6 +67,18 @@ export function calcularEmbudo(leads: V3Lead[]) {
   // extra.cuotas = purchase.payment.installments_number de Hotmart — 1 cuota
   // es pago único, así que solo cuenta como "pago a cuotas" si es más de 1.
   const pagosACuotas = leads.filter((l) => l.status === "comprado" && typeof l.extra?.cuotas === "number" && l.extra.cuotas > 1).length;
+  const cuotaPendiente = calcularPagoPendiente(leads);
+
+  // Facturación de pago único vs. facturación que entró en cuotas — mismas
+  // ventas que ya cuenta `compraron`, solo partidas por `extra.cuotas`.
+  const ventasComprado = reales.filter((l) => l.status === "comprado");
+  const montoDe = (l: V3Lead) => (typeof l.extra?.monto === "number" ? l.extra.monto : 0);
+  const facturacionPagoUnico = ventasComprado
+    .filter((l) => !(typeof l.extra?.cuotas === "number" && l.extra.cuotas > 1))
+    .reduce((acc, l) => acc + montoDe(l), 0);
+  const facturacionEnCuotas = ventasComprado
+    .filter((l) => typeof l.extra?.cuotas === "number" && l.extra.cuotas > 1)
+    .reduce((acc, l) => acc + montoDe(l), 0);
 
   const porFuente = new Map<string, number>();
   for (const l of reales) {
@@ -63,5 +89,15 @@ export function calcularEmbudo(leads: V3Lead[]) {
     .map(([label, value]) => ({ label, value }))
     .sort((a, b) => b.value - a.value);
 
-  return { etapas, compraron, fuentes, carritoAbandonado, tarjetaRechazada, pagosACuotas };
+  return {
+    etapas,
+    compraron,
+    fuentes,
+    carritoAbandonado,
+    tarjetaRechazada,
+    pagosACuotas,
+    cuotaPendiente,
+    facturacionPagoUnico,
+    facturacionEnCuotas,
+  };
 }

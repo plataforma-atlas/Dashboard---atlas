@@ -6,10 +6,13 @@ import {
   Banknote,
   BarChart3,
   CalendarClock,
+  CircleDollarSign,
+  Clock,
   CreditCard,
   DollarSign,
   Eye,
   Filter,
+  Layers,
   LifeBuoy,
   LogIn,
   MousePointerClick,
@@ -46,6 +49,7 @@ import Tabs from "@/components/v3/Tabs";
 import DailyDetailTable from "@/components/v3/DailyDetailTable";
 import HorizontalBarPanel from "@/components/v3/HorizontalBarPanel";
 import EmbudoFunnelChart from "@/components/v3/EmbudoFunnelChart";
+import TendenciaHotmartChart from "@/components/v3/TendenciaHotmartChart";
 import { formatMoneyEnMoneda } from "@/lib/v3/format";
 import { calcularEmbudo } from "@/lib/v3/embudo";
 
@@ -314,6 +318,33 @@ export default function V3ClientePage() {
 
   const embudo = useMemo(() => calcularEmbudo(leads), [leads]);
 
+  // Tendencia diaria de Ventas/Carrito abandonado/Tarjetas rechazadas, mismo
+  // recorte por `rangoPeriodo` que ya usa `desempenoPorDia` — acá se cuentan
+  // ocurrencias (no plata), agrupando por la fecha del evento de cada una
+  // (created_at para ventas, el timestamp propio del evento para las otras
+  // dos, ya que ese es el día real en que pasó cada cosa).
+  const tendenciaHotmart = useMemo(() => {
+    const { fecha_inicio, fecha_fin } = rangoPeriodo;
+    const dentroDelRango = (fecha: string) => (!fecha_inicio || fecha >= fecha_inicio) && (!fecha_fin || fecha <= fecha_fin);
+    const porFecha = new Map<string, { ventas: number; carritoAbandonado: number; tarjetaRechazada: number }>();
+    const sumar = (fechaIso: string | undefined, campo: "ventas" | "carritoAbandonado" | "tarjetaRechazada") => {
+      if (!fechaIso) return;
+      const fecha = fechaIso.slice(0, 10);
+      if (!dentroDelRango(fecha)) return;
+      const actual = porFecha.get(fecha) ?? { ventas: 0, carritoAbandonado: 0, tarjetaRechazada: 0 };
+      actual[campo] += 1;
+      porFecha.set(fecha, actual);
+    };
+    for (const l of leads) {
+      if (l.status === "comprado") sumar(l.created_at, "ventas");
+      if (typeof l.extra?.carrito_abandonado_at === "string") sumar(l.extra.carrito_abandonado_at, "carritoAbandonado");
+      if (typeof l.extra?.tarjeta_rechazada_at === "string") sumar(l.extra.tarjeta_rechazada_at, "tarjetaRechazada");
+    }
+    return Array.from(porFecha.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([fecha, v]) => ({ fecha, ...v }));
+  }, [leads, rangoPeriodo]);
+
   const selectedCampaign = useMemo(() => {
     const preferred = campaigns.find((c) => c.status === "active") ?? campaigns[0];
     return preferred ?? null;
@@ -533,6 +564,42 @@ export default function V3ClientePage() {
                     accent="primary"
                   />
                   <KpiCard icon={CalendarClock} label="Pagos a cuotas" value={formatNumber(embudo.pagosACuotas)} accent="primary" />
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
+                  <KpiCard
+                    icon={DollarSign}
+                    label="Facturación pago único"
+                    value={formatMoneyEnMoneda(embudo.facturacionPagoUnico, m.moneda)}
+                    accent="success"
+                  />
+                  <KpiCard
+                    icon={Layers}
+                    label="Facturación en cuotas"
+                    value={formatMoneyEnMoneda(embudo.facturacionEnCuotas, m.moneda)}
+                    accent="success"
+                  />
+                  <KpiCard
+                    icon={Clock}
+                    label="Cuotas pendientes"
+                    value={formatNumber(embudo.cuotaPendiente.count)}
+                    sub={subRecuperacion(embudo.cuotaPendiente)}
+                    accent="primary"
+                  />
+                  <KpiCard
+                    icon={CircleDollarSign}
+                    label="Dinero pendiente"
+                    value={formatMoneyEnMoneda(embudo.cuotaPendiente.montoPendiente, m.moneda)}
+                    sub="Boletos/cuotas vencidas sin cobrar"
+                    accent="primary"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3 mt-2">
+                  <h3 className="text-sm font-semibold text-on-surface">
+                    Tendencia de Hotmart <span className="text-on-surface-faint font-normal">· ventas, carrito abandonado y tarjetas rechazadas por día</span>
+                  </h3>
+                  <TendenciaHotmartChart rows={tendenciaHotmart} />
                 </div>
               </>
             );
