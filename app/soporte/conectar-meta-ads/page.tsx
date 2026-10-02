@@ -134,22 +134,18 @@ export default function ConectarMetaAdsGuiaPage() {
         <SeccionGuia
           numero={3}
           icono={UserCog}
-          titulo="Darle al Usuario del Sistema un rol en la app"
-          descripcion="Esto se hace en la pantalla de la app (la misma de la Parte 1), no en Business Settings — por eso es un paso aparte."
+          titulo="Darle al Usuario del Sistema acceso a la app"
+          descripcion="Se hace en Business Settings, con el mismo botón que usaste para la cuenta publicitaria — no en el panel de desarrollador (ese &quot;Agregar personas&quot; es para cuentas de Facebook de personas, no para Usuarios del Sistema)."
           pasos={[
+            { texto: <>En <Codigo>business.facebook.com/settings</Codigo> → <Boton>Usuarios del sistema</Boton>, seleccioná el que creaste (ej. &quot;Vermetricas API&quot;).</> },
+            { texto: <>Hacé clic en <Boton>Agregar activos</Boton> (el mismo botón que usaste para la cuenta publicitaria).</> },
+            { texto: <>En &quot;Seleccionar tipo de activo&quot;, elegí <Boton>Apps</Boton>.</> },
+            { texto: <>Buscá y seleccioná tu app (&quot;Conexión Vermetricas&quot;).</> },
             {
               texto: (
                 <>
-                  Volvé a <Codigo>developers.facebook.com</Codigo> → tu app (&quot;Conexión Vermetricas&quot;) — vas a terminar en el mismo Panel donde quedaste al crearla en la Parte 1.
-                </>
-              ),
-            },
-            { texto: <>En el menú de la izquierda, abrí <Boton>Roles de la app</Boton> → <Boton>Roles</Boton>.</> },
-            {
-              texto: (
-                <>
-                  Agregá ahí al Usuario del Sistema que creaste en el paso anterior (ej. &quot;Vermetricas API&quot;) con rol <Boton>Administrador</Boton>. Esto es distinto de los activos
-                  (cuentas publicitarias) que ya le diste en Business Settings — sin este rol en la app, al generar el token te va a decir &quot;No hay permisos disponibles&quot;.
+                  A la derecha, en &quot;Acceso total&quot;, activá <Boton>Administrar app</Boton> y hacé clic en <Boton>Asignar activos</Boton>. Sin este paso, al generar el token te va a
+                  decir &quot;No hay permisos disponibles&quot;.
                 </>
               ),
             },
@@ -176,7 +172,15 @@ export default function ConectarMetaAdsGuiaPage() {
             {
               texto: (
                 <>
-                  Te va a aparecer un texto largo que empieza con <Codigo>EAAG...</Codigo> —{" "}
+                  Si es la primera vez que esa cuenta genera un token, Meta puede pedir <Boton>Verificar cuenta</Boton> antes de entregarlo: te pide un número de teléfono, te manda un
+                  código por SMS, lo ingresás y listo — volvé a hacer clic en <Boton>Generar token</Boton> si hace falta.
+                </>
+              ),
+            },
+            {
+              texto: (
+                <>
+                  Te va a aparecer un texto largo que empieza con <Codigo>EAA...</Codigo> —{" "}
                   <span className="font-medium text-on-surface">copialo y guardalo en un lugar seguro ya mismo</span> (un
                   bloc de notas, por ejemplo). Meta solo lo muestra esta vez; si cerrás la ventana sin copiarlo, hay que
                   generar uno nuevo.
@@ -213,7 +217,7 @@ export default function ConectarMetaAdsGuiaPage() {
             { texto: <>En la tarjeta &quot;Meta Ads&quot;, hacé clic en <Boton>Conectar</Boton>.</> },
             { texto: "Pegá el ID de la cuenta en el primer campo, y ponele un nombre a elección en el segundo (ej. \"Cuenta principal\")." },
             { texto: <>Si tenés más de una cuenta publicitaria, hacé clic en <Boton>Agregar otra cuenta</Boton> y repetí el paso anterior para cada una.</> },
-            { texto: <>Pegá el token (el que empieza con <Codigo>EAAG...</Codigo>) en el campo &quot;Token de acceso&quot;.</> },
+            { texto: <>Pegá el token (el que empieza con <Codigo>EAA...</Codigo>) en el campo &quot;Token de acceso&quot;.</> },
             { texto: <>Hacé clic en <Boton>Guardar conexión</Boton>.</> },
           ]}
         />
