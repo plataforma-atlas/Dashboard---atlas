@@ -51,8 +51,11 @@ import HorizontalBarPanel from "@/components/v3/HorizontalBarPanel";
 import EmbudoFunnelChart from "@/components/v3/EmbudoFunnelChart";
 import TendenciaHotmartChart from "@/components/v3/TendenciaHotmartChart";
 import PaginasTesteoTable from "@/components/v3/PaginasTesteoTable";
+import LeadsWorldMap from "@/components/v3/LeadsWorldMap";
+import GeoRankingTable from "@/components/v3/GeoRankingTable";
 import { formatMoneyEnMoneda } from "@/lib/v3/format";
-import { calcularEmbudo, calcularPaginasTesteo } from "@/lib/v3/embudo";
+import { calcularEmbudo, calcularGeografia, calcularPaginasTesteo } from "@/lib/v3/embudo";
+import { nombrePaisEs } from "@/components/v3/LeadsWorldMap";
 
 type Session = { authenticated: boolean; role?: "admin" | "client"; clientes?: string[] };
 type FunnelResponse = { source: "n8n" | "error"; rows: FunnelRow[]; message?: string };
@@ -389,6 +392,8 @@ export default function V3ClientePage() {
     [leads, puntos, visitas, rangoPeriodo]
   );
 
+  const geografia = useMemo(() => calcularGeografia(leads), [leads]);
+
   const selectedCampaign = useMemo(() => {
     const preferred = campaigns.find((c) => c.status === "active") ?? campaigns[0];
     return preferred ?? null;
@@ -650,6 +655,27 @@ export default function V3ClientePage() {
                     Páginas de testeo <span className="text-on-surface-faint font-normal">· comparación de registrados/conversión por landing (visitas vía el pixel propio, se copia desde Endpoints)</span>
                   </h3>
                   <PaginasTesteoTable rows={paginasTesteo} />
+                </div>
+
+                <div className="grid lg:grid-cols-[1.6fr_1fr_1fr] gap-4 mt-2">
+                  <div className="flex flex-col gap-3 rounded-xl border border-outline bg-surface p-4">
+                    <h3 className="text-[11px] uppercase tracking-wide text-on-surface-variant font-medium">Leads por país</h3>
+                    <LeadsWorldMap porPais={geografia.porPais} />
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <h3 className="text-sm font-semibold text-on-surface">País</h3>
+                    <GeoRankingTable
+                      columnaLabel="País"
+                      rows={geografia.porPais.map((p) => ({ label: nombrePaisEs(p.pais), count: p.count }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <h3 className="text-sm font-semibold text-on-surface">Ciudad</h3>
+                    <GeoRankingTable
+                      columnaLabel="Ciudad"
+                      rows={geografia.porCiudad.map((c) => ({ label: c.ciudad, sublabel: nombrePaisEs(c.pais), count: c.count }))}
+                    />
+                  </div>
                 </div>
               </>
             );

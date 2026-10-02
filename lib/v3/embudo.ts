@@ -159,3 +159,33 @@ export function calcularPaginasTesteo(
     return { id: punto.id, nombre: punto.nombre, visitas: visitasCount, registrados, conversion, encuesta, grupo };
   });
 }
+
+// Geolocalizados por IP al captar el lead (ver Integraciones — Captación
+// Lead) — `pais` se guarda en inglés (mismo formato que devuelve ip-api.com,
+// para que calce sin traducir contra el nombre de país del mapa); la
+// traducción a español para mostrar en pantalla vive en el componente, no
+// acá, porque esto es solo el conteo.
+export type LeadPorPais = { pais: string; count: number };
+export type LeadPorCiudad = { ciudad: string; pais: string; count: number };
+
+export function calcularGeografia(leads: V3Lead[]): { porPais: LeadPorPais[]; porCiudad: LeadPorCiudad[] } {
+  const reales = leads.filter((l) => l.extra?.sin_match !== true);
+
+  const porPaisMapa = new Map<string, number>();
+  const porCiudadMapa = new Map<string, { ciudad: string; pais: string; count: number }>();
+
+  for (const l of reales) {
+    if (l.pais) porPaisMapa.set(l.pais, (porPaisMapa.get(l.pais) ?? 0) + 1);
+    if (l.ciudad) {
+      const clave = `${l.ciudad}__${l.pais ?? ""}`;
+      const actual = porCiudadMapa.get(clave) ?? { ciudad: l.ciudad, pais: l.pais ?? "", count: 0 };
+      actual.count += 1;
+      porCiudadMapa.set(clave, actual);
+    }
+  }
+
+  const porPais = [...porPaisMapa.entries()].map(([pais, count]) => ({ pais, count })).sort((a, b) => b.count - a.count);
+  const porCiudad = [...porCiudadMapa.values()].sort((a, b) => b.count - a.count);
+
+  return { porPais, porCiudad };
+}

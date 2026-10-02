@@ -37,9 +37,16 @@ async function proxy(req: Request, path: string[]) {
 
   try {
     const hasBody = req.method !== "GET" && req.method !== "HEAD";
+    // Reenvía la IP real de quien llamó (Vercel ya la pone en x-forwarded-for
+    // en la request entrante) — sin esto, n8n solo vería la IP de este mismo
+    // proxy, nunca la del visitante real. Usado para geolocalizar leads (ver
+    // "Integraciones — Captación Lead") — nunca bloquea nada si falta.
+    const forwardedFor = req.headers.get("x-forwarded-for");
+    const headers: Record<string, string> = { "Content-Type": req.headers.get("content-type") || "application/json" };
+    if (forwardedFor) headers["x-forwarded-for"] = forwardedFor;
     const res = await fetch(target.toString(), {
       method: req.method,
-      headers: { "Content-Type": req.headers.get("content-type") || "application/json" },
+      headers,
       body: hasBody ? await req.text() : undefined,
       cache: "no-store",
     });

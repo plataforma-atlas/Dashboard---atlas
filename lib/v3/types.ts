@@ -61,6 +61,11 @@ export type V3Lead = {
   pagina_origen: string | null;
   dashboard_id: number | null;
   punto_captacion_id: number | null;
+  // Geolocalizados por IP al momento de la captación (ver Integraciones —
+  // Captación Lead) — null si la geolocalización falló o el lead es viejo,
+  // de antes de que existiera este campo.
+  pais: string | null;
+  ciudad: string | null;
   status: V3LeadStatus;
   extra: Record<string, unknown>;
   created_at: string;
