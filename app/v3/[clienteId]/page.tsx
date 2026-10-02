@@ -10,6 +10,7 @@ import {
   DollarSign,
   Eye,
   Filter,
+  LifeBuoy,
   LogIn,
   MousePointerClick,
   Percent,
@@ -506,10 +507,11 @@ export default function V3ClientePage() {
             const PENDIENTE = "—";
             return (
               <>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
                   <KpiCard icon={LogIn} label="Ingresaron a los grupos" value={formatNumber(ingresaronGrupos)} sub={subGrupos} accent="primary" />
                   <KpiCard icon={Presentation} label="Vieron la clase" value={PENDIENTE} sub="Falta trackear asistencia (pendiente)" accent="primary" />
                   <KpiCard icon={PlayCircle} label="Vio replay" value={PENDIENTE} sub="Falta trackear asistencia (pendiente)" accent="primary" />
+                  <KpiCard icon={LifeBuoy} label="Contactaron a soporte" value={PENDIENTE} sub="Falta endpoint de GHL (pendiente)" accent="primary" />
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
