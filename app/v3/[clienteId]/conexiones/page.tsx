@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Check, Link2, Plus, X } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
+import Status from "@/components/ui/status";
 
 type EstadoConexion = { integration_type: string; status: string; updated_at: string; tiene_credencial: boolean };
 type CuentaForm = { id: string; label: string };
@@ -306,54 +307,32 @@ export default function V3ConexionesPage() {
           <span className="text-[14px] font-medium text-on-surface">Go High Level</span>
           <span className="text-[13px] text-on-surface-variant">Tu CRM — se usa para funciones futuras. Vermetricas no envía ni modifica datos ahí automáticamente.</span>
         </div>
-        {ghlFormAbierto ? null : ghlConectado ? (
-          <div className="flex items-center flex-wrap gap-2 shrink-0">
-            <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline-success bg-success-container text-success">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
-              </span>
-              Conectado
-            </span>
-            {isAdmin && (
+        <div className="flex items-center flex-wrap gap-2 shrink-0">
+          <Status variant={ghlGuardando ? "pending" : ghlConectado ? "success" : "neutral"} />
+          {!ghlFormAbierto && (
+            <>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setSoporteWebhookAbierto((v) => !v)}
+                  className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+                >
+                  {soporteWebhookAbierto ? "Ocultar webhook de soporte" : "Ver webhook de soporte"}
+                </button>
+              )}
               <button
-                type="button"
-                onClick={() => setSoporteWebhookAbierto((v) => !v)}
-                className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+                onClick={() => setGhlFormAbierto(true)}
+                className={
+                  ghlConectado
+                    ? "press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+                    : "press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
+                }
               >
-                {soporteWebhookAbierto ? "Ocultar webhook de soporte" : "Ver webhook de soporte"}
+                {ghlConectado ? "Reconectar" : "Conectar"}
               </button>
-            )}
-            <button
-              onClick={() => setGhlFormAbierto(true)}
-              className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
-            >
-              Reconectar
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center flex-wrap gap-2 shrink-0">
-            <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-faint">
-              <span className="h-2 w-2 rounded-full bg-on-surface-faint" />
-              No conectado
-            </span>
-            {isAdmin && (
-              <button
-                type="button"
-                onClick={() => setSoporteWebhookAbierto((v) => !v)}
-                className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
-              >
-                {soporteWebhookAbierto ? "Ocultar webhook de soporte" : "Ver webhook de soporte"}
-              </button>
-            )}
-            <button
-              onClick={() => setGhlFormAbierto(true)}
-              className="press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
-            >
-              Conectar
-            </button>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       {soporteWebhookAbierto && !ghlFormAbierto && (
@@ -449,44 +428,31 @@ export default function V3ConexionesPage() {
           <span className="text-[14px] font-medium text-on-surface">Meta Ads</span>
           <span className="text-[13px] text-on-surface-variant">Para traer el gasto, impresiones y clics de tus campañas y anuncios.</span>
         </div>
-        {formAbierto ? null : metaConectado ? (
-          <div className="flex items-center flex-wrap gap-2 shrink-0">
-            <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline-success bg-success-container text-success">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
-              </span>
-              Conectado
-            </span>
-            <button
-              onClick={() => setFormAbierto(true)}
-              className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
-            >
-              Reconectar
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center flex-wrap gap-2 shrink-0">
-            <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-faint">
-              <span className="h-2 w-2 rounded-full bg-on-surface-faint" />
-              No conectado
-            </span>
-            {META_OAUTH_HABILITADO && (
-              <a
-                href={`/api/oauth/meta/start?cliente_id=${encodeURIComponent(clienteId)}`}
-                className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+        <div className="flex items-center flex-wrap gap-2 shrink-0">
+          <Status variant={guardando ? "pending" : metaConectado ? "success" : "neutral"} />
+          {!formAbierto && (
+            <>
+              {!metaConectado && META_OAUTH_HABILITADO && (
+                <a
+                  href={`/api/oauth/meta/start?cliente_id=${encodeURIComponent(clienteId)}`}
+                  className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+                >
+                  Continuar con Facebook
+                </a>
+              )}
+              <button
+                onClick={() => setFormAbierto(true)}
+                className={
+                  metaConectado
+                    ? "press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+                    : "press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
+                }
               >
-                Continuar con Facebook
-              </a>
-            )}
-            <button
-              onClick={() => setFormAbierto(true)}
-              className="press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
-            >
-              Conectar
-            </button>
-          </div>
-        )}
+                {metaConectado ? "Reconectar" : "Conectar"}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {oauthError && (
@@ -632,43 +598,32 @@ export default function V3ConexionesPage() {
           <span className="text-[14px] font-medium text-on-surface">Hotmart</span>
           <span className="text-[13px] text-on-surface-variant">De acá llegan tus ventas — se reflejan solas en Base de datos.</span>
         </div>
-        {hotmartFormAbierto ? null : hotmartConectado ? (
-          <div className="flex items-center flex-wrap gap-2 shrink-0">
-            <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline-success bg-success-container text-success">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
-              </span>
-              Conectado
-            </span>
-            <button
-              type="button"
-              onClick={() => setHotmartWebhookAbierto((v) => !v)}
-              className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
-            >
-              {hotmartWebhookAbierto ? "Ocultar webhook" : "Ver webhook"}
-            </button>
-            <button
-              onClick={() => setHotmartFormAbierto(true)}
-              className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
-            >
-              Reconectar
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center flex-wrap gap-2 shrink-0">
-            <span className="flex items-center gap-2 text-[13px] px-3 py-1.5 rounded-full border border-outline text-on-surface-faint">
-              <span className="h-2 w-2 rounded-full bg-on-surface-faint" />
-              No conectado
-            </span>
-            <button
-              onClick={() => setHotmartFormAbierto(true)}
-              className="press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
-            >
-              Conectar
-            </button>
-          </div>
-        )}
+        <div className="flex items-center flex-wrap gap-2 shrink-0">
+          <Status variant={hotmartGuardando ? "pending" : hotmartConectado ? "success" : "neutral"} />
+          {!hotmartFormAbierto && (
+            <>
+              {hotmartConectado && (
+                <button
+                  type="button"
+                  onClick={() => setHotmartWebhookAbierto((v) => !v)}
+                  className="press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+                >
+                  {hotmartWebhookAbierto ? "Ocultar webhook" : "Ver webhook"}
+                </button>
+              )}
+              <button
+                onClick={() => setHotmartFormAbierto(true)}
+                className={
+                  hotmartConectado
+                    ? "press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+                    : "press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
+                }
+              >
+                {hotmartConectado ? "Reconectar" : "Conectar"}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {hotmartConectado && hotmartWebhookAbierto && !hotmartFormAbierto && (
