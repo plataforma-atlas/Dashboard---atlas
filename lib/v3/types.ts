@@ -20,17 +20,12 @@ export type V3Dashboard = {
 // de captación, un set fijo de endpoints hermanos para el resto del embudo —
 // todos enmascarados vía /api/hooks (nunca se ve n8n), autenticados por su
 // propio `token`, sin sesión.
-export type V3EndpointTipo = "encuesta" | "gracias" | "grupos" | "mensaje_recibido";
+export type V3EndpointTipo = "encuesta" | "gracias" | "grupos" | "mensaje_recibido" | "visita";
 
 export type V3PuntoEndpoint = {
   tipo: V3EndpointTipo;
   token: string;
 };
-
-// Nivel de la entidad de Meta a la que un punto de captación ("página de
-// testeo") puede vincularse, para traer sus "Clics en el enlace" como proxy
-// de visitas — ver lib/v3/embudo.ts, calcularPaginasTesteo().
-export type V3MetaNivel = "campana" | "conjunto" | "anuncio";
 
 export type V3CaptacionPunto = {
   id: number;
@@ -38,9 +33,16 @@ export type V3CaptacionPunto = {
   etiqueta_ghl: string;
   token_captacion: string;
   endpoints: V3PuntoEndpoint[];
-  meta_nivel: V3MetaNivel | null;
-  meta_entity_id: string | null;
-  meta_entity_nombre: string | null;
+  created_at: string;
+};
+
+// Una visita real a una página de testeo (hit del pixel propio — ver
+// app/api/hooks y el endpoint "visita" en V3PuntoEndpoint). No identifica a
+// la persona (se registra antes de cualquier dato de contacto), solo cuenta
+// la carga de la página — ver lib/v3/embudo.ts, calcularPaginasTesteo().
+export type V3CaptacionVisita = {
+  id: number;
+  punto_captacion_id: number;
   created_at: string;
 };
 

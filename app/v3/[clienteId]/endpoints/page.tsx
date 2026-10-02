@@ -2,16 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { Check, Link2, Plus, Save, Unlink } from "lucide-react";
+import { Check, Link2, Plus, Save } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
-import { V3CaptacionPunto, V3Dashboard, V3EndpointTipo, V3MetaNivel } from "@/lib/v3/types";
-import { MetaAdsResponse } from "@/lib/meta-ads/types";
-
-const NIVELES_META: { value: V3MetaNivel; label: string }[] = [
-  { value: "anuncio", label: "Anuncio" },
-  { value: "conjunto", label: "Conjunto de anuncios" },
-  { value: "campana", label: "Campaña" },
-];
+import { V3CaptacionPunto, V3Dashboard, V3EndpointTipo } from "@/lib/v3/types";
 
 const ETIQUETAS_ENDPOINT: Record<"captacion" | V3EndpointTipo, string> = {
   captacion: "Captación",
@@ -19,6 +12,7 @@ const ETIQUETAS_ENDPOINT: Record<"captacion" | V3EndpointTipo, string> = {
   gracias: "Página de gracias",
   grupos: "Ingreso a grupos (SendFlow)",
   mensaje_recibido: "Mensaje 1a1 recibido",
+  visita: "Visitas (pixel para \"Páginas de testeo\")",
 };
 
 const PATH_ENDPOINT: Record<"captacion" | V3EndpointTipo, string> = {
@@ -27,11 +21,21 @@ const PATH_ENDPOINT: Record<"captacion" | V3EndpointTipo, string> = {
   gracias: "integraciones/embudo-gracias",
   grupos: "integraciones/embudo-grupos",
   mensaje_recibido: "integraciones/embudo-mensaje-recibido",
+  visita: "integraciones/captacion-visita",
 };
 
 function construirEnlace(path: string, token: string) {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   return `${origin}/api/hooks/${path}?token=${token}`;
+}
+
+// "Visita" no se pega como URL (va en un form o workflow) sino como un pixel
+// de imagen oculto en la página — por eso copia un snippet de HTML listo para
+// pegar en vez de la URL pelada, a diferencia de los demás endpoints.
+function construirContenidoParaCopiar(tipo: "captacion" | V3EndpointTipo, token: string) {
+  const url = construirEnlace(PATH_ENDPOINT[tipo], token);
+  if (tipo === "visita") return `<img src="${url}" width="1" height="1" style="display:none" alt="" />`;
+  return url;
 }
 
 export default function V3EndpointsPage() {
@@ -57,16 +61,6 @@ export default function V3EndpointsPage() {
   const [guardandoTipo, setGuardandoTipo] = useState<"clase" | "replay" | null>(null);
   const [enlaceError, setEnlaceError] = useState<string | null>(null);
   const [enlaceGuardado, setEnlaceGuardado] = useState<"clase" | "replay" | null>(null);
-
-  // "Páginas de testeo" — vincular cada punto de captación con un anuncio/
-  // conjunto/campaña real de Meta, para que el Home pueda mostrar sus visitas
-  // ("Clics en el enlace") y calcular % de conversión. Se reusa el mismo pull
-  // que ya alimenta Administrador de Anuncios.
-  const [metaData, setMetaData] = useState<MetaAdsResponse | null>(null);
-  const [nivelEdit, setNivelEdit] = useState<Record<number, V3MetaNivel | "">>({});
-  const [entityEdit, setEntityEdit] = useState<Record<number, string>>({});
-  const [vinculandoPunto, setVinculandoPunto] = useState<number | null>(null);
-  const [vinculoError, setVinculoError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -141,66 +135,6 @@ export default function V3EndpointsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dashboardActual?.id]);
 
-  useEffect(() => {
-    if (!dashboardActual) return;
-    const qs = new URLSearchParams({ cliente_id: clienteId });
-    if (dashboardActual.nomenclatura_filtro) qs.set("nomenclatura", dashboardActual.nomenclatura_filtro);
-    fetch(`/api/anuncios/meta?${qs.toString()}`, { cache: "no-store" })
-      .then((res) => res.json())
-      .then((body: MetaAdsResponse) => setMetaData(body))
-      .catch(() => setMetaData(null));
-  }, [dashboardActual?.id, dashboardActual?.nomenclatura_filtro, clienteId]);
-
-  function listaParaNivel(nivel: V3MetaNivel): { id: string; nombre: string; linkClicks: number }[] {
-    if (!metaData || !metaData.conectado) return [];
-    if (nivel === "campana") return metaData.campanas.map((c) => ({ id: c.campaign_id, nombre: c.campaign_name, linkClicks: c.link_clicks }));
-    if (nivel === "conjunto") return metaData.conjuntos.map((c) => ({ id: c.adset_id, nombre: c.adset_name, linkClicks: c.link_clicks }));
-    return metaData.anuncios.map((a) => ({ id: a.ad_id, nombre: a.ad_name, linkClicks: a.link_clicks }));
-  }
-
-  async function guardarVinculo(punto: V3CaptacionPunto, nivel: V3MetaNivel | "", entityId: string) {
-    if (!dashboardActual) return;
-    const entidad = nivel ? listaParaNivel(nivel).find((e) => e.id === entityId) : null;
-    if (nivel && !entidad) {
-      setVinculoError("Elegí un anuncio/conjunto/campaña de la lista.");
-      return;
-    }
-    setVinculandoPunto(punto.id);
-    setVinculoError(null);
-    try {
-      const res = await fetch("/api/v3/captacion-puntos", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cliente_id: clienteId,
-          dashboard_id: dashboardActual.id,
-          punto_id: punto.id,
-          meta_nivel: nivel || "",
-          meta_entity_id: nivel ? entityId : "",
-          meta_entity_nombre: nivel ? entidad?.nombre ?? "" : "",
-        }),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setVinculoError(body.error || "No se pudo actualizar el vínculo con Meta");
-        return;
-      }
-      setPuntos((actuales) =>
-        actuales.map((p) =>
-          p.id === punto.id
-            ? { ...p, meta_nivel: body.meta_nivel ?? null, meta_entity_id: body.meta_entity_id ?? null, meta_entity_nombre: body.meta_entity_nombre ?? null }
-            : p
-        )
-      );
-      setNivelEdit((actual) => ({ ...actual, [punto.id]: "" }));
-      setEntityEdit((actual) => ({ ...actual, [punto.id]: "" }));
-    } catch {
-      setVinculoError("No se pudo conectar al servidor");
-    } finally {
-      setVinculandoPunto(null);
-    }
-  }
-
   async function crearPunto(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
@@ -235,10 +169,10 @@ export default function V3EndpointsPage() {
     }
   }
 
-  function copiar(path: string, token: string) {
-    const url = construirEnlace(path, token);
+  function copiar(tipo: "captacion" | V3EndpointTipo, token: string) {
+    const contenido = construirContenidoParaCopiar(tipo, token);
     navigator.clipboard
-      ?.writeText(url)
+      ?.writeText(contenido)
       .then(() => {
         setCopiado(token);
         setTimeout(() => setCopiado((actual) => (actual === token ? null : actual)), 2000);
@@ -361,10 +295,6 @@ export default function V3EndpointsPage() {
                   { tipo: "captacion", token: punto.token_captacion },
                   ...punto.endpoints.filter((e) => e.tipo !== "gracias" && (isAdmin || e.tipo !== "mensaje_recibido")),
                 ];
-                const nivelActual = (nivelEdit[punto.id] ?? punto.meta_nivel ?? "") as V3MetaNivel | "";
-                const entityActual = entityEdit[punto.id] ?? punto.meta_entity_id ?? "";
-                const opcionesNivel = nivelActual ? listaParaNivel(nivelActual) : [];
-                const entidadVinculada = punto.meta_nivel ? listaParaNivel(punto.meta_nivel).find((e) => e.id === punto.meta_entity_id) : null;
                 return (
                   <div key={punto.id} className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-3">
                     <div>
@@ -373,95 +303,40 @@ export default function V3EndpointsPage() {
                     </div>
                     <div className="flex flex-col gap-1.5">
                       {filas.map((fila) => (
-                        <div key={fila.tipo} className="flex items-center justify-between gap-3 rounded-md bg-background px-3 py-2">
-                          <span className="text-[13px] text-on-surface-variant shrink-0">{ETIQUETAS_ENDPOINT[fila.tipo]}</span>
-                          <button
-                            type="button"
-                            onClick={() => copiar(PATH_ENDPOINT[fila.tipo], fila.token)}
-                            className="press flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150"
-                          >
-                            {copiado === fila.token ? (
-                              <>
-                                <Check size={12} /> Copiado
-                              </>
-                            ) : (
-                              <>
-                                <Link2 size={12} /> Copiar
-                              </>
-                            )}
-                          </button>
+                        <div key={fila.tipo} className="flex flex-col gap-1">
+                          <div className="flex items-center justify-between gap-3 rounded-md bg-background px-3 py-2">
+                            <span className="text-[13px] text-on-surface-variant shrink-0">{ETIQUETAS_ENDPOINT[fila.tipo]}</span>
+                            <button
+                              type="button"
+                              onClick={() => copiar(fila.tipo, fila.token)}
+                              className="press flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150"
+                            >
+                              {copiado === fila.token ? (
+                                <>
+                                  <Check size={12} /> Copiado
+                                </>
+                              ) : (
+                                <>
+                                  <Link2 size={12} /> {fila.tipo === "visita" ? "Copiar snippet" : "Copiar"}
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          {fila.tipo === "visita" && (
+                            <p className="text-[11px] text-on-surface-faint px-1">
+                              Pegá esto en el <code className="font-mono">&lt;head&gt;</code> de la página (o justo antes de cerrar{" "}
+                              <code className="font-mono">&lt;/body&gt;</code>) — cuenta cada visita real, sin importar cuántos anuncios de
+                              Meta apunten acá.
+                            </p>
+                          )}
                         </div>
                       ))}
-                    </div>
-
-                    <div className="flex flex-col gap-2 rounded-md bg-background px-3 py-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[12px] text-on-surface-variant">
-                          Vínculo con Meta (para "Páginas de testeo" en el Home)
-                        </span>
-                        {punto.meta_nivel && (
-                          <button
-                            type="button"
-                            onClick={() => guardarVinculo(punto, "", "")}
-                            disabled={vinculandoPunto === punto.id}
-                            className="press flex items-center gap-1 text-[11px] px-2 py-1 rounded-md border border-outline hover:border-error text-on-surface-faint shrink-0 transition-colors duration-150 disabled:opacity-50"
-                          >
-                            <Unlink size={11} /> Quitar
-                          </button>
-                        )}
-                      </div>
-                      {entidadVinculada && (
-                        <p className="text-[12px] text-on-surface-faint">
-                          Vinculada a: <span className="text-on-surface">{entidadVinculada.nombre}</span> · Clics en el enlace (30 días):{" "}
-                          {entidadVinculada.linkClicks.toLocaleString("es-CO")}
-                        </p>
-                      )}
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <select
-                          value={nivelActual}
-                          onChange={(e) => {
-                            const v = e.target.value as V3MetaNivel | "";
-                            setNivelEdit((actual) => ({ ...actual, [punto.id]: v }));
-                            setEntityEdit((actual) => ({ ...actual, [punto.id]: "" }));
-                          }}
-                          className="bg-surface border border-outline rounded-md px-2.5 py-1.5 text-[13px] text-on-surface focus:border-primary outline-none transition-colors duration-150"
-                        >
-                          <option value="">Elegir nivel…</option>
-                          {NIVELES_META.map((n) => (
-                            <option key={n.value} value={n.value}>
-                              {n.label}
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          value={entityActual}
-                          onChange={(e) => setEntityEdit((actual) => ({ ...actual, [punto.id]: e.target.value }))}
-                          disabled={!nivelActual}
-                          className="flex-1 min-w-0 bg-surface border border-outline rounded-md px-2.5 py-1.5 text-[13px] text-on-surface focus:border-primary outline-none transition-colors duration-150 disabled:opacity-50"
-                        >
-                          <option value="">{nivelActual ? "Elegir…" : "Primero elegí un nivel"}</option>
-                          {opcionesNivel.map((o) => (
-                            <option key={o.id} value={o.id}>
-                              {o.nombre} ({o.linkClicks.toLocaleString("es-CO")} clics)
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          onClick={() => guardarVinculo(punto, nivelActual, entityActual)}
-                          disabled={!nivelActual || !entityActual || vinculandoPunto === punto.id}
-                          className="press flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150 disabled:opacity-50"
-                        >
-                          <Save size={12} /> {vinculandoPunto === punto.id ? "Guardando…" : "Guardar"}
-                        </button>
-                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
           )}
-          {vinculoError && <p className="text-sm text-error">{vinculoError}</p>}
 
           <form onSubmit={crearPunto} className="rounded-lg border border-outline bg-surface p-4 flex flex-col sm:flex-row sm:items-end gap-3">
             <div className="flex flex-col gap-1.5 flex-1 min-w-0">

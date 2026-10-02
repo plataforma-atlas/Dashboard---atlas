@@ -3,10 +3,10 @@
 import { PaginaTesteo } from "@/lib/v3/embudo";
 import { formatNumber, formatPercent } from "@/lib/webinar-os/aggregate";
 
-// Compara páginas de testeo (A/B) de un mismo lanzamiento. "Visitas" viene de
-// "Clics en el enlace" de Meta, del anuncio/conjunto/campaña al que se vinculó
-// cada punto de captación — una página sin vincular muestra "—" en vez de 0,
-// para no fingir una tasa de conversión que no se puede calcular todavía.
+// Compara páginas de testeo (A/B) de un mismo lanzamiento. "Visitas" viene
+// del pixel propio (cada página siempre tiene su endpoint de visita, ver
+// Endpoints) — si da 0 con registrados > 0, lo más probable es que todavía
+// no se haya pegado el snippet en la página, no que nadie la haya visitado.
 export default function PaginasTesteoTable({ rows }: { rows: PaginaTesteo[] }) {
   if (rows.length === 0) {
     return <p className="text-sm text-on-surface-faint">Todavía no hay páginas de testeo (puntos de captación) en este dashboard.</p>;
@@ -32,11 +32,11 @@ export default function PaginasTesteoTable({ rows }: { rows: PaginaTesteo[] }) {
             <tr key={r.id} className="border-t border-outline">
               <td className="py-2 pr-4">
                 <div className="text-on-surface">{r.nombre}</div>
-                <div className="text-[11px] text-on-surface-faint">
-                  {r.metaEntityNombre ? `Vinculada a: ${r.metaEntityNombre}` : "Sin vincular con Meta"}
-                </div>
+                {r.visitas === 0 && r.registrados > 0 && (
+                  <div className="text-[11px] text-on-surface-faint">¿Ya pegaste el pixel de visitas en esta página?</div>
+                )}
               </td>
-              <td className="py-2 pr-4 text-on-surface tabular">{r.visitas !== null ? formatNumber(r.visitas) : "—"}</td>
+              <td className="py-2 pr-4 text-on-surface tabular">{formatNumber(r.visitas)}</td>
               <td className="py-2 pr-4 text-on-surface tabular">{formatNumber(r.registrados)}</td>
               <td className="py-2 pr-4 text-on-surface tabular">{formatPercent(r.conversion ?? undefined)}</td>
               <td className="py-2 pr-4 text-on-surface tabular">{formatNumber(r.encuesta)}</td>

@@ -1,5 +1,4 @@
-import { V3CaptacionPunto, V3Lead } from "@/lib/v3/types";
-import { MetaAdsResponse } from "@/lib/meta-ads/types";
+import { V3CaptacionPunto, V3CaptacionVisita, V3Lead } from "@/lib/v3/types";
 
 export type EmbudoEtapa = { key: string; label: string; count: number; sinMatch?: number };
 
@@ -117,27 +116,36 @@ export function calcularEmbudo(leads: V3Lead[]) {
 }
 
 // Comparación por "página de testeo" (cada punto de captación = una landing
-// distinta de un mismo lanzamiento) — visitas viene de las "Clics en el
-// enlace" (link_clicks) del anuncio/conjunto/campaña de Meta al que se vinculó
-// el punto (ver app/v3/[clienteId]/endpoints/page.tsx); `null` significa "sin
-// vincular todavía", nunca se inventa un número.
+// distinta de un mismo lanzamiento). Las visitas vienen del pixel propio
+// (un <img> que el cliente pega en la página — ver V3PuntoEndpoint tipo
+// "visita" y app/api/hooks/integraciones/captacion-visita), no de Meta: se
+// evaluó traer "Clics en el enlace" de Meta, pero muchas páginas reciben
+// tráfico de varios anuncios a la vez (y a veces de un anuncio armado desde
+// una publicación existente, cuyo destino ni siquiera es legible con el
+// token de ads_read/ads_management) — el pixel cuenta toda visita real sin
+// importar de dónde venga.
 export type PaginaTesteo = {
   id: number;
   nombre: string;
+  visitas: number;
   registrados: number;
+  conversion: number | null;
   encuesta: number;
   grupo: number;
-  visitas: number | null;
-  conversion: number | null;
-  metaEntityNombre: string | null;
 };
 
 export function calcularPaginasTesteo(
   leads: V3Lead[],
   puntos: V3CaptacionPunto[],
-  metaData: MetaAdsResponse | null
+  visitas: V3CaptacionVisita[],
+  rangoPeriodo: { fecha_inicio: string; fecha_fin: string }
 ): PaginaTesteo[] {
   const reales = leads.filter((l) => l.extra?.sin_match !== true);
+  const { fecha_inicio, fecha_fin } = rangoPeriodo;
+  const dentroDelRango = (fechaIso: string) => {
+    const fecha = fechaIso.slice(0, 10);
+    return (!fecha_inicio || fecha >= fecha_inicio) && (!fecha_fin || fecha <= fecha_fin);
+  };
 
   return puntos.map((punto) => {
     const deEstaPagina = reales.filter((l) => l.punto_captacion_id === punto.id);
@@ -145,16 +153,9 @@ export function calcularPaginasTesteo(
     const encuesta = deEstaPagina.filter(tieneExtra("encuesta_at")).length;
     const grupo = deEstaPagina.filter(tieneExtra("grupo_ingresado_at")).length;
 
-    let visitas: number | null = null;
-    if (punto.meta_nivel && punto.meta_entity_id && metaData?.conectado) {
-      const lista =
-        punto.meta_nivel === "campana" ? metaData.campanas : punto.meta_nivel === "conjunto" ? metaData.conjuntos : metaData.anuncios;
-      const idKey = punto.meta_nivel === "campana" ? "campaign_id" : punto.meta_nivel === "conjunto" ? "adset_id" : "ad_id";
-      const match = (lista as Record<string, unknown>[]).find((row) => row[idKey] === punto.meta_entity_id);
-      if (match) visitas = Number(match.link_clicks) || 0;
-    }
-    const conversion = visitas !== null && visitas > 0 ? (registrados / visitas) * 100 : null;
+    const visitasCount = visitas.filter((v) => v.punto_captacion_id === punto.id && dentroDelRango(v.created_at)).length;
+    const conversion = visitasCount > 0 ? (registrados / visitasCount) * 100 : null;
 
-    return { id: punto.id, nombre: punto.nombre, registrados, encuesta, grupo, visitas, conversion, metaEntityNombre: punto.meta_entity_nombre };
+    return { id: punto.id, nombre: punto.nombre, visitas: visitasCount, registrados, conversion, encuesta, grupo };
   });
 }

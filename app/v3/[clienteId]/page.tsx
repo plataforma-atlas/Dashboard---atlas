@@ -36,7 +36,7 @@ import {
 import { formatMoney, formatNumber, formatPercent } from "@/lib/webinar-os/aggregate";
 import { RangoRapido, rangoRapido } from "@/lib/webinar-os/control-center/dateRanges";
 import { MetaAdsResponse } from "@/lib/meta-ads/types";
-import { V3CaptacionPunto, V3Dashboard, V3Lead } from "@/lib/v3/types";
+import { V3CaptacionPunto, V3CaptacionVisita, V3Dashboard, V3Lead } from "@/lib/v3/types";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import V3ComingSoon from "@/components/v3/V3ComingSoon";
 import MetaNoConectado from "@/components/v3/MetaNoConectado";
@@ -80,6 +80,7 @@ export default function V3ClientePage() {
   // Puntos de captación del dashboard elegido — alimenta "Páginas de testeo"
   // (comparación A/B), ver lib/v3/embudo.ts, calcularPaginasTesteo().
   const [puntos, setPuntos] = useState<V3CaptacionPunto[]>([]);
+  const [visitas, setVisitas] = useState<V3CaptacionVisita[]>([]);
   // Filtra leads/ventas propios por fecha — Meta Ads (inversión/impresiones/
   // clics) sigue fijo en los últimos 30 días, el pull de n8n todavía no
   // acepta un rango custom.
@@ -241,6 +242,23 @@ export default function V3ClientePage() {
     };
   }, [esLanzamiento, dashboardActual, clienteId]);
 
+  useEffect(() => {
+    if (!esLanzamiento || !dashboardActual) return;
+    let cancelled = false;
+    const qs = new URLSearchParams({ cliente_id: clienteId, dashboard_id: String(dashboardActual.id) });
+    fetch(`/api/v3/captacion-visitas?${qs.toString()}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((body: { visitas?: V3CaptacionVisita[] }) => {
+        if (!cancelled) setVisitas(body.visitas ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setVisitas([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [esLanzamiento, dashboardActual, clienteId]);
+
   // Métricas de la sección Meta del Home de Lanzamiento. "Facturación bruta"
   // y "neta"/cash-collect son hoy la misma suma de extra.monto de Hotmart —
   // quedan como dos tarjetas separadas porque a futuro pueden divergir
@@ -366,7 +384,10 @@ export default function V3ClientePage() {
       .map(([fecha, v]) => ({ fecha, ...v }));
   }, [leads, rangoPeriodo]);
 
-  const paginasTesteo = useMemo(() => calcularPaginasTesteo(leads, puntos, metaData), [leads, puntos, metaData]);
+  const paginasTesteo = useMemo(
+    () => calcularPaginasTesteo(leads, puntos, visitas, rangoPeriodo),
+    [leads, puntos, visitas, rangoPeriodo]
+  );
 
   const selectedCampaign = useMemo(() => {
     const preferred = campaigns.find((c) => c.status === "active") ?? campaigns[0];
@@ -626,7 +647,7 @@ export default function V3ClientePage() {
 
                 <div className="flex flex-col gap-3 mt-2">
                   <h3 className="text-sm font-semibold text-on-surface">
-                    Páginas de testeo <span className="text-on-surface-faint font-normal">· comparación de registrados/conversión por landing (cada "página" se vincula a un anuncio de Meta en Endpoints)</span>
+                    Páginas de testeo <span className="text-on-surface-faint font-normal">· comparación de registrados/conversión por landing (visitas vía el pixel propio, se copia desde Endpoints)</span>
                   </h3>
                   <PaginasTesteoTable rows={paginasTesteo} />
                 </div>
