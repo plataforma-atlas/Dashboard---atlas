@@ -1,0 +1,42 @@
+import { V3Lead } from "@/lib/v3/types";
+
+export type EmbudoEtapa = { key: string; label: string; count: number; sinMatch?: number };
+
+const tieneExtra = (campo: string) => (l: V3Lead) => Boolean(l.extra?.[campo]);
+
+// Las filas `sin_match: true` son pings (hoy solo de "Entró al grupo") que no
+// matchearon ningún lead por teléfono/correo — se guardan igual (ver
+// Integraciones — Eventos de Embudo) para no perder el dato, pero nunca deben
+// contarse como un registro real: por eso quedan afuera de `reales` y de
+// `etapas[].count`, y solo aparecen en el campo aparte `sinMatch`.
+export function calcularEmbudo(leads: V3Lead[]) {
+  const reales = leads.filter((l) => l.extra?.sin_match !== true);
+  const sinMatchRows = leads.filter((l) => l.extra?.sin_match === true);
+
+  const etapas: EmbudoEtapa[] = [
+    { key: "registrados", label: "Registrados", count: reales.length },
+    { key: "encuesta", label: "Encuesta", count: reales.filter(tieneExtra("encuesta_at")).length },
+    { key: "gracias", label: "Página de gracias", count: reales.filter(tieneExtra("gracias_visto_at")).length },
+    { key: "mensaje", label: "Mensaje 1a1 recibido", count: reales.filter(tieneExtra("mensaje_1a1_recibido_at")).length },
+    {
+      key: "grupo",
+      label: "Entró al grupo",
+      count: reales.filter(tieneExtra("grupo_ingresado_at")).length,
+      sinMatch: sinMatchRows.filter(tieneExtra("grupo_ingresado_at")).length,
+    },
+    // Agregar una etapa nueva acá cuando se sume un endpoint nuevo al embudo.
+  ];
+
+  const compraron = reales.filter((l) => l.status === "comprado").length;
+
+  const porFuente = new Map<string, number>();
+  for (const l of reales) {
+    const fuente = l.utm_source || l.pagina_origen || "Directo";
+    porFuente.set(fuente, (porFuente.get(fuente) ?? 0) + 1);
+  }
+  const fuentes = [...porFuente.entries()]
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value);
+
+  return { etapas, compraron, fuentes };
+}

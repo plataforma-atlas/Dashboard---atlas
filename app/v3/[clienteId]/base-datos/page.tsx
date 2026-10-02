@@ -98,20 +98,21 @@ export default function V3BaseDatosPage() {
     const encabezados =
       tab === "comprado"
         ? ["Nombre", "Correo", "Teléfono", "Producto", "Monto", "Moneda", "Origen del lead", "Origen de la venta", "Sin embudo", "Fecha"]
-        : ["Nombre", "Correo", "Teléfono", "Origen", "Fecha"];
+        : ["Nombre", "Correo", "Teléfono", "Origen", "Sin match", "Fecha"];
     const filas = leads.map((lead) => {
       const producto = typeof lead.extra?.producto === "string" ? lead.extra.producto : "";
       const monto = typeof lead.extra?.monto === "number" ? lead.extra.monto : null;
       const moneda = typeof lead.extra?.moneda === "string" ? lead.extra.moneda : "";
       const ventaSck = typeof lead.extra?.venta_sck === "string" ? lead.extra.venta_sck : "";
       const fueraDeEmbudo = lead.extra?.fuera_de_embudo === true;
+      const sinMatch = lead.extra?.sin_match === true;
       const origen = lead.utm_source || lead.pagina_origen || "";
       const fecha = new Date(lead.created_at).toLocaleDateString("es-CO");
       const base = [lead.nombre || "", lead.correo || "", lead.telefono || ""];
       const resto =
         tab === "comprado"
           ? [producto, monto !== null ? String(monto) : "", moneda, origen, ventaSck, fueraDeEmbudo ? "Si" : "No", fecha]
-          : [origen, fecha];
+          : [origen, sinMatch ? "Si" : "No", fecha];
       return [...base, ...resto].map(celdaCsv).join(",");
     });
     const csv = [encabezados.join(","), ...filas].join("\n");
@@ -243,6 +244,7 @@ export default function V3BaseDatosPage() {
                   const moneda = typeof lead.extra?.moneda === "string" ? lead.extra.moneda : "";
                   const ventaSck = typeof lead.extra?.venta_sck === "string" ? lead.extra.venta_sck : "";
                   const fueraDeEmbudo = lead.extra?.fuera_de_embudo === true;
+                  const sinMatch = lead.extra?.sin_match === true;
                   return (
                     <tr key={lead.id} className="border-b border-outline last:border-0">
                       <td className="px-4 py-2.5 text-on-surface">
@@ -251,6 +253,14 @@ export default function V3BaseDatosPage() {
                           {tab === "comprado" && fueraDeEmbudo && (
                             <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-outline text-on-surface-faint shrink-0">
                               Sin embudo
+                            </span>
+                          )}
+                          {tab === "lead" && sinMatch && (
+                            <span
+                              title="Entró a un grupo pero su número no matchea ningún lead registrado"
+                              className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border border-outline text-on-surface-faint shrink-0"
+                            >
+                              Sin match
                             </span>
                           )}
                         </div>

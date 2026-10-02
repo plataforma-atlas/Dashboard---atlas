@@ -38,7 +38,9 @@ import DesempenoDiarioChart from "@/components/v3/DesempenoDiarioChart";
 import Tabs from "@/components/v3/Tabs";
 import DailyDetailTable from "@/components/v3/DailyDetailTable";
 import HorizontalBarPanel from "@/components/v3/HorizontalBarPanel";
+import EmbudoFunnelChart from "@/components/v3/EmbudoFunnelChart";
 import { formatMoneyEnMoneda } from "@/lib/v3/format";
+import { calcularEmbudo } from "@/lib/v3/embudo";
 
 type Session = { authenticated: boolean; role?: "admin" | "client"; clientes?: string[] };
 type FunnelResponse = { source: "n8n" | "error"; rows: FunnelRow[]; message?: string };
@@ -218,7 +220,13 @@ export default function V3ClientePage() {
     const clics = metaData.campanas.reduce((acc, c) => acc + c.clicks, 0);
 
     const ventas = leads.filter((l) => l.status === "comprado");
-    const leadsCount = leads.length;
+    // Los pings "sin match" (ver Integraciones — Eventos de Embudo, endpoint
+    // de Grupos) son teléfonos que no matchearon ningún lead real — se
+    // guardan igual para no perder el dato, pero nunca fueron un registro de
+    // verdad: si se contaran acá, inflarían leadsCount y deflactarían las dos
+    // tasas de conversión sin que nadie lo pida.
+    const leadsReales = leads.filter((l) => l.extra?.sin_match !== true);
+    const leadsCount = leadsReales.length;
     const ventasCount = ventas.length;
     // Hotmart manda el bruto (lo que pagó el comprador) y, cuando el payload
     // trae el desglose de comisión, también el neto que de verdad le queda al
@@ -296,6 +304,8 @@ export default function V3ClientePage() {
         roas: v.inversion > 0 ? v.facturacion / v.inversion : null,
       }));
   }, [metaData, leads, rangoPeriodo]);
+
+  const embudo = useMemo(() => calcularEmbudo(leads), [leads]);
 
   const selectedCampaign = useMemo(() => {
     const preferred = campaigns.find((c) => c.status === "active") ?? campaigns[0];
@@ -474,6 +484,11 @@ export default function V3ClientePage() {
               <span className="text-on-surface-faint font-normal">· inversión siempre últimos 30 días, facturación según el período elegido</span>
             </h3>
             <DesempenoDiarioChart rows={desempenoPorDia} moneda={m.moneda} />
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4 mt-2">
+            <EmbudoFunnelChart etapas={embudo.etapas} compraron={embudo.compraron} />
+            <HorizontalBarPanel title="Origen del tráfico" rows={embudo.fuentes} formatValue={formatNumber} />
           </div>
         </section>
       </div>
