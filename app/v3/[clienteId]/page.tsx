@@ -20,6 +20,7 @@ import {
   PlayCircle,
   Presentation,
   ShoppingBag,
+  Tag,
   ShoppingCart,
   TrendingDown,
   TrendingUp,
@@ -302,6 +303,10 @@ export default function V3ClientePage() {
     const roasNeto = inversion > 0 ? facturacionNeta / inversion : null;
     const conversionPagina = clics > 0 ? (leadsCount / clics) * 100 : null;
     const conversionGlobal = leadsCount > 0 ? (ventasCount / leadsCount) * 100 : null;
+    // CPL = costo por lead — inversión de Meta entre los leads reales del
+    // embudo propio (no "Leads (Meta)", que es lo que Meta reporta solo, ver
+    // nota de Administrador de Anuncios sobre por qué no se cruzan).
+    const cpl = leadsCount > 0 ? inversion / leadsCount : null;
 
     return {
       inversion,
@@ -316,6 +321,7 @@ export default function V3ClientePage() {
       roasNeto,
       conversionPagina,
       conversionGlobal,
+      cpl,
     };
   }, [metaData, leads]);
 
@@ -532,6 +538,13 @@ export default function V3ClientePage() {
             <KpiCard icon={Wallet} label="Inversión publicitaria" value={numeroOGuion(m.inversion, formatMoney)} accent="primary" />
             <KpiCard icon={Eye} label="Impresiones" value={numeroOGuion(m.impresiones, formatNumber)} accent="primary" />
             <KpiCard icon={MousePointerClick} label="Clics" value={numeroOGuion(m.clics, formatNumber)} accent="primary" />
+            <KpiCard
+              icon={Tag}
+              label="CPL"
+              value={numeroOGuion(m.cpl, (n) => new Intl.NumberFormat("es-CO", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(n))}
+              sub="Costo por lead (inversión / leads)"
+              accent="primary"
+            />
             <KpiCard
               icon={Filter}
               label="% Conversión"

@@ -248,34 +248,41 @@ export default function V3EndpointsPage() {
             ))}
             {enlaceError && <p className="text-sm text-error">{enlaceError}</p>}
             {isAdmin && (
-              <div className="flex items-center justify-between gap-3 rounded-md bg-background px-3 py-2 mt-1">
-                <span className="text-[13px] text-on-surface-variant shrink-0">Webhook para GHL (pedir enlace por lead)</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const url = `${typeof window !== "undefined" ? window.location.origin : ""}/api/hooks/integraciones/generar-enlace?cliente_id=${clienteId}`;
-                    navigator.clipboard?.writeText(url).then(() => {
-                      setCopiado("generar-enlace");
-                      setTimeout(() => setCopiado((actual) => (actual === "generar-enlace" ? null : actual)), 2000);
-                    });
-                  }}
-                  className="press flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150"
-                >
-                  {copiado === "generar-enlace" ? (
-                    <>
-                      <Check size={12} /> Copiado
-                    </>
-                  ) : (
-                    <>
-                      <Link2 size={12} /> Copiar
-                    </>
-                  )}
-                </button>
+              <div className="flex flex-col gap-1.5">
+                {([
+                  { tipo: "clase" as const, path: "integraciones/generar-enlace-clase", label: "Webhook para GHL — vio la clase" },
+                  { tipo: "replay" as const, path: "integraciones/generar-enlace-replay", label: "Webhook para GHL — vio el replay" },
+                ]).map((w) => (
+                  <div key={w.tipo} className="flex items-center justify-between gap-3 rounded-md bg-background px-3 py-2">
+                    <span className="text-[13px] text-on-surface-variant shrink-0">{w.label}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = `${typeof window !== "undefined" ? window.location.origin : ""}/api/hooks/${w.path}?cliente_id=${clienteId}`;
+                        navigator.clipboard?.writeText(url).then(() => {
+                          setCopiado(w.path);
+                          setTimeout(() => setCopiado((actual) => (actual === w.path ? null : actual)), 2000);
+                        });
+                      }}
+                      className="press flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150"
+                    >
+                      {copiado === w.path ? (
+                        <>
+                          <Check size={12} /> Copiado
+                        </>
+                      ) : (
+                        <>
+                          <Link2 size={12} /> Copiar
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
             {isAdmin && (
               <p className="text-[11px] text-on-surface-faint">
-                Body: <code className="font-mono">{"{ telefono, correo, tipo: \"clase\" | \"replay\" }"}</code> — responde <code className="font-mono">{"{ url }"}</code> para insertar en el mensaje.
+                Body de los dos: <code className="font-mono">{"{ telefono, correo }"}</code> — cada uno responde <code className="font-mono">{"{ url }"}</code> ya resuelto para su tipo, sin que GHL tenga que mandar nada más (antes era un solo webhook con un campo <code className="font-mono">tipo</code>, pero eso se prestaba a confusión al configurarlo).
               </p>
             )}
           </div>

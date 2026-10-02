@@ -18,7 +18,8 @@ const ALLOWED_PATHS = new Set([
   "integraciones/embudo-mensaje-recibido",
   "integraciones/hotmart-venta",
   "integraciones/soporte-contacto",
-  "integraciones/generar-enlace",
+  "integraciones/generar-enlace-clase",
+  "integraciones/generar-enlace-replay",
   "integraciones/captacion-visita",
 ]);
 
