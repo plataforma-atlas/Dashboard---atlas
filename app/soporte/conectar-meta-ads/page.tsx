@@ -90,10 +90,28 @@ export default function ConectarMetaAdsGuiaPage() {
             { texto: <>Entrá a <Codigo>developers.facebook.com</Codigo> con tu cuenta de Facebook (la misma con la que administrás tus anuncios).</> },
             { texto: "Si es tu primera vez ahí, te va a pedir registrarte como desarrollador — aceptá los términos, es gratis e inmediato." },
             { texto: <>Arriba a la derecha, hacé clic en <Boton>Mis apps</Boton> → <Boton>Crear app</Boton>.</> },
-            { texto: <>Te va a preguntar el tipo de app: elegí <Boton>Otro</Boton> y después <Boton>Empresa</Boton> (Business).</> },
-            { texto: <>Ponele un nombre cualquiera, por ejemplo <Codigo>Conexión Vermetricas</Codigo>, y confirmá con tu cuenta de Business Manager si te la pide.</> },
-            { texto: <>Ya creada la app, en el panel de la izquierda buscá <Boton>Agregar producto</Boton> y agregá <Boton>Marketing API</Boton> (buscalo en la lista y hacé clic en &quot;Configurar&quot;).</> },
-            { texto: "Con eso ya está — no hay que publicar ni mandar a revisión nada, porque solo vas a usar la app para tus propias cuentas." },
+            { texto: <>En <Boton>Detalles de la app</Boton>, ponele un nombre cualquiera (ej. <Codigo>Conexión Vermetricas</Codigo>) y un correo de contacto.</> },
+            {
+              texto: (
+                <>
+                  En <Boton>Casos de uso</Boton>, marcá estas dos opciones (son las únicas que necesitás): <span className="font-medium text-on-surface">&quot;Crear y administrar anuncios con la API de marketing&quot;</span> y{" "}
+                  <span className="font-medium text-on-surface">&quot;Medir datos de rendimiento de los anuncios con la API de marketing&quot;</span>. El resto de la lista (Threads, Instagram, WhatsApp, juegos, etc.) no hace falta.
+                </>
+              ),
+            },
+            { texto: <>En <Boton>Negocio</Boton>, elegí el portfolio comercial al que pertenece la cuenta publicitaria que vas a conectar.</> },
+            { texto: <>En <Boton>Requisitos</Boton> lo normal es que diga &quot;No se identificaron requisitos&quot; — seguí sin hacer nada ahí.</> },
+            { texto: <>En <Boton>Resumen</Boton>, revisá y hacé clic en <Boton>Crear app</Boton> (te puede pedir que vuelvas a escribir tu contraseña de Facebook, por seguridad).</> },
+            {
+              texto: (
+                <>
+                  Con la app ya creada vas a ver un panel con una checklist (&quot;Personalizar casos de uso&quot;, &quot;Probar casos de uso&quot;, &quot;Publicar&quot;) y un cuadro de
+                  &quot;Conviértete en proveedor de tecnología&quot;.{" "}
+                  <span className="font-medium text-on-surface">No hace falta completar nada de eso ni publicar la app</span> — esa parte es solo para cuando una app necesita acceder a
+                  cuentas de otros negocios (eso pasa por revisión de Meta). Para generar tu propio token sobre tu propia cuenta no se necesita revisión: seguí directo a la Parte 2.
+                </>
+              ),
+            },
           ]}
         />
 
@@ -110,6 +128,17 @@ export default function ConectarMetaAdsGuiaPage() {
             { texto: <>En la ventana que se abre, elegí la pestaña <Boton>Cuentas publicitarias</Boton>, buscá y seleccioná la cuenta (o cuentas) que querés conectar.</> },
             { texto: <>A la derecha, activá el permiso de <Boton>Control total</Boton> (o como mínimo &quot;Gestionar la cuenta&quot;) para esa cuenta.</> },
             { texto: "Guardá los cambios." },
+            {
+              texto: (
+                <>
+                  <span className="font-medium text-on-surface">Antes de pasar a generar el token</span>, hay un paso que se salta fácil: el Usuario del Sistema necesita además un{" "}
+                  <span className="font-medium text-on-surface">rol dentro de la app</span> que creaste en la Parte 1 (esto es distinto de los activos que le diste arriba). Sin esto, al
+                  generar el token te va a decir &quot;No hay permisos disponibles&quot;. Andá a <Codigo>developers.facebook.com</Codigo> → tu app (&quot;Conexión Vermetricas&quot;) → en el
+                  menú de la izquierda, <Boton>Roles de la app</Boton> → pestaña <Boton>Usuarios del sistema</Boton> → <Boton>Agregar usuarios del sistema</Boton> → seleccioná el usuario
+                  del sistema que creaste (ej. &quot;Vermetricas API&quot;) con rol <Boton>Administrador</Boton>.
+                </>
+              ),
+            },
           ]}
         />
 
