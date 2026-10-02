@@ -54,8 +54,9 @@ import TendenciaHotmartChart from "@/components/v3/TendenciaHotmartChart";
 import PaginasTesteoTable from "@/components/v3/PaginasTesteoTable";
 import LeadsWorldMap from "@/components/v3/LeadsWorldMap";
 import GeoRankingTable from "@/components/v3/GeoRankingTable";
+import EncuestaPreguntaPanel from "@/components/v3/EncuestaPreguntaPanel";
 import { formatMoneyEnMoneda } from "@/lib/v3/format";
-import { calcularEmbudo, calcularGeografia, calcularPaginasTesteo } from "@/lib/v3/embudo";
+import { calcularEmbudo, calcularEncuesta, calcularGeografia, calcularPaginasTesteo } from "@/lib/v3/embudo";
 import { nombrePaisEs } from "@/components/v3/LeadsWorldMap";
 
 type Session = { authenticated: boolean; role?: "admin" | "client"; clientes?: string[] };
@@ -399,6 +400,7 @@ export default function V3ClientePage() {
   );
 
   const geografia = useMemo(() => calcularGeografia(leads), [leads]);
+  const encuesta = useMemo(() => calcularEncuesta(leads), [leads]);
 
   const selectedCampaign = useMemo(() => {
     const preferred = campaigns.find((c) => c.status === "active") ?? campaigns[0];
@@ -688,6 +690,20 @@ export default function V3ClientePage() {
                       columnaLabel="Ciudad"
                       rows={geografia.porCiudad.map((c) => ({ label: c.ciudad, sublabel: nombrePaisEs(c.pais), count: c.count }))}
                     />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 mt-2">
+                  <h3 className="text-sm font-semibold text-on-surface">
+                    Resultados de la encuesta{" "}
+                    <span className="text-on-surface-faint font-normal">
+                      · respuestas de los {encuesta[0]?.total ?? 0} leads que completaron la encuesta
+                    </span>
+                  </h3>
+                  <div className="grid lg:grid-cols-2 gap-4">
+                    {encuesta.map((p) => (
+                      <EncuestaPreguntaPanel key={p.clave} pregunta={p.pregunta} opciones={p.opciones} total={p.total} />
+                    ))}
                   </div>
                 </div>
               </>

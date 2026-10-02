@@ -189,3 +189,85 @@ export function calcularGeografia(leads: V3Lead[]): { porPais: LeadPorPais[]; po
 
   return { porPais, porCiudad };
 }
+
+// Preguntas fijas de la encuesta post-registro (endpoint `embudo-encuesta`,
+// `extra.respuestas`). El orden de las opciones es el de la encuesta real, no
+// por frecuencia — así se lee igual que la encuesta que respondió la persona.
+export const ENCUESTA_PREGUNTAS: { clave: string; pregunta: string; opciones: string[] }[] = [
+  {
+    clave: "edad",
+    pregunta: "¿En qué rango de edad estás?",
+    opciones: ["18 a 24 años", "25 a 34 años", "35 a 44 años", "45 a 54 años", "55 años o más"],
+  },
+  {
+    clave: "situacion",
+    pregunta: "¿Cuál de estas opciones describe mejor tu situación actual?",
+    opciones: [
+      "Tengo empleo y quiero encontrar más propósito en mi vida",
+      "Soy emprendedor o tengo un negocio propio",
+      "Soy coach, terapeuta, mentor o facilitador",
+      "Tengo una marca personal o quiero construir una",
+      "Estoy en una etapa de búsqueda, reinvención o transformación personal",
+      "Ninguna de las anteriores",
+    ],
+  },
+  {
+    clave: "intentado",
+    pregunta: "¿Qué has intentado antes para mejorar esta situación?",
+    opciones: [
+      "Cursos o mentorías online",
+      "Terapias, coaching o procesos de sanación",
+      "Libros, podcasts o contenido de desarrollo personal",
+      "Meditación, oración o prácticas espirituales",
+      "Eventos presenciales o retiros",
+      "Nada formal, apenas estoy empezando",
+    ],
+  },
+  {
+    clave: "inversion",
+    pregunta: "¿Cuánto estarías dispuesto a invertir hoy en un proceso de transformación personal y espiritual?",
+    opciones: [
+      "Menos de $50 USD",
+      "Entre $50 y $100 USD",
+      "Entre $100 y $300 USD",
+      "Entre $300 y $1.000 USD",
+      "Más de $1.000 USD si veo mucho valor",
+      "Ahora mismo no puedo invertir",
+    ],
+  },
+  {
+    clave: "acompanamiento",
+    pregunta: "¿Qué tipo de acompañamiento te gustaría recibir después de descargar este material?",
+    opciones: [
+      "Acceso a una masterclass gratuita en vivo",
+      "Un reto o mentoría corta de transformación",
+      "Información sobre un programa de 33 días",
+      "Contenido por WhatsApp para seguir profundizando",
+      "Hablar con alguien del equipo para recibir orientación",
+      "Solo quiero recibir el PDF por ahora",
+    ],
+  },
+];
+
+export type EncuestaResultado = { clave: string; pregunta: string; total: number; opciones: { label: string; count: number }[] };
+
+export function calcularEncuesta(leads: V3Lead[]): EncuestaResultado[] {
+  const respondieron = leads.filter((l) => {
+    const r = l.extra?.respuestas;
+    return r && typeof r === "object" && Object.keys(r as object).length > 0;
+  });
+
+  return ENCUESTA_PREGUNTAS.map(({ clave, pregunta, opciones }) => {
+    const conteo = new Map<string, number>(opciones.map((o) => [o, 0]));
+    let total = 0;
+    for (const l of respondieron) {
+      const respuestas = l.extra?.respuestas as Record<string, string> | undefined;
+      const valor = respuestas?.[clave];
+      if (valor && conteo.has(valor)) {
+        conteo.set(valor, (conteo.get(valor) ?? 0) + 1);
+        total += 1;
+      }
+    }
+    return { clave, pregunta, total, opciones: opciones.map((label) => ({ label, count: conteo.get(label) ?? 0 })) };
+  });
+}
