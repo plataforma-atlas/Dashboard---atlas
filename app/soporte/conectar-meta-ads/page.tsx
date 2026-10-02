@@ -1,4 +1,4 @@
-import { Building2, Users, KeyRound, Hash, Link2, Lightbulb, CircleCheck } from "lucide-react";
+import { Building2, Users, KeyRound, Hash, Link2, Lightbulb, CircleCheck, Clock } from "lucide-react";
 
 export const metadata = {
   title: "Cómo conectar Meta Ads — Soporte Vermetricas",
@@ -56,11 +56,21 @@ function Boton({ children }: { children: React.ReactNode }) {
 
 export default function ConectarMetaAdsGuiaPage() {
   return (
-    <div className="min-h-screen bg-background text-on-surface">
-      <div className="max-w-2xl mx-auto px-4 py-12 md:py-16 flex flex-col gap-8">
+    <div className="px-4 md:px-10 py-8 md:py-12">
+      <div className="max-w-2xl mx-auto flex flex-col gap-8">
+        <nav className="flex items-center gap-1.5 text-[13px] text-on-surface-faint">
+          <a href="/soporte" className="hover:text-on-surface-variant transition-colors duration-150">
+            Soporte
+          </a>
+          <span>/</span>
+          <span className="text-on-surface-variant">Conectar Meta Ads</span>
+        </nav>
+
         <header className="flex flex-col gap-2">
-          <span className="text-xs uppercase tracking-[0.14em] text-primary font-mono">Vermetricas · Soporte</span>
           <h1 className="font-display text-2xl md:text-3xl font-semibold">Cómo conectar tu cuenta de Meta Ads</h1>
+          <span className="flex items-center gap-1.5 text-[13px] text-on-surface-faint">
+            <Clock size={13} strokeWidth={2} />5 min de lectura
+          </span>
           <p className="text-[15px] text-on-surface-variant leading-relaxed">
             Esta conexión necesita dos cosas: el <Codigo>ID</Codigo> de tu cuenta publicitaria y un{" "}
             <span className="font-medium text-on-surface">token de acceso</span> con permisos de lectura y gestión de
