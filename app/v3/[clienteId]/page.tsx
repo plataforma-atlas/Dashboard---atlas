@@ -505,6 +505,8 @@ export default function V3ClientePage() {
               ? `${formatNumber(etapaGrupo.count)} con match + ${formatNumber(etapaGrupo.sinMatch)} sin match`
               : undefined;
             const PENDIENTE = "—";
+            const subRecuperacion = (ev: { recuperados: number; porcentajeRecuperacion: number | null }) =>
+              ev.recuperados > 0 ? `${formatNumber(ev.recuperados)} se recuperaron (${Math.round(ev.porcentajeRecuperacion ?? 0)}%)` : undefined;
             return (
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
@@ -516,8 +518,20 @@ export default function V3ClientePage() {
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
                   <KpiCard icon={ShoppingCart} label="Ventas" value={formatNumber(m.ventasCount)} accent="success" />
-                  <KpiCard icon={ShoppingBag} label="Carrito abandonado" value={PENDIENTE} sub="Falta en Hotmart (pendiente)" accent="primary" />
-                  <KpiCard icon={CreditCard} label="Tarjetas rechazadas" value={PENDIENTE} sub="Falta en Hotmart (pendiente)" accent="primary" />
+                  <KpiCard
+                    icon={ShoppingBag}
+                    label="Carrito abandonado"
+                    value={formatNumber(embudo.carritoAbandonado.count)}
+                    sub={subRecuperacion(embudo.carritoAbandonado)}
+                    accent="primary"
+                  />
+                  <KpiCard
+                    icon={CreditCard}
+                    label="Tarjetas rechazadas"
+                    value={formatNumber(embudo.tarjetaRechazada.count)}
+                    sub={subRecuperacion(embudo.tarjetaRechazada)}
+                    accent="primary"
+                  />
                   <KpiCard icon={CalendarClock} label="Pagos a cuotas" value={PENDIENTE} sub="Falta en Hotmart (pendiente)" accent="primary" />
                 </div>
               </>

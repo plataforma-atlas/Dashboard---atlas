@@ -2,7 +2,25 @@ import { V3Lead } from "@/lib/v3/types";
 
 export type EmbudoEtapa = { key: string; label: string; count: number; sinMatch?: number };
 
+// Para Carrito abandonado / Tarjeta rechazada: el lead queda marcado con el
+// timestamp del evento para siempre (es un hecho histórico real), pero si
+// después sí compró (status === 'comprado') ya no debe contarse como un
+// carrito/tarjeta "perdido" — por eso `count` excluye a los recuperados y
+// `recuperados`/`porcentajeRecuperacion` quedan aparte.
+export type EventoHotmart = { count: number; recuperados: number; porcentajeRecuperacion: number | null };
+
 const tieneExtra = (campo: string) => (l: V3Lead) => Boolean(l.extra?.[campo]);
+
+function calcularEventoHotmart(leads: V3Lead[], campo: string): EventoHotmart {
+  const conEvento = leads.filter(tieneExtra(campo));
+  const recuperados = conEvento.filter((l) => l.status === "comprado").length;
+  const total = conEvento.length;
+  return {
+    count: total - recuperados,
+    recuperados,
+    porcentajeRecuperacion: total > 0 ? (recuperados / total) * 100 : null,
+  };
+}
 
 // Las filas `sin_match: true` son pings (hoy solo de "Entró al grupo") que no
 // matchearon ningún lead por teléfono/correo — se guardan igual (ver
@@ -30,6 +48,8 @@ export function calcularEmbudo(leads: V3Lead[]) {
   ];
 
   const compraron = reales.filter((l) => l.status === "comprado").length;
+  const carritoAbandonado = calcularEventoHotmart(leads, "carrito_abandonado_at");
+  const tarjetaRechazada = calcularEventoHotmart(leads, "tarjeta_rechazada_at");
 
   const porFuente = new Map<string, number>();
   for (const l of reales) {
@@ -40,5 +60,5 @@ export function calcularEmbudo(leads: V3Lead[]) {
     .map(([label, value]) => ({ label, value }))
     .sort((a, b) => b.value - a.value);
 
-  return { etapas, compraron, fuentes };
+  return { etapas, compraron, fuentes, carritoAbandonado, tarjetaRechazada };
 }
