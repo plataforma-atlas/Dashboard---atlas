@@ -16,7 +16,9 @@ export function calcularEmbudo(leads: V3Lead[]) {
   const etapas: EmbudoEtapa[] = [
     { key: "registrados", label: "Registrados", count: reales.length },
     { key: "encuesta", label: "Encuesta", count: reales.filter(tieneExtra("encuesta_at")).length },
-    { key: "gracias", label: "Página de gracias", count: reales.filter(tieneExtra("gracias_visto_at")).length },
+    // "Página de gracias" no se trackea: el botón de esa página manda directo
+    // a entrar al grupo, nunca hay un ping propio que la confirme — mostrar
+    // esta etapa siempre en 0 sería fabricar un dato sin fuente real.
     { key: "mensaje", label: "Mensaje 1a1 recibido", count: reales.filter(tieneExtra("mensaje_1a1_recibido_at")).length },
     {
       key: "grupo",

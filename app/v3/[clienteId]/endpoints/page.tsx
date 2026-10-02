@@ -161,9 +161,13 @@ export default function V3EndpointsPage() {
           ) : (
             <div className="flex flex-col gap-3">
               {puntos.map((punto) => {
+                // "Página de gracias" no tiene forma real de trackearse: el botón de
+                // esa página manda directo a entrar al grupo, nunca dispara un ping
+                // propio — se deja de ofrecer este endpoint para no entregar un
+                // enlace que el cliente no tiene dónde pegar.
                 const filas: { tipo: "captacion" | V3EndpointTipo; token: string }[] = [
                   { tipo: "captacion", token: punto.token_captacion },
-                  ...punto.endpoints.filter((e) => isAdmin || e.tipo !== "mensaje_recibido"),
+                  ...punto.endpoints.filter((e) => e.tipo !== "gracias" && (isAdmin || e.tipo !== "mensaje_recibido")),
                 ];
                 return (
                   <div key={punto.id} className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-3">
