@@ -515,7 +515,7 @@ export default function V3ClientePage() {
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
-                  <KpiCard icon={ShoppingCart} label="Compras" value={formatNumber(m.ventasCount)} accent="success" />
+                  <KpiCard icon={ShoppingCart} label="Ventas" value={formatNumber(m.ventasCount)} accent="success" />
                   <KpiCard icon={ShoppingBag} label="Carrito abandonado" value={PENDIENTE} sub="Falta en Hotmart (pendiente)" accent="primary" />
                   <KpiCard icon={CreditCard} label="Tarjetas rechazadas" value={PENDIENTE} sub="Falta en Hotmart (pendiente)" accent="primary" />
                   <KpiCard icon={CalendarClock} label="Pagos a cuotas" value={PENDIENTE} sub="Falta en Hotmart (pendiente)" accent="primary" />
