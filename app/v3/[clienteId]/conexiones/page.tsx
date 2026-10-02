@@ -473,6 +473,14 @@ export default function V3ConexionesPage() {
               <span className="font-mono">ads_management</span>) — este último permite pausar/activar desde el panel.
               {metaConectado && " Esto reemplaza la lista completa de cuentas conectadas."}
             </p>
+            <a
+              href="/soporte/conectar-meta-ads"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[13px] text-primary hover:underline self-start"
+            >
+              ¿No sabés cómo conseguir el ID o el token? Mirá la guía paso a paso →
+            </a>
           </div>
 
           <div className="flex flex-col gap-2">
