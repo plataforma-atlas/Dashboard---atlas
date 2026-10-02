@@ -51,7 +51,6 @@ export default function V3EndpointsPage() {
   const [puntos, setPuntos] = useState<V3CaptacionPunto[]>([]);
   const [puntosLoading, setPuntosLoading] = useState(false);
   const [nombreNuevo, setNombreNuevo] = useState("");
-  const [etiquetaNueva, setEtiquetaNueva] = useState("");
   const [creando, setCreando] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [copiado, setCopiado] = useState<string | null>(null);
@@ -143,16 +142,12 @@ export default function V3EndpointsPage() {
       setFormError("Ponele un nombre al punto de captación.");
       return;
     }
-    if (!etiquetaNueva.trim()) {
-      setFormError("Falta la etiqueta que se le va a poner en Go High Level.");
-      return;
-    }
     setCreando(true);
     try {
       const res = await fetch("/api/v3/captacion-puntos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cliente_id: clienteId, dashboard_id: dashboardActual.id, nombre: nombreNuevo.trim(), etiqueta_ghl: etiquetaNueva.trim() }),
+        body: JSON.stringify({ cliente_id: clienteId, dashboard_id: dashboardActual.id, nombre: nombreNuevo.trim() }),
       });
       const nuevo = await res.json();
       if (!res.ok) {
@@ -160,7 +155,6 @@ export default function V3EndpointsPage() {
         return;
       }
       setNombreNuevo("");
-      setEtiquetaNueva("");
       await cargarPuntos();
     } catch {
       setFormError("No se pudo conectar al servidor");
@@ -306,7 +300,6 @@ export default function V3EndpointsPage() {
                   <div key={punto.id} className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-3">
                     <div>
                       <div className="text-[14px] font-medium text-on-surface">{punto.nombre}</div>
-                      <div className="text-[12px] text-on-surface-faint font-mono">Etiqueta GHL: {punto.etiqueta_ghl}</div>
                     </div>
                     <div className="flex flex-col gap-1.5">
                       {filas.map((fila) => (
@@ -354,16 +347,6 @@ export default function V3EndpointsPage() {
                 onChange={(e) => setNombreNuevo(e.target.value)}
                 placeholder="Ej. Landing principal"
                 className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface focus:border-primary outline-none transition-colors duration-150"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-              <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Etiqueta para Go High Level</label>
-              <input
-                type="text"
-                value={etiquetaNueva}
-                onChange={(e) => setEtiquetaNueva(e.target.value)}
-                placeholder="Ej. lanzamiento_octubre_registrado"
-                className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
               />
             </div>
             <button

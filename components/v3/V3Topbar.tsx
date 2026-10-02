@@ -9,16 +9,6 @@ import { V3Dashboard, V3DashboardTipo } from "@/lib/v3/types";
 // testear más de 5 páginas a la vez en un mismo lanzamiento.
 const LETRAS_PAGINA = ["A", "B", "C", "D", "E"];
 
-function slugify(s: string): string {
-  return (s || "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/(^_|_$)/g, "");
-}
-
 // Barra global de dashboards (proyectos filtrados por nomenclatura) — vive en
 // el layout de la V3 para que el selector esté disponible en cualquier
 // pantalla, no solo en Administrador de Anuncios. Hoy solo esa pantalla
@@ -95,8 +85,7 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
       // Para Lanzamiento, crear de una vez sus páginas de testeo (puntos de
       // captación "Página A"/"Página B"/...) — cada una ya trae sus 4
       // endpoints hermanos generados solos (ver Núcleo — V3 Puntos de
-      // Captación). La etiqueta de GHL se arma sola a partir del nombre del
-      // dashboard; se puede ajustar a mano más adelante si hiciera falta.
+      // Captación).
       const erroresPaginas: string[] = [];
       if (tipoNuevo === "lanzamiento") {
         for (let i = 0; i < paginasTesteo; i++) {
@@ -105,12 +94,7 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
             const rPunto = await fetch("/api/v3/captacion-puntos", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                cliente_id: clienteId,
-                dashboard_id: nuevo.id,
-                nombre: `Página ${letra}`,
-                etiqueta_ghl: `${slugify(nombreNuevo)}_pagina_${letra.toLowerCase()}`,
-              }),
+              body: JSON.stringify({ cliente_id: clienteId, dashboard_id: nuevo.id, nombre: `Página ${letra}` }),
             });
             if (!rPunto.ok) erroresPaginas.push(letra);
           } catch {

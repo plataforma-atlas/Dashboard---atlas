@@ -304,7 +304,7 @@ export default function V3ConexionesPage() {
       <div className="rounded-lg border border-outline bg-surface p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-0.5">
           <span className="text-[14px] font-medium text-on-surface">Go High Level</span>
-          <span className="text-[13px] text-on-surface-variant">Tu CRM — para crear y etiquetar contactos automáticamente cuando captes un lead.</span>
+          <span className="text-[13px] text-on-surface-variant">Tu CRM — se usa para funciones futuras. Vermetricas no envía ni modifica datos ahí automáticamente.</span>
         </div>
         {ghlFormAbierto ? null : ghlConectado ? (
           <div className="flex items-center flex-wrap gap-2 shrink-0">
@@ -392,7 +392,8 @@ export default function V3ConexionesPage() {
             <span className="text-[14px] font-medium text-on-surface">{ghlConectado ? "Reconectar Go High Level" : "Conectar Go High Level"}</span>
             <p className="text-[13px] text-on-surface-variant">
               Necesitamos el <span className="font-mono">Location ID</span> de tu sub-cuenta y un token de{" "}
-              <span className="font-medium">Integración Privada</span> (Settings → Private Integrations en GHL) con permisos de Contacts.
+              <span className="font-medium">Integración Privada</span> (Settings → Private Integrations en GHL). Por ahora solo guardamos la
+              conexión para funciones futuras — Vermetricas no envía ni modifica nada en tu cuenta de GHL.
               {ghlConectado && " Esto reemplaza la conexión guardada."}
             </p>
           </div>
