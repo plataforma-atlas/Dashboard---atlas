@@ -38,7 +38,7 @@ function construirContenidoParaCopiar(tipo: "captacion" | V3EndpointTipo, token:
   return url;
 }
 
-export default function V3EndpointsPage() {
+export default function V3WebhooksPage() {
   const params = useParams<{ clienteId: string }>();
   const clienteId = params.clienteId;
   const searchParams = useSearchParams();
@@ -185,7 +185,7 @@ export default function V3EndpointsPage() {
   return (
     <div className="px-4 py-8 md:px-8 max-w-4xl mx-auto flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-[0.14em] text-primary font-mono">Endpoints</span>
+        <span className="text-xs uppercase tracking-[0.14em] text-primary font-mono">Webhooks</span>
         <h1 className="font-display text-2xl text-on-surface font-semibold">Puntos de captación y su embudo</h1>
         <p className="text-sm text-on-surface-variant">
           Cada punto es una landing distinta — copiá sus enlaces y pegalos donde corresponda (tu página, tu encuesta, SendFlow).
@@ -194,7 +194,7 @@ export default function V3EndpointsPage() {
 
       {!dashboardActual ? (
         <p className="text-[13px] text-on-surface-faint py-8 text-center">
-          Elegí un dashboard de tipo Lanzamiento en el selector de arriba para ver sus endpoints.
+          Elegí un dashboard de tipo Lanzamiento en el selector de arriba para ver sus webhooks.
         </p>
       ) : dashboardActual.tipo !== "lanzamiento" ? (
         <p className="text-[13px] text-on-surface-faint py-8 text-center">Los endpoints son para dashboards de tipo Lanzamiento.</p>

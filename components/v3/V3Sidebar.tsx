@@ -237,10 +237,10 @@ export default function V3Sidebar({
             <span className={`truncate ${collapsed ? "md:hidden" : ""}`}>Conexiones</span>
           </a>
           <a
-            href={`/v3/${clienteIdActual}/endpoints${dashboardQuery}`}
-            title="Endpoints"
+            href={`/v3/${clienteIdActual}/webhooks${dashboardQuery}`}
+            title="Webhooks"
             className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm min-w-0 transition-colors duration-150 ${
-              pathname === `/v3/${clienteIdActual}/endpoints`
+              pathname === `/v3/${clienteIdActual}/webhooks`
                 ? "bg-surface-high text-on-surface"
                 : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"
             } ${collapsed ? "md:justify-center" : ""}`}
@@ -248,7 +248,7 @@ export default function V3Sidebar({
             <span className="w-6 h-6 rounded-lg bg-primary/20 text-primary grid place-items-center shrink-0">
               <Link2 size={13} strokeWidth={2} />
             </span>
-            <span className={`truncate ${collapsed ? "md:hidden" : ""}`}>Endpoints</span>
+            <span className={`truncate ${collapsed ? "md:hidden" : ""}`}>Webhooks</span>
           </a>
           <a
             href={`/v3/${clienteIdActual}/equipo`}
