@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import V3Sidebar from "@/components/v3/V3Sidebar";
 import V3Topbar from "@/components/v3/V3Topbar";
+import EstadoCuentaGate from "@/components/v3/EstadoCuentaGate";
 
 // Shell de la V3: solo chrome (sidebar + topbar + main). Cada página hija
 // resuelve su propia sesión/datos — ver plan en purrfect-humming-backus.md.
@@ -15,16 +16,18 @@ export default function V3Layout({ children }: { children: React.ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-background">
-      <Suspense fallback={null}>
-        <V3Sidebar mobileOpen={mobileNavOpen} onCloseMobile={() => setMobileNavOpen(false)} />
-      </Suspense>
-      <main className="min-h-screen flex-1 md:ml-[var(--sidebar-w,240px)] transition-[margin] duration-200">
+    <EstadoCuentaGate>
+      <div className="min-h-screen flex flex-col md:flex-row bg-background">
         <Suspense fallback={null}>
-          <V3Topbar onOpenMobileMenu={() => setMobileNavOpen(true)} />
+          <V3Sidebar mobileOpen={mobileNavOpen} onCloseMobile={() => setMobileNavOpen(false)} />
         </Suspense>
-        {children}
-      </main>
-    </div>
+        <main className="min-h-screen flex-1 md:ml-[var(--sidebar-w,240px)] transition-[margin] duration-200">
+          <Suspense fallback={null}>
+            <V3Topbar onOpenMobileMenu={() => setMobileNavOpen(true)} />
+          </Suspense>
+          {children}
+        </main>
+      </div>
+    </EstadoCuentaGate>
   );
 }
