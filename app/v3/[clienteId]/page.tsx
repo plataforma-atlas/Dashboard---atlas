@@ -56,7 +56,7 @@ import LeadsWorldMap from "@/components/v3/LeadsWorldMap";
 import GeoRankingTable from "@/components/v3/GeoRankingTable";
 import EncuestaPreguntaPanel from "@/components/v3/EncuestaPreguntaPanel";
 import { formatMoneyEnMoneda } from "@/lib/v3/format";
-import { calcularEmbudo, calcularEncuesta, calcularGeografia, calcularPaginasTesteo } from "@/lib/v3/embudo";
+import { calcularEmbudo, calcularEncuesta, calcularGeografia, calcularPaginasTesteo, calcularUtms, UTM_CLAVES } from "@/lib/v3/embudo";
 import { nombrePaisEs } from "@/components/v3/LeadsWorldMap";
 
 type Session = { authenticated: boolean; role?: "admin" | "client"; clientes?: string[] };
@@ -400,6 +400,7 @@ export default function V3ClientePage() {
   );
 
   const geografia = useMemo(() => calcularGeografia(leads), [leads]);
+  const utms = useMemo(() => calcularUtms(leads), [leads]);
   const encuesta = useMemo(() => calcularEncuesta(leads), [leads]);
 
   const selectedCampaign = useMemo(() => {
@@ -690,6 +691,23 @@ export default function V3ClientePage() {
                       columnaLabel="Ciudad"
                       rows={geografia.porCiudad.map((c) => ({ label: c.ciudad, sublabel: nombrePaisEs(c.pais), count: c.count }))}
                     />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 mt-2">
+                  <h3 className="text-sm font-semibold text-on-surface">
+                    UTM <span className="text-on-surface-faint font-normal">· de dónde llegaron los leads</span>
+                  </h3>
+                  <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {UTM_CLAVES.map((u) => (
+                      <div key={u.clave} className="flex flex-col gap-3 rounded-xl border border-outline bg-surface p-4">
+                        <h4 className="text-[11px] uppercase tracking-wide text-on-surface-variant font-medium">{u.label}</h4>
+                        <GeoRankingTable
+                          columnaLabel="Valor"
+                          rows={utms[u.clave].map((x) => ({ label: x.valor, count: x.count }))}
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
 

@@ -288,3 +288,31 @@ export function esLeadAltoValor(lead: V3Lead): boolean {
   const respuestas = obtenerRespuestasLead(lead);
   return respuestas?.[PREGUNTA_VALOR_ALTO.clave] === PREGUNTA_VALOR_ALTO.opcion;
 }
+
+// Leads por valor de cada UTM (fuente, medio, campaña, contenido y término).
+// Los leads sin ese UTM cuentan como "(sin dato)" para que se vea cuántos
+// llegaron sin etiqueta, en vez de esconderlos.
+export type LeadPorUtm = { valor: string; count: number };
+export type UtmClave = "utm_source" | "utm_medium" | "utm_campaign" | "utm_content" | "utm_term";
+
+export const UTM_CLAVES: { clave: UtmClave; label: string }[] = [
+  { clave: "utm_source", label: "utm_source" },
+  { clave: "utm_medium", label: "utm_medium" },
+  { clave: "utm_campaign", label: "utm_campaign" },
+  { clave: "utm_content", label: "utm_content" },
+  { clave: "utm_term", label: "utm_term" },
+];
+
+export function calcularUtms(leads: V3Lead[]): Record<UtmClave, LeadPorUtm[]> {
+  const reales = leads.filter((l) => l.extra?.sin_match !== true);
+  const resultado = {} as Record<UtmClave, LeadPorUtm[]>;
+  for (const { clave } of UTM_CLAVES) {
+    const conteo = new Map<string, number>();
+    for (const l of reales) {
+      const valor = (l[clave] ?? "").toString().trim() || "(sin dato)";
+      conteo.set(valor, (conteo.get(valor) ?? 0) + 1);
+    }
+    resultado[clave] = [...conteo.entries()].map(([valor, count]) => ({ valor, count })).sort((a, b) => b.count - a.count);
+  }
+  return resultado;
+}
