@@ -275,6 +275,8 @@ export default function V3Sidebar({
         <div className="flex items-center gap-2 shrink-0">
           <a
             href="/soporte"
+            target="_blank"
+            rel="noopener noreferrer"
             title="Soporte"
             aria-label="Soporte"
             className="press w-9 h-9 rounded-lg bg-surface-high hover:bg-outline grid place-items-center text-on-surface-variant hover:text-on-surface transition-colors duration-150"

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Menu, X, Link2, Users, ShoppingCart, Radio, ChevronLeft } from "lucide-react";
+import { Menu, X, Link2, Users, ShoppingCart, Radio } from "lucide-react";
 
 type ItemGuia = { href: string; label: string; icono: React.ElementType; disponible: boolean };
 type Categoria = { titulo: string; items: ItemGuia[] };
@@ -30,14 +30,6 @@ function SidebarContenido({ pathname, onNavegar }: { pathname: string; onNavegar
           <div className="text-[11px] text-on-surface-faint truncate">Centro de soporte</div>
         </div>
       </div>
-
-      <a
-        href="/"
-        className="press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm border border-outline text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150"
-      >
-        <ChevronLeft size={14} strokeWidth={2} className="shrink-0" />
-        Volver al panel
-      </a>
 
       <nav className="flex flex-col gap-4">
         {SOPORTE_NAV.map((cat) => (

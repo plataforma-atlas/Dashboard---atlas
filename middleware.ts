@@ -12,6 +12,14 @@ const CHECKIN_PUBLICO = process.env.EVENTO_CHECKIN_PUBLICO === "true";
 // redirigir a /login. Antes solo se excluían _next y favicon.ico a mano, y
 // eso rompió /brand/vermetricas-icon.png (la petición devolvía el HTML de
 // login en vez del PNG, porque el middleware la trataba como ruta protegida).
+// La V3 es la única versión visible. Las rutas de la versión anterior (la raíz, los
+// paneles, el Webinar Control Center y el admin viejo) redirigen a /v3, para que
+// no quede ningún acceso a esa versión desde el sitio.
+const RUTAS_RETIRADAS = ["/panel", "/webinar-os", "/admin"];
+function esRutaRetirada(pathname: string): boolean {
+  return pathname === "/" || RUTAS_RETIRADAS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
 const STATIC_ASSET_RE = /\.(png|jpe?g|svg|gif|webp|ico|avif|css|js|map|woff2?|txt|xml|json)$/i;
 
 export async function middleware(req: NextRequest) {
@@ -37,7 +45,11 @@ export async function middleware(req: NextRequest) {
   }
 
   if (isPublic && session && (pathname === "/login" || pathname === "/registro")) {
-    return NextResponse.redirect(new URL(session.role === "checkin" ? "/checkin" : "/", req.url));
+    return NextResponse.redirect(new URL(session.role === "checkin" ? "/checkin" : "/v3", req.url));
+  }
+
+  if (session && esRutaRetirada(pathname)) {
+    return NextResponse.redirect(new URL("/v3", req.url));
   }
 
   // El rol "checkin" es para staff externo del evento que solo debe poder
@@ -49,10 +61,6 @@ export async function middleware(req: NextRequest) {
     !pathname.startsWith("/api/auth")
   ) {
     return NextResponse.redirect(new URL("/checkin", req.url));
-  }
-
-  if (pathname.startsWith("/admin") && session?.role !== "admin") {
-    return NextResponse.redirect(new URL("/", req.url));
   }
 
   return NextResponse.next();
