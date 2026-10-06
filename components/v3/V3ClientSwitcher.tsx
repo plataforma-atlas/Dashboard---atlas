@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import {  Search } from "lucide-react";
 
 export default function V3ClientSwitcher({
   clients,
@@ -48,14 +48,6 @@ export default function V3ClientSwitcher({
         ))}
       </div>
 
-      <div className="border-t border-outline p-1.5 shrink-0">
-        <a
-          href="/admin/clientes"
-          className="press flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-primary hover:bg-surface transition-colors duration-150"
-        >
-          <Plus size={14} /> Crear cliente nuevo
-        </a>
-      </div>
     </div>
   );
 }
