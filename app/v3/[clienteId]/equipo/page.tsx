@@ -153,9 +153,7 @@ export default function V3EquipoPage() {
         </div>
       ) : error ? (
         <div className="rounded-lg border border-outline-error bg-error-container px-4 py-3 text-sm text-error">{error}</div>
-      ) : miembros.length === 0 ? (
-        <p className="text-[13px] text-on-surface-faint py-8 text-center">Todavía no hay nadie con acceso a esta cuenta.</p>
-      ) : (
+      ) : miembros.length === 0 ? null : (
         <div className="rounded-lg border border-outline bg-surface overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
