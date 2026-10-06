@@ -21,7 +21,7 @@ type Usuario = {
 const TIPOS_ACCESO: { id: "vitalicio" | "prueba_7" | "demo_15"; label: string }[] = [
   { id: "vitalicio", label: "Vitalicio" },
   { id: "prueba_7", label: "Prueba 7 días" },
-  { id: "demo_15", label: "Demo 15 días" },
+  { id: "demo_15", label: "Prueba 15 días" },
 ];
 
 const ESTADOS: { id: "activa" | "pago_pendiente" | "bloqueada"; label: string }[] = [
@@ -281,8 +281,8 @@ export default function AdminUsuariosPage() {
             <thead>
               <tr className="border-b border-outline text-left text-xs uppercase tracking-[0.1em] text-on-surface-faint">
                 <th className="px-4 py-3 font-medium">Usuario</th>
-                <th className="px-4 py-3 font-medium">Rol</th>
                 <th className="px-4 py-3 font-medium">Cuenta</th>
+                <th className="px-4 py-3 font-medium">Rol</th>
                 <th className="px-4 py-3 font-medium">Clientes asignados</th>
                 <th className="px-4 py-3 font-medium"></th>
               </tr>
