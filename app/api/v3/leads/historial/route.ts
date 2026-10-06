@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
+import { exigirAcceso } from "@/lib/permisos";
 
 export async function GET(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
@@ -12,9 +13,8 @@ export async function GET(req: Request) {
   const correo = searchParams.get("correo") ?? "";
   const telefono = searchParams.get("telefono") ?? "";
 
-  if (session.role !== "admin" && !clientesDeSesion(session).includes(cliente_id)) {
-    return NextResponse.json({ error: "Sin acceso a este cliente" }, { status: 403 });
-  }
+  const guardia = await exigirAcceso(session, cliente_id, {});
+  if ("error" in guardia) return guardia.error;
   if (!correo && !telefono) {
     return NextResponse.json({ error: "Falta correo o teléfono" }, { status: 400 });
   }
@@ -33,7 +33,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: body.error || "No se pudo cargar el historial" }, { status: res.status });
     }
     const data = await res.json();
-    return NextResponse.json({ historial: Array.isArray(data) ? data : [] });
+    const filas = Array.isArray(data) ? data : [];
+    const permitidas = guardia.acceso.dashboards;
+    const historial = permitidas === null ? filas : filas.filter((f: { dashboard_id?: number }) => permitidas.includes(Number(f.dashboard_id)));
+    return NextResponse.json({ historial });
   } catch (err) {
     console.error("Error consultando historial de lead:", err);
     return NextResponse.json({ error: "No se pudo conectar al servidor" }, { status: 502 });

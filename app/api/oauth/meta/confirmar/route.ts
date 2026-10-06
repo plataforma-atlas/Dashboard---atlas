@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
+import { exigirAcceso } from "@/lib/permisos";
 import { META_OAUTH_PENDING_COOKIE, metaOAuthConfigurado, verificarPendienteOAuth } from "@/lib/meta-oauth";
 
 export async function POST(req: Request) {
@@ -14,9 +15,8 @@ export async function POST(req: Request) {
   const clienteId = (body?.cliente_id ?? "").toString().trim();
   const idsSeleccionados: string[] = Array.isArray(body?.cuentaIds) ? body.cuentaIds.map((v: unknown) => String(v)) : [];
 
-  if (session.role !== "admin" && !clientesDeSesion(session).includes(clienteId)) {
-    return NextResponse.json({ error: "No tienes acceso a este cliente" }, { status: 403 });
-  }
+  const guardia = await exigirAcceso(session, clienteId, { escribir: true });
+  if ("error" in guardia) return guardia.error;
   if (idsSeleccionados.length === 0) return NextResponse.json({ error: "Elegí al menos una cuenta publicitaria" }, { status: 400 });
 
   const pendienteCookie = cookies().get(META_OAUTH_PENDING_COOKIE)?.value;

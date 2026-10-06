@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
+import { exigirAcceso } from "@/lib/permisos";
 
 export async function GET(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
@@ -10,8 +11,10 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const cliente_id = searchParams.get("cliente_id") ?? "";
 
-  if (session.role !== "admin" && !clientesDeSesion(session).includes(cliente_id)) {
-    return NextResponse.json({ error: "Sin acceso a este cliente" }, { status: 403 });
+  const guardia = await exigirAcceso(session, cliente_id, {});
+  if ("error" in guardia) return guardia.error;
+  if (guardia.acceso.dashboards !== null) {
+    return NextResponse.json({ error: "Este análisis cruza todos los dashboards y solo está disponible con acceso completo" }, { status: 403 });
   }
 
   const url = process.env.N8N_V3_LEADS_ANALISIS_RECORRIDO_URL;

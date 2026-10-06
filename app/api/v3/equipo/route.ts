@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
-import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
+import { COOKIE_NAME, verifySession } from "@/lib/auth";
+import { exigirAcceso } from "@/lib/permisos";
 import { signInviteToken } from "@/lib/invite";
 import { sendTeamInviteEmail } from "@/lib/email";
 
-async function requireAccesoCliente(clienteId: string) {
+async function requireAccesoCliente(clienteId: string, equipo = false) {
   const token = cookies().get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
   if (!session) return { error: NextResponse.json({ error: "No autenticado" }, { status: 401 }) } as const;
-  if (session.role !== "admin" && !clientesDeSesion(session).includes(clienteId)) {
-    return { error: NextResponse.json({ error: "No tienes acceso a este cliente" }, { status: 403 }) } as const;
-  }
+  const guardia = await exigirAcceso(session, clienteId, { equipo });
+  if ("error" in guardia) return { error: guardia.error } as const;
   return { session } as const;
 }
 
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Dashboards inválidos" }, { status: 400 });
   }
 
-  const check = await requireAccesoCliente(clienteId);
+  const check = await requireAccesoCliente(clienteId, true);
   if ("error" in check) return check.error;
 
   // Solo se pueden dar dashboards que realmente pertenecen a este cliente.
@@ -105,7 +105,7 @@ export async function DELETE(req: Request) {
   if (!clienteId) return NextResponse.json({ error: "Falta cliente_id" }, { status: 400 });
   if (!Number.isInteger(userId)) return NextResponse.json({ error: "Falta user_id" }, { status: 400 });
 
-  const check = await requireAccesoCliente(clienteId);
+  const check = await requireAccesoCliente(clienteId, true);
   if ("error" in check) return check.error;
   if (check.session.user_id === userId) {
     return NextResponse.json({ error: "No podés quitarte a vos mismo del equipo" }, { status: 400 });

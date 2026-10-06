@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
+import { exigirAcceso } from "@/lib/permisos";
 
 export async function GET(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
@@ -14,8 +15,10 @@ export async function GET(req: Request) {
   const fecha_inicio = searchParams.get("fecha_inicio") ?? "";
   const fecha_fin = searchParams.get("fecha_fin") ?? "";
 
-  if (session.role !== "admin" && !clientesDeSesion(session).includes(cliente_id)) {
-    return NextResponse.json({ error: "Sin acceso a este cliente" }, { status: 403 });
+  const guardia = await exigirAcceso(session, cliente_id, { dashboardId: dashboard_id ? Number(dashboard_id) : null });
+  if ("error" in guardia) return guardia.error;
+  if (guardia.acceso.dashboards !== null && !dashboard_id) {
+    return NextResponse.json({ error: "Elegí un dashboard para ver sus leads" }, { status: 400 });
   }
 
   const url = process.env.N8N_V3_LEADS_URL;

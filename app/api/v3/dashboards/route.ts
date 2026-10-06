@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
+import { dashboardsPermitidos } from "@/lib/permisos";
+import { exigirAcceso } from "@/lib/permisos";
 
 export async function GET(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
@@ -10,9 +12,8 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const cliente_id = searchParams.get("cliente_id") ?? "";
 
-  if (session.role !== "admin" && !clientesDeSesion(session).includes(cliente_id)) {
-    return NextResponse.json({ error: "Sin acceso a este cliente" }, { status: 403 });
-  }
+  const guardia = await exigirAcceso(session, cliente_id, {});
+  if ("error" in guardia) return guardia.error;
 
   const url = process.env.N8N_V3_DASHBOARDS_URL;
   if (!url) return NextResponse.json({ error: "N8N_V3_DASHBOARDS_URL no está configurada" }, { status: 500 });
@@ -26,7 +27,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: body.error || "No se pudieron cargar los dashboards" }, { status: res.status });
     }
     const data = await res.json();
-    return NextResponse.json({ dashboards: Array.isArray(data) ? data : [] });
+    const lista = Array.isArray(data) ? data : [];
+    return NextResponse.json({ dashboards: dashboardsPermitidos(guardia.acceso, lista) });
   } catch (err) {
     console.error("Error consultando dashboards de V3:", err);
     return NextResponse.json({ error: "No se pudo conectar al servidor" }, { status: 502 });
@@ -45,9 +47,8 @@ export async function POST(req: Request) {
   const tipo = (body?.tipo ?? "lanzamiento").toString().trim();
 
   if (!clienteId) return NextResponse.json({ error: "Falta cliente_id" }, { status: 400 });
-  if (session.role !== "admin" && !clientesDeSesion(session).includes(clienteId)) {
-    return NextResponse.json({ error: "No tienes acceso a este cliente" }, { status: 403 });
-  }
+  const guardia = await exigirAcceso(session, clienteId, { escribir: true });
+  if ("error" in guardia) return guardia.error;
   if (!nombre) return NextResponse.json({ error: "Falta el nombre del dashboard" }, { status: 400 });
   if (tipo !== "lanzamiento" && tipo !== "webinar") {
     return NextResponse.json({ error: "Tipo de dashboard inválido" }, { status: 400 });
@@ -87,9 +88,8 @@ export async function PATCH(req: Request) {
   const url = (body?.url ?? "").toString().trim();
 
   if (!clienteId || !dashboardId) return NextResponse.json({ error: "Falta cliente_id o dashboard_id" }, { status: 400 });
-  if (session.role !== "admin" && !clientesDeSesion(session).includes(clienteId)) {
-    return NextResponse.json({ error: "No tienes acceso a este cliente" }, { status: 403 });
-  }
+  const guardia = await exigirAcceso(session, clienteId, { escribir: true, dashboardId: dashboardId });
+  if ("error" in guardia) return guardia.error;
   if (!tipo || !url) return NextResponse.json({ error: "Falta tipo o url" }, { status: 400 });
 
   const urlBase = process.env.N8N_V3_DASHBOARDS_URL;

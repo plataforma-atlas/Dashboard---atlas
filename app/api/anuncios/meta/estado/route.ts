@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
+import { exigirAcceso } from "@/lib/permisos";
 
 export async function POST(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
@@ -12,9 +13,8 @@ export async function POST(req: Request) {
   const id = (body?.id ?? "").toString().trim();
   const status = (body?.status ?? "").toString().trim();
 
-  if (session.role !== "admin" && !clientesDeSesion(session).includes(cliente_id)) {
-    return NextResponse.json({ error: "Sin acceso a este cliente" }, { status: 403 });
-  }
+  const guardia = await exigirAcceso(session, cliente_id, { escribir: true });
+  if ("error" in guardia) return guardia.error;
   if (!id) return NextResponse.json({ error: "Falta el id del anuncio o campaña" }, { status: 400 });
   if (status !== "ACTIVE" && status !== "PAUSED") {
     return NextResponse.json({ error: "Estado inválido" }, { status: 400 });

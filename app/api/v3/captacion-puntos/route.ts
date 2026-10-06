@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
+import { exigirAcceso } from "@/lib/permisos";
 
 export async function GET(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
@@ -11,9 +12,8 @@ export async function GET(req: Request) {
   const cliente_id = searchParams.get("cliente_id") ?? "";
   const dashboard_id = searchParams.get("dashboard_id") ?? "";
 
-  if (session.role !== "admin" && !clientesDeSesion(session).includes(cliente_id)) {
-    return NextResponse.json({ error: "Sin acceso a este cliente" }, { status: 403 });
-  }
+  const guardia = await exigirAcceso(session, cliente_id, { dashboardId: Number(dashboard_id) || null });
+  if ("error" in guardia) return guardia.error;
   if (!dashboard_id) return NextResponse.json({ error: "Falta dashboard_id" }, { status: 400 });
 
   const url = process.env.N8N_V3_CAPTACION_PUNTOS_URL;
@@ -47,9 +47,8 @@ export async function POST(req: Request) {
   const nombre = (body?.nombre ?? "").toString().trim();
 
   if (!clienteId) return NextResponse.json({ error: "Falta cliente_id" }, { status: 400 });
-  if (session.role !== "admin" && !clientesDeSesion(session).includes(clienteId)) {
-    return NextResponse.json({ error: "No tienes acceso a este cliente" }, { status: 403 });
-  }
+  const guardia = await exigirAcceso(session, clienteId, { escribir: true, dashboardId: Number(dashboardId) || null });
+  if ("error" in guardia) return guardia.error;
   if (!dashboardId) return NextResponse.json({ error: "Falta dashboard_id" }, { status: 400 });
   if (!nombre) return NextResponse.json({ error: "Falta el nombre del punto de captación" }, { status: 400 });
 

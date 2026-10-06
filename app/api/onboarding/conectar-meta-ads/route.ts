@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
+import { exigirAcceso } from "@/lib/permisos";
 
 export async function POST(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
@@ -20,9 +21,8 @@ export async function POST(req: Request) {
   const accessToken = (body?.accessToken ?? "").toString().trim();
 
   if (!clienteId) return NextResponse.json({ error: "Falta cliente_id" }, { status: 400 });
-  if (session.role !== "admin" && !clientesDeSesion(session).includes(clienteId)) {
-    return NextResponse.json({ error: "No tienes acceso a este cliente" }, { status: 403 });
-  }
+  const guardia = await exigirAcceso(session, clienteId, { escribir: true });
+  if ("error" in guardia) return guardia.error;
   if (adAccounts.length === 0) return NextResponse.json({ error: "Falta al menos una cuenta publicitaria" }, { status: 400 });
   if (!accessToken) return NextResponse.json({ error: "Falta el token de acceso de Meta" }, { status: 400 });
 
