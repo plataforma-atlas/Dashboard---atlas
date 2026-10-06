@@ -93,6 +93,8 @@ export default function GruposAnuncios({
           );
         })}
 
+        {guardados.length > 0 && <span aria-hidden="true" className="h-6 w-px bg-outline mx-1" />}
+
         {guardados.map((g) => {
           const esActivo = activo === `s:${g.id}`;
           return (

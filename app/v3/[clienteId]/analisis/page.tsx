@@ -48,6 +48,7 @@ export default function V3AnalisisPage() {
   const [grupos, setGrupos] = useState<GrupoGuardado[]>([]);
   const [grupoActivo, setGrupoActivo] = useState<string>("g:todos");
   const [leads, setLeads] = useState<V3Lead[]>([]);
+  const [criterioAbierto, setCriterioAbierto] = useState(true);
   const acceso = useAcceso(clienteId);
 
   useEffect(() => {
@@ -178,12 +179,14 @@ export default function V3AnalisisPage() {
   function seleccionarPredefinido(key: GrupoKey) {
     setConfig((c) => ({ ...c, grupo: key, adIds: [] }));
     setGrupoActivo(`g:${key}`);
+    setCriterioAbierto(true);
     setPage(1);
   }
 
   function seleccionarGuardado(g: GrupoGuardado) {
     setConfig(sanitizarConfig(g.config));
     setGrupoActivo(`s:${g.id}`);
+    setCriterioAbierto(false);
     setPage(1);
   }
 
@@ -273,6 +276,8 @@ export default function V3AnalisisPage() {
           criterio={config.criterio}
           dashboardElegido={dashboardActualId !== null}
           puedeEscribir={acceso.puedeEscribir}
+          abierto={criterioAbierto}
+          onToggleAbierto={() => setCriterioAbierto((v) => !v)}
           onChange={cambiarCriterio}
           onGuardarGrupo={(nombre) => guardarNuevoGrupo(nombre, false)}
         />

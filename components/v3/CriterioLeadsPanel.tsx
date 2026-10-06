@@ -22,6 +22,8 @@ export default function CriterioLeadsPanel({
   criterio,
   dashboardElegido,
   puedeEscribir,
+  abierto,
+  onToggleAbierto,
   onChange,
   onGuardarGrupo,
 }: {
@@ -29,10 +31,13 @@ export default function CriterioLeadsPanel({
   criterio: CriterioLeads | null;
   dashboardElegido: boolean;
   puedeEscribir: boolean;
+  abierto: boolean;
+  onToggleAbierto: () => void;
   onChange: (criterio: CriterioLeads) => void;
   onGuardarGrupo: (nombre: string) => Promise<string | null>;
 }) {
   const preguntas = useMemo(() => preguntasDisponibles(leads), [leads]);
+  const textoPregunta = preguntas.find((p) => p.clave === criterio?.pregunta)?.texto ?? criterio?.pregunta ?? "";
   const [guardandoAbierto, setGuardandoAbierto] = useState(false);
   const [nombreGrupo, setNombreGrupo] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -82,11 +87,46 @@ export default function CriterioLeadsPanel({
     cambiar({ modo: "manual", respuestas: [...siguiente] });
   }
 
+  const resumen =
+    criterio?.modo === "manual"
+      ? `${criterio.respuestas.length} respuestas marcadas`
+      : criterio?.modo === "minimo"
+        ? `monto desde ${formatNumber(criterio.minimo)}`
+        : `las ${criterio?.n ?? 0} de mayor monto`;
+
+  if (!abierto && criterio) {
+    return (
+      <div className="animate-fade-in-up bg-surface border border-outline rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[13px] text-on-surface-variant min-w-0 truncate">
+          <span className="text-on-surface font-medium">Criterio:</span> {textoPregunta} · {resumen}
+        </p>
+        <button
+          type="button"
+          onClick={onToggleAbierto}
+          className="press px-3 py-1.5 rounded-lg border border-outline text-[13px] text-on-surface-variant hover:text-on-surface transition-colors duration-150 shrink-0"
+        >
+          Editar criterio
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in-up bg-surface border border-outline rounded-xl p-4 flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-[13px] font-medium text-on-surface">Criterio de leads calificados</h2>
-        <p className="text-[12px] text-on-surface-faint">Elegí la pregunta y cuál respuesta cuenta como calificada.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-[13px] font-medium text-on-surface">Criterio de leads calificados</h2>
+          <p className="text-[12px] text-on-surface-faint">Elegí la pregunta y cuál respuesta cuenta como calificada.</p>
+        </div>
+        {criterio && (
+          <button
+            type="button"
+            onClick={onToggleAbierto}
+            className="press px-3 py-1.5 rounded-lg border border-outline text-[13px] text-on-surface-variant hover:text-on-surface transition-colors duration-150 shrink-0"
+          >
+            Ocultar
+          </button>
+        )}
       </div>
 
       <label className="flex flex-col gap-1.5">
