@@ -2,19 +2,19 @@
 
 import { Check, ImageOff } from "lucide-react";
 import { MetaAdRow } from "@/lib/meta-ads/types";
-import { formatMoney, formatNumber } from "@/lib/webinar-os/aggregate";
+import { METRICAS_POR_DEFECTO, MetricaKey, metricaDef } from "@/lib/v3/analisis-anuncios";
 
 export default function AdCreativeCard({
   ad,
   selected,
   onToggle,
+  metricas = METRICAS_POR_DEFECTO,
 }: {
   ad: MetaAdRow;
   selected: boolean;
   onToggle: () => void;
+  metricas?: MetricaKey[];
 }) {
-  const sinDatos = ad.roas === 0 && ad.ventas === 0;
-
   return (
     <button
       type="button"
@@ -51,33 +51,18 @@ export default function AdCreativeCard({
         )}
       </div>
 
-      <div className="p-4 flex flex-col gap-3">
-        <div className="grid grid-cols-2 gap-y-2.5">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] uppercase tracking-wide text-on-surface-faint">Gasto</span>
-            <span className="text-[13px] text-on-surface font-medium tabular">{formatMoney(ad.spend)}</span>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] uppercase tracking-wide text-on-surface-faint">Impresiones</span>
-            <span className="text-[13px] text-on-surface font-medium tabular">{formatNumber(ad.impressions)}</span>
-          </div>
-        </div>
-
-        <div className="h-px w-full bg-outline" />
-
-        <div className="grid grid-cols-3 gap-2">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] uppercase tracking-wide text-on-surface-faint">ROAS</span>
-            <span className="text-[13px] text-on-surface font-medium tabular">{sinDatos ? "—" : `${ad.roas.toFixed(2)}x`}</span>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] uppercase tracking-wide text-on-surface-faint">CPA</span>
-            <span className="text-[13px] text-on-surface font-medium tabular">{sinDatos ? "—" : formatMoney(ad.cpa)}</span>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] uppercase tracking-wide text-on-surface-faint">Ventas</span>
-            <span className="text-[13px] text-on-surface font-medium tabular">{formatNumber(ad.ventas)}</span>
-          </div>
+      <div className="p-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          {metricas.map((key) => {
+            const def = metricaDef(key);
+            const vacio = def.sinDatos?.(ad) ?? false;
+            return (
+              <div key={key} className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-[10px] uppercase tracking-wide text-on-surface-faint truncate">{def.label}</span>
+                <span className="text-[13px] text-on-surface font-medium tabular">{vacio ? "—" : def.formatear(ad)}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </button>
