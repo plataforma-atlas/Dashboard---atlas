@@ -17,12 +17,9 @@ export default function V3ComingSoon({ strategyType }: { strategyType?: string |
       <h2 className="text-lg font-semibold text-on-surface">Próximamente</h2>
       <p className="text-sm text-on-surface-variant max-w-sm">
         {nombre
-          ? `El nuevo dashboard todavía no está disponible para campañas de tipo ${nombre}. Por ahora podés ver esta información en la versión clásica.`
+          ? `El nuevo dashboard todavía no está disponible para campañas de tipo ${nombre}.`
           : "Este cliente no tiene una campaña activa todavía, o el nuevo dashboard todavía no está disponible para su tipo de estrategia."}
       </p>
-      <a href="/" className="text-sm text-primary hover:underline">
-        Ir a la versión clásica →
-      </a>
     </div>
   );
 }

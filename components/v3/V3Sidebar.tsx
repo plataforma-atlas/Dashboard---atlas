@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, Clapperboard, Database, LayoutDashboard, Link2, LogOut, Megaphone, Undo2, UserPlus, Users, X } from "lucide-react";
+import { ChevronDown, Clapperboard, Database, LayoutDashboard, Link2, LogOut, Megaphone, UserCog, UserPlus, Users, X } from "lucide-react";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
@@ -137,16 +137,6 @@ export default function V3Sidebar({
         </div>
       )}
 
-      <a
-        href="/"
-        title="Volver a la versión clásica"
-        className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm border border-outline text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors duration-150 ${
-          collapsed ? "md:justify-center" : ""
-        }`}
-      >
-        <Undo2 size={14} strokeWidth={2} className="shrink-0" />
-        <span className={collapsed ? "md:hidden" : ""}>Volver a la versión clásica</span>
-      </a>
 
       <nav className="flex flex-col gap-1">
         {(() => {
@@ -166,6 +156,23 @@ export default function V3Sidebar({
             </a>
           );
         })()}
+
+        {isAdmin && (
+          <a
+            href="/v3/usuarios"
+            title="Usuarios"
+            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm min-w-0 transition-colors duration-150 ${
+              pathname === "/v3/usuarios"
+                ? "bg-surface-high text-on-surface"
+                : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"
+            } ${collapsed ? "md:justify-center" : ""}`}
+          >
+            <span className="w-6 h-6 rounded-lg bg-primary/20 text-primary grid place-items-center shrink-0">
+              <UserCog size={13} strokeWidth={2} />
+            </span>
+            <span className={`truncate ${collapsed ? "md:hidden" : ""}`}>Usuarios</span>
+          </a>
+        )}
 
         {clienteIdActual && (
           <a

@@ -29,7 +29,7 @@ function LoginForm() {
         setError(data.error || "No se pudo iniciar sesión");
         return;
       }
-      router.push(searchParams.get("next") || "/");
+      router.push(searchParams.get("next") || "/v3");
       router.refresh();
     } catch {
       setError("No se pudo conectar. Intenta de nuevo.");

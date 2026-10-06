@@ -1070,6 +1070,13 @@ Decisión de negocio (confirmada con John): las ventas se cobran por **Whop**, n
 - **Verificado en pruebas locales**: firma válida → 200 y guardado; firma falsa → 401; timestamp viejo → 401; sin headers → 401. Eventos de prueba enviados dos veces con el mismo id → ambos responden OK.
 - **Antes de activarlo en Whop** hace falta: (1) crear el webhook en el panel de Whop con los eventos de membresía y pago, (2) copiar el secreto `ws_` que Whop muestra una sola vez, (3) cargarlo en Vercel como `WHOP_WEBHOOK_SECRET` y redeployar. Si el secreto no está, el endpoint responde 500 y Whop reintenta por varios días.
 
+### V3 como única versión visible + usuarios en la barra lateral (2026-10-06)
+
+- **Entrada**: el login lleva a `/v3` (antes a `/`, la versión clásica). `/` sigue existiendo como respaldo, pero nadie llega ahí por navegación. El admin cae en el primer cliente de la lista, igual que antes; si no tiene ninguno, la raíz de la V3 lo avisa.
+- **Sin link a la clásica**: se sacó "Volver a la versión clásica" de la barra lateral de la V3, y el aviso de "Próximamente" ya no ofrece ir a la clásica.
+- **Usuarios en la V3**: nuevo ítem "Usuarios" en la barra lateral, visible solo para admin, que abre `/v3/usuarios`. La lógica de la pantalla vive ahora en `components/v3/UsuariosAdminPanel.tsx`, compartido por la V3 y por `app/admin/usuarios` (versión vieja, respaldo). El alta de usuario se abre en un popup con el botón "+ Nuevo usuario"; al crear, el popup se cierra y la lista se recarga.
+- **Verificado**: login del admin → entra a `/v3` y termina en la primera cuenta; la barra lateral muestra Dashboard y Usuarios; el popup se abre desde la pantalla de usuarios. La captura del navegador mostró la tabla "traspasando" el popup, pero en el DOM el popup es el elemento de arriba y tiene fondo sólido: es un artefacto de la captura, no del código.
+
 ### Pendientes / deferred explícitamente
 
 - **OAuth de Meta — scaffolding completo, bloqueado por un trámite externo**: todo el código está construido y en producción (ver sección dedicada arriba), pero apagado hasta que el usuario (1) cree la app en developers.facebook.com con el producto "Facebook Login for Business", (2) configure el redirect URI `https://www.vermetricas.com/api/oauth/meta/callback` y cargue las URLs de `/legal/privacidad`/`/legal/eliminar-datos`, y (3) pase el App ID/App Secret — recién ahí se activa el botón (funciona sin revisión para la cuenta del propio creador de la app, por "Standard Access") y se prepara el texto/guion del video para la revisión final de Meta (necesaria para que funcione con cuentas de clientes reales, no solo las del dueño de la app).
