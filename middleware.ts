@@ -21,6 +21,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/invitacion") ||
     pathname.startsWith("/api/hooks") ||
+    pathname.startsWith("/api/whop/webhook") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
     STATIC_ASSET_RE.test(pathname) ||
