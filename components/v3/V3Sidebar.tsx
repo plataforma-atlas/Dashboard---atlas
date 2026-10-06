@@ -157,22 +157,6 @@ export default function V3Sidebar({
           );
         })()}
 
-        {isAdmin && (
-          <a
-            href="/v3/usuarios"
-            title="Usuarios"
-            className={`press flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm min-w-0 transition-colors duration-150 ${
-              pathname === "/v3/usuarios"
-                ? "bg-surface-high text-on-surface"
-                : "text-on-surface-variant hover:text-on-surface hover:bg-surface-high"
-            } ${collapsed ? "md:justify-center" : ""}`}
-          >
-            <span className="w-6 h-6 rounded-lg bg-primary/20 text-primary grid place-items-center shrink-0">
-              <UserCog size={13} strokeWidth={2} />
-            </span>
-            <span className={`truncate ${collapsed ? "md:hidden" : ""}`}>Usuarios</span>
-          </a>
-        )}
 
         {clienteIdActual && (
           <a
@@ -282,14 +266,30 @@ export default function V3Sidebar({
         <div className={collapsed ? "md:hidden" : ""}>
           <ThemeModeToggle mode={mode} onToggle={toggleMode} />
         </div>
-        <button
-          onClick={handleLogout}
-          title="Salir"
+        <div className="flex items-center gap-2 shrink-0">
+          {isAdmin && (
+            <a
+              href="/v3/usuarios"
+              title="Usuarios"
+              aria-label="Usuarios"
+              className={`press w-9 h-9 rounded-lg grid place-items-center transition-colors duration-150 ${
+                pathname === "/v3/usuarios"
+                  ? "bg-surface-high text-on-surface"
+                  : "bg-surface-high hover:bg-outline text-on-surface-variant hover:text-on-surface"
+              }`}
+            >
+              <UserCog size={16} strokeWidth={2} />
+            </a>
+          )}
+          <button
+            onClick={handleLogout}
+            title="Salir"
           aria-label="Salir"
           className="press w-9 h-9 rounded-lg bg-surface-high hover:bg-outline grid place-items-center text-on-surface-variant hover:text-on-surface transition-colors duration-150 shrink-0"
         >
           <LogOut size={16} strokeWidth={2} />
-        </button>
+          </button>
+        </div>
       </div>
     </aside>
     </>
