@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { COOKIE_NAME, verifySession } from "@/lib/auth";
-
-const DIAS_POR_TIPO: Record<string, number | null> = {
-  vitalicio: null,
-  prueba_7: 7,
-  demo_15: 15,
-};
+import { esTipoAcceso, vencimientoParaTipo } from "@/lib/acceso";
 
 export async function POST(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
@@ -26,9 +21,8 @@ export async function POST(req: Request) {
   const tipo = body?.tipo_acceso ? String(body.tipo_acceso) : "";
   let venceAt = "sin_cambio";
   if (tipo) {
-    if (!(tipo in DIAS_POR_TIPO)) return NextResponse.json({ error: "Tipo de acceso inválido" }, { status: 400 });
-    const dias = DIAS_POR_TIPO[tipo];
-    venceAt = dias === null ? "" : new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString();
+    if (!esTipoAcceso(tipo)) return NextResponse.json({ error: "Tipo de acceso inválido" }, { status: 400 });
+    venceAt = vencimientoParaTipo(tipo);
   }
 
   const url = process.env.N8N_ADMIN_CUENTA_ESTADO_URL;

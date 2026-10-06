@@ -25,7 +25,6 @@ export default function AdminClientesPage() {
 
   const [showForm, setShowForm] = useState(false);
   const [nombre, setNombre] = useState("");
-  const [estrategias, setEstrategias] = useState<string[]>([]);
   const [creando, setCreando] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -112,10 +111,6 @@ export default function AdminClientesPage() {
     }
   }
 
-  function toggleEstrategia(id: string) {
-    setEstrategias((prev) => (prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]));
-  }
-
   async function crearCliente(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
@@ -123,16 +118,12 @@ export default function AdminClientesPage() {
       setFormError("Ponle un nombre al cliente.");
       return;
     }
-    if (estrategias.length === 0) {
-      setFormError("Elige al menos una estrategia.");
-      return;
-    }
     setCreando(true);
     try {
       const res = await fetch("/api/admin/crear-cliente", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: nombre.trim(), strategies: estrategias }),
+        body: JSON.stringify({ name: nombre.trim(), strategies: [] }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -140,7 +131,6 @@ export default function AdminClientesPage() {
         return;
       }
       setNombre("");
-      setEstrategias([]);
       setShowForm(false);
       await cargar();
     } catch {
@@ -202,27 +192,6 @@ export default function AdminClientesPage() {
               autoFocus
               className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface focus:border-primary outline-none transition-colors duration-150"
             />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Estrategias que va a usar</label>
-            <div className="flex flex-wrap gap-2">
-              {ESTRATEGIAS.map((s) => {
-                const activa = estrategias.includes(s.id);
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => toggleEstrategia(s.id)}
-                    className={`press text-[13px] px-3 py-1.5 rounded-full border transition-colors duration-150 ${
-                      activa ? "bg-primary text-on-primary border-primary" : "border-outline text-on-surface-variant hover:text-on-surface"
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                );
-              })}
-            </div>
           </div>
 
           {formError && <p className="text-sm text-error">{formError}</p>}
