@@ -1,21 +1,24 @@
 "use client";
 
-import { Check, ExternalLink, ImageOff } from "lucide-react";
+import { useState } from "react";
+import { Check, Eye, ImageOff } from "lucide-react";
 import { AnuncioAnalisis, METRICAS_POR_DEFECTO, MetricaKey, metricaDef } from "@/lib/v3/analisis-anuncios";
+import VistaPreviaAnuncio from "@/components/v3/VistaPreviaAnuncio";
 
 export default function AdCreativeCard({
+  clienteId,
   ad,
   selected,
   onToggle,
   metricas = METRICAS_POR_DEFECTO,
 }: {
+  clienteId: string;
   ad: AnuncioAnalisis;
   selected: boolean;
   onToggle: () => void;
   metricas?: MetricaKey[];
 }) {
-  // Abre el anuncio en el Administrador de Anuncios de Meta, en una pestaña nueva.
-  const urlAnuncio = `https://adsmanager.facebook.com/adsmanager/manage/ads?act=${ad.ad_account_id.replace(/^act_/, "")}&selected_ad_ids=${ad.ad_id}`;
+  const [verAbierto, setVerAbierto] = useState(false);
 
   return (
     <div className="relative">
@@ -70,16 +73,23 @@ export default function AdCreativeCard({
         </div>
       </button>
 
-      <a
-        href={urlAnuncio}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Ver anuncio en Meta"
-        title="Ver anuncio en Meta"
-        className="press absolute top-2.5 left-2.5 z-10 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white grid place-items-center transition-colors duration-150"
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setVerAbierto(true);
+        }}
+        aria-label="Ver anuncio"
+        title="Ver anuncio"
+        className="press absolute top-2.5 left-2.5 z-10 h-8 px-2.5 rounded-full bg-black/60 hover:bg-black/80 text-white text-[12px] inline-flex items-center gap-1.5 transition-colors duration-150"
       >
-        <ExternalLink size={14} strokeWidth={2} />
-      </a>
+        <Eye size={14} strokeWidth={2} />
+        Ver anuncio
+      </button>
+
+      {verAbierto && (
+        <VistaPreviaAnuncio clienteId={clienteId} adId={ad.ad_id} adName={ad.ad_name} onClose={() => setVerAbierto(false)} />
+      )}
     </div>
   );
 }

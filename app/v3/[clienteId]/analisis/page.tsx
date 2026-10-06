@@ -328,7 +328,7 @@ export default function V3AnalisisPage() {
           <div className="flex flex-wrap justify-center gap-6">
             {anunciosSeleccionados.map((ad) => (
               <div key={ad.ad_id} className="w-full sm:w-96">
-                <AdCreativeCard ad={ad} selected onToggle={() => toggleSeleccion(ad.ad_id)} metricas={config.metricas} />
+                <AdCreativeCard clienteId={clienteId} ad={ad} selected onToggle={() => toggleSeleccion(ad.ad_id)} metricas={config.metricas} />
               </div>
             ))}
           </div>
@@ -351,6 +351,7 @@ export default function V3AnalisisPage() {
             {visibles.map((ad) => (
               <AdCreativeCard
                 key={ad.ad_id}
+                clienteId={clienteId}
                 ad={ad}
                 selected={seleccionados.includes(ad.ad_id)}
                 onToggle={() => toggleSeleccion(ad.ad_id)}

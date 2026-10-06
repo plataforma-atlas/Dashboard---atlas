@@ -120,7 +120,7 @@ export default function LeadHistorialPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40" />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div
         className="animate-fade-in-up relative w-full max-w-lg max-h-[85vh] overflow-y-auto bg-surface border border-outline rounded-2xl shadow-lg p-6 flex flex-col gap-5"
         onClick={(e) => e.stopPropagation()}

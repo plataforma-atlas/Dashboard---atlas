@@ -209,7 +209,7 @@ export default function UsuariosAdminPanel() {
       </div>
       {nuevoAbierto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setNuevoAbierto(false)} />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setNuevoAbierto(false)} />
           <div className="animate-fade-in-up relative w-full max-w-2xl bg-surface border border-outline rounded-2xl shadow-lg p-6">
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
