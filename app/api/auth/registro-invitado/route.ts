@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const resRegistro = await fetch(registroUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: body.email, password: body.password, name: body.name, cliente_id: invite.cliente_id }),
+      body: JSON.stringify({ email: body.email, password: body.password, name: body.name, cliente_id: invite.cliente_id, nivel: invite.nivel, dashboards: invite.dashboards, agregado_por: invite.agregado_por }),
       cache: "no-store",
     });
     const dataRegistro = await resRegistro.json().catch(() => ({}));

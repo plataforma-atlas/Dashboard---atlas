@@ -46,15 +46,42 @@ export async function POST(req: Request) {
   const clienteId = (body?.cliente_id ?? "").toString().trim();
   const clienteNombre = (body?.cliente_nombre ?? clienteId).toString().trim();
   const email = (body?.email ?? "").toString().trim();
+  const nivel = (body?.nivel ?? "solo_lectura").toString();
+  const dashboards: unknown[] = Array.isArray(body?.dashboards) ? body.dashboards : [];
 
   if (!clienteId) return NextResponse.json({ error: "Falta cliente_id" }, { status: 400 });
   if (!email) return NextResponse.json({ error: "Falta el correo de la persona a invitar" }, { status: 400 });
+  if (nivel !== "operador" && nivel !== "solo_lectura") {
+    return NextResponse.json({ error: "Nivel inválido" }, { status: 400 });
+  }
+  const idsDashboards = dashboards.map((d) => Number(d));
+  if (idsDashboards.some((d) => !Number.isInteger(d) || d <= 0)) {
+    return NextResponse.json({ error: "Dashboards inválidos" }, { status: 400 });
+  }
 
   const check = await requireAccesoCliente(clienteId);
   if ("error" in check) return check.error;
 
+  // Solo se pueden dar dashboards que realmente pertenecen a este cliente.
+  if (idsDashboards.length > 0) {
+    const urlDash = process.env.N8N_V3_DASHBOARDS_URL;
+    if (!urlDash) return NextResponse.json({ error: "N8N_V3_DASHBOARDS_URL no está configurada" }, { status: 500 });
+    const target = new URL(urlDash);
+    target.searchParams.set("cliente_id", clienteId);
+    const resDash = await fetch(target.toString(), { cache: "no-store" });
+    const listaDash = (await resDash.json().catch(() => [])) as { id: number }[];
+    const propios = new Set((Array.isArray(listaDash) ? listaDash : []).map((d) => Number(d.id)));
+    if (idsDashboards.some((d) => !propios.has(d))) {
+      return NextResponse.json({ error: "Alguno de los dashboards no pertenece a este cliente" }, { status: 400 });
+    }
+  }
+
   try {
-    const inviteToken = await signInviteToken(clienteId, clienteNombre, `/v3/${clienteId}`);
+    const inviteToken = await signInviteToken(clienteId, clienteNombre, `/v3/${clienteId}`, {
+      nivel: nivel as "operador" | "solo_lectura",
+      dashboards: idsDashboards.length > 0 ? idsDashboards : undefined,
+      agregado_por: check.session.user_id,
+    });
 
     const host = headers().get("host");
     const proto = headers().get("x-forwarded-proto") ?? "https";

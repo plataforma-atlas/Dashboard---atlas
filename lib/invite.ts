@@ -9,6 +9,10 @@ export type InvitePayload = {
   // histórico (/panel/conexiones) — las invitaciones de equipo de la V3 lo
   // setean a /v3/{clienteId}.
   redirect?: string;
+  // Acceso que recibe el miembro al aceptar (solo invitaciones de equipo).
+  nivel?: "operador" | "solo_lectura";
+  dashboards?: number[];
+  agregado_por?: number;
 };
 
 function getSecretKey() {
@@ -17,8 +21,13 @@ function getSecretKey() {
   return new TextEncoder().encode(secret);
 }
 
-export async function signInviteToken(clienteId: string, clienteNombre: string, redirect?: string): Promise<string> {
-  return new SignJWT({ purpose: "client_invite", cliente_id: clienteId, cliente_nombre: clienteNombre, redirect })
+export async function signInviteToken(
+  clienteId: string,
+  clienteNombre: string,
+  redirect?: string,
+  acceso?: Pick<InvitePayload, "nivel" | "dashboards" | "agregado_por">
+): Promise<string> {
+  return new SignJWT({ purpose: "client_invite", cliente_id: clienteId, cliente_nombre: clienteNombre, redirect, ...acceso })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
