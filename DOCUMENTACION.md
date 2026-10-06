@@ -1,6 +1,6 @@
 # Documentación técnica — Panel Vermetricas
 
-> Este documento complementa al [`README.md`](./README.md) (quick-start) con el detalle completo del proyecto: arquitectura, autenticación, modelo de datos, inventario de rutas/APIs, integración con n8n, y los flujos de onboarding de clientes. Generado a partir de una lectura completa del código el 2026-09-14 — todo lo que dice acá está verificado contra archivos reales del repo, no es una descripción genérica. Actualizado el 2026-09-15 con el sidebar compartido/colapsable y los cambios de navegación del Control Center (secciones 7, 8 y 16). Actualizado el 2026-09-16 con el flujo de recuperación de contraseña self-service vía Resend (sección 18) y sus variables de entorno (sección 6). Actualizado el 2026-09-18 con el rediseño del selector de periodo del Control Center, el reemplazo de íconos del sidebar, el sidebar theme-aware + nuevo switch claro/oscuro, y el sistema de animación/tipografía aplicado a todo el dashboard (secciones 15 y 19). Actualizado el 2026-09-23 con el embudo de captación self-service para clientes (páginas `/panel/embudos` y `/panel/conexiones` con Meta Ads), sus nuevos endpoints de n8n, las tablas/etapas de Postgres que usan, el proxy que enmascara las URLs de n8n, la navegación "Configuración"/"Embudos"/"Leads" in-place (sin popup) en los tres sidebars, el menú "Otras campañas" del Control Center para clientes multi-estrategia existentes, y la pantalla `/panel/leads` de leads/compradores con paginación propia (`components/ui/pagination.tsx`) y export a CSV/Excel (sección 20). Actualizado el 2026-09-24 con el backend del constructor de páginas propio (tablas `landing_pages`/`landing_page_leads`, workflow `Núcleo — Páginas de Captación`, rutas `/api/paginas/*`) y la integración de WordPress (conectar con prueba de credenciales real, estado, desconectar y publicar páginas por REST, workflows `Integraciones — WordPress (Cliente)` e `Integraciones — Publicar en WordPress (Cliente)`, tarjeta "WordPress" en `/panel/conexiones`). Actualizado el mismo día con el wizard visual del constructor de páginas (`/panel/paginas`, panel "Páginas" en los tres sidebars, `components/panel/PaginasBody.tsx`), el generador de HTML propio (`lib/paginas/templates.ts`, `/api/paginas/generar-html`) y el flujo completo de guardar/editar/previsualizar/publicar en WordPress (sección 21). Actualizado el mismo día otra vez con el rediseño del wizard a 9 pasos explicativos (Funil/Flujo/Modelo con descripciones tipo referencia externa, en vez de un formulario plano), el flujo de 2 vs 3 páginas con slugs por página, y el formato de WhatsApp del popup — todo guardado dentro de la columna `copy` (JSON libre) sin tocar Postgres ni n8n (sección 21). Actualizado el mismo día una tercera vez con el rediseño completo de la plantilla "Estándar" de captura a partir del análisis de páginas de captura reales del cliente (hero con foto + mecanismo + checklist + experto + footer + CTA fijo global, todo detrás de un popup de formulario en vez de un form inline) y el grid de miniaturas del paso "Modelo" (sección 21). Actualizado el mismo día una cuarta vez con el rediseño completo de la página de encuesta como quiz de una pregunta por pantalla con barra de progreso, en dos plantillas intercambiables ("Estándar" y "Urgencia" con opciones por emoji), el selector con vista previa en modal generada en vivo desde el propio cliente, y el editor de opciones por pregunta (ya no un campo de texto separado por comas) (sección 21). Actualizado el 2026-09-25 con dos fixes de layout (el `body` sin `flex-direction: column` que descuadraba la card y el footer de la encuesta "Estándar", y el brand-label con `position: absolute` que quedaba montado encima de la card), el desacople de seleccionar-vs-previsualizar plantilla de encuesta (antes un solo click hacía las dos cosas), y una auditoría de "taste" contra la skill externa `Leonxlnx/taste-skill` (ban de em-dash, racionamiento de punto medio) aplicada al HTML generado, sin instalar el paquete (sección 21). Actualizado el mismo día otra vez tras encontrar y corregir dos problemas reales de producción (no de código): faltaban en Vercel las 5 variables de entorno de `N8N_PAGINAS_URL`/`N8N_WORDPRESS_*` agregadas el 2026-09-24 (nunca se replicaron desde `.env.local`), y `JWT_SECRET` estaba desincronizado entre `.env.local` y Vercel desde la rotación del 2026-09-22, lo que rompía el login en producción para cualquier usuario — ambos corregidos vía API de Vercel + redeploy, documentados como gotchas nuevos (secciones 16 y 17). Actualizado el mismo día una vez más con el rediseño de la página de gracias (ícono de check, card en los colores de la página, botón CTA condicional y nueva nota de confirmación chica debajo del botón) para que coincida con la referencia externa (sección 21). Actualizado el 2026-09-25 una vez más: **el constructor de páginas se pausó a pedido explícito del cliente** — se va a construir aparte en otro proyecto/plataforma — y se sacó de la navegación en los tres sidebars (`AppSidebar.tsx`, dashboard clásico, Control Center) y la tarjeta "WordPress" de `/panel/conexiones`, sin borrar nada del código/backend (sección 21). **Actualizado el 2026-09-25 una vez más con la sección 22, nueva**: toda la V3 (`/v3/*`), el rediseño del dashboard inspirado en VK Metrics — multi-cuenta de Meta Ads, "dashboards" por nomenclatura de campaña, Administrador de Anuncios con los 3 niveles de Meta (Campañas/Conjuntos/Anuncios) y pausar/activar en vivo, Análisis de Anuncios con tarjetas por ROAS y comparación, y los tres workflows de n8n nuevos que lo sostienen. Es la primera vez que este proyecto escribe (no solo lee) contra la API de Meta. Actualizado el mismo día una vez más con los dashboards de tipo Lanzamiento/Webinar, la conexión de Go High Level dentro de la V3, los "puntos de captación" (un endpoint público por landing, con token propio) y el workflow `Integraciones — Captación Lead (Cliente)` que guarda cada lead y opcionalmente lo crea/etiqueta en GHL, más la nueva sección "Base de datos" (sección 22). Actualizado el mismo día una vez más: el resto del embudo de Lanzamiento (Encuesta, Página de gracias, Ingreso a grupos vía SendFlow, Mensaje 1a1) con endpoints enmascarados vía el proxy `/api/hooks/[...path]` que ya existía (nunca se expone n8n), una página nueva `/v3/[clienteId]/endpoints` que centraliza todos los enlaces por punto de captación, y `client_leads.extra jsonb` para acumular los datos de cada paso del embudo (sección 22). Actualizado el 2026-09-26 con la conexión de Hotmart (todas las ventas reales de un cliente, vía webhook, combinando el patrón de credencial guardada con el de webhook enmascarado que ya existían por separado) y el reajuste de prioridades del embudo (sección 22). Actualizado el 2026-09-27 con el campo `sck` de Hotmart (atribución real de qué grupo/mensaje generó cada venta, confirmado contra la documentación oficial de Hotmart), el filtro por dashboard y el export a CSV en "Base de datos", y un gotcha nuevo del SDK de n8n sobre nodos IF encadenados directamente que descartan un nodo en silencio (sección 22).
+> Este documento complementa al [`README.md`](./README.md) (quick-start) con el detalle completo del proyecto: arquitectura, autenticación, modelo de datos, inventario de rutas/APIs, integración con n8n, y los flujos de onboarding de clientes. Generado a partir de una lectura completa del código el 2026-09-14 — todo lo que dice acá está verificado contra archivos reales del repo, no es una descripción genérica. Actualizado el 2026-09-15 con el sidebar compartido/colapsable y los cambios de navegación del Control Center (secciones 7, 8 y 16). Actualizado el 2026-09-16 con el flujo de recuperación de contraseña self-service vía Resend (sección 18) y sus variables de entorno (sección 6). Actualizado el 2026-09-18 con el rediseño del selector de periodo del Control Center, el reemplazo de íconos del sidebar, el sidebar theme-aware + nuevo switch claro/oscuro, y el sistema de animación/tipografía aplicado a todo el dashboard (secciones 15 y 19). Actualizado el 2026-09-23 con el embudo de captación self-service para clientes (páginas `/panel/embudos` y `/panel/conexiones` con Meta Ads), sus nuevos endpoints de n8n, las tablas/etapas de Postgres que usan, el proxy que enmascara las URLs de n8n, la navegación "Configuración"/"Embudos"/"Leads" in-place (sin popup) en los tres sidebars, el menú "Otras campañas" del Control Center para clientes multi-estrategia existentes, y la pantalla `/panel/leads` de leads/compradores con paginación propia (`components/ui/pagination.tsx`) y export a CSV/Excel (sección 20). Actualizado el 2026-09-24 con el backend del constructor de páginas propio (tablas `landing_pages`/`landing_page_leads`, workflow `Núcleo — Páginas de Captación`, rutas `/api/paginas/*`) y la integración de WordPress (conectar con prueba de credenciales real, estado, desconectar y publicar páginas por REST, workflows `Integraciones — WordPress (Cliente)` e `Integraciones — Publicar en WordPress (Cliente)`, tarjeta "WordPress" en `/panel/conexiones`). Actualizado el mismo día con el wizard visual del constructor de páginas (`/panel/paginas`, panel "Páginas" en los tres sidebars, `components/panel/PaginasBody.tsx`), el generador de HTML propio (`lib/paginas/templates.ts`, `/api/paginas/generar-html`) y el flujo completo de guardar/editar/previsualizar/publicar en WordPress (sección 21). Actualizado el mismo día otra vez con el rediseño del wizard a 9 pasos explicativos (Funil/Flujo/Modelo con descripciones tipo referencia externa, en vez de un formulario plano), el flujo de 2 vs 3 páginas con slugs por página, y el formato de WhatsApp del popup — todo guardado dentro de la columna `copy` (JSON libre) sin tocar Postgres ni n8n (sección 21). Actualizado el mismo día una tercera vez con el rediseño completo de la plantilla "Estándar" de captura a partir del análisis de páginas de captura reales del cliente (hero con foto + mecanismo + checklist + experto + footer + CTA fijo global, todo detrás de un popup de formulario en vez de un form inline) y el grid de miniaturas del paso "Modelo" (sección 21). Actualizado el mismo día una cuarta vez con el rediseño completo de la página de encuesta como quiz de una pregunta por pantalla con barra de progreso, en dos plantillas intercambiables ("Estándar" y "Urgencia" con opciones por emoji), el selector con vista previa en modal generada en vivo desde el propio cliente, y el editor de opciones por pregunta (ya no un campo de texto separado por comas) (sección 21). Actualizado el 2026-09-25 con dos fixes de layout (el `body` sin `flex-direction: column` que descuadraba la card y el footer de la encuesta "Estándar", y el brand-label con `position: absolute` que quedaba montado encima de la card), el desacople de seleccionar-vs-previsualizar plantilla de encuesta (antes un solo click hacía las dos cosas), y una auditoría de "taste" contra la skill externa `Leonxlnx/taste-skill` (ban de em-dash, racionamiento de punto medio) aplicada al HTML generado, sin instalar el paquete (sección 21). Actualizado el mismo día otra vez tras encontrar y corregir dos problemas reales de producción (no de código): faltaban en Vercel las 5 variables de entorno de `N8N_PAGINAS_URL`/`N8N_WORDPRESS_*` agregadas el 2026-09-24 (nunca se replicaron desde `.env.local`), y `JWT_SECRET` estaba desincronizado entre `.env.local` y Vercel desde la rotación del 2026-09-22, lo que rompía el login en producción para cualquier usuario — ambos corregidos vía API de Vercel + redeploy, documentados como gotchas nuevos (secciones 16 y 17). Actualizado el mismo día una vez más con el rediseño de la página de gracias (ícono de check, card en los colores de la página, botón CTA condicional y nueva nota de confirmación chica debajo del botón) para que coincida con la referencia externa (sección 21). Actualizado el 2026-09-25 una vez más: **el constructor de páginas se pausó a pedido explícito del cliente** — se va a construir aparte en otro proyecto/plataforma — y se sacó de la navegación en los tres sidebars (`AppSidebar.tsx`, dashboard clásico, Control Center) y la tarjeta "WordPress" de `/panel/conexiones`, sin borrar nada del código/backend (sección 21). **Actualizado el 2026-09-25 una vez más con la sección 22, nueva**: toda la V3 (`/v3/*`), el rediseño del dashboard inspirado en VK Metrics — multi-cuenta de Meta Ads, "dashboards" por nomenclatura de campaña, Administrador de Anuncios con los 3 niveles de Meta (Campañas/Conjuntos/Anuncios) y pausar/activar en vivo, Análisis de Anuncios con tarjetas por ROAS y comparación, y los tres workflows de n8n nuevos que lo sostienen. Es la primera vez que este proyecto escribe (no solo lee) contra la API de Meta. Actualizado el mismo día una vez más con los dashboards de tipo Lanzamiento/Webinar, la conexión de Go High Level dentro de la V3, los "puntos de captación" (un endpoint público por landing, con token propio) y el workflow `Integraciones — Captación Lead (Cliente)` que guarda cada lead y opcionalmente lo crea/etiqueta en GHL, más la nueva sección "Base de datos" (sección 22). Actualizado el mismo día una vez más: el resto del embudo de Lanzamiento (Encuesta, Página de gracias, Ingreso a grupos vía SendFlow, Mensaje 1a1) con endpoints enmascarados vía el proxy `/api/hooks/[...path]` que ya existía (nunca se expone n8n), una página nueva `/v3/[clienteId]/endpoints` que centraliza todos los enlaces por punto de captación, y `client_leads.extra jsonb` para acumular los datos de cada paso del embudo (sección 22). Actualizado el 2026-09-26 con la conexión de Hotmart (todas las ventas reales de un cliente, vía webhook, combinando el patrón de credencial guardada con el de webhook enmascarado que ya existían por separado) y el reajuste de prioridades del embudo (sección 22). Actualizado el 2026-10-06 con el Administrador de Anuncios (columnas, conversiones personalizadas, visión consolidada con gráfico diario, filtro de fecha y ver anuncio), el Análisis de Anuncios (grupos guardados, criterio de leads calificados, ordenar, filtros) y la sección de UTM del dashboard (secciones 22 y 23). Actualizado el 2026-09-27 con el campo `sck` de Hotmart (atribución real de qué grupo/mensaje generó cada venta, confirmado contra la documentación oficial de Hotmart), el filtro por dashboard y el export a CSV en "Base de datos", y un gotcha nuevo del SDK de n8n sobre nodos IF encadenados directamente que descartan un nodo en silencio (sección 22).
 
 ## Estado actual — resumen vigente (2026-10-06)
 
@@ -47,6 +47,22 @@ Esta sección es la foto de hoy. Las secciones de abajo son el historial de cóm
 - **Backoffice** para el equipo de Vermetricas: planeado, pendiente. Se contempla desde ahora en el modelo de roles.
 - **Versión móvil de la pantalla de Usuarios**: en pantallas angostas la tabla se corta.
 - Cliente o usuario eliminado de forma definitiva: hoy solo hay **desactivar** (no borra). Un borrado real requiere una consulta directa, que se hace solo con confirmación.
+
+### Administrador, análisis de anuncios y dashboard (2026-10-06)
+- **Administrador de Anuncios** (`/v3/[clienteId]/anuncios`): tres pestañas (Campañas, Conjuntos, Anuncios). En la fila de pestañas: botón **Gráfico** (se habilita al seleccionar filas) y **Columnas**. Filtro de fecha igual al del dashboard (Hoy, 7/30/90 días, Todo el período, Rango personalizado). Las tablas se configuran con **Columnas** (métricas de tráfico y de conversión, en el orden que elija la persona). Se pueden crear **conversiones personalizadas** que combinan dos eventos de los leads (Y, Luego, No). Al seleccionar filas se abre la **visión consolidada**: totales ponderados y un gráfico diario de los anuncios seleccionados (barras o línea, hasta dos métricas). Cada anuncio tiene un botón **Ver anuncio** que muestra la vista previa de Meta dentro de Vermetricas, sin que quien la ve necesite cuenta de Meta.
+- **Análisis de Anuncios** (`/v3/[clienteId]/analisis`): grupos predefinidos (Todos, Mejores ganchos, Mejor ROAS, Mejores leads) y **grupos guardados por cliente**. El grupo **Mejores leads** cuenta como calificados los leads cuya respuesta de una pregunta de la encuesta cumple un criterio (las N de mayor monto, desde un monto mínimo, o marcadas a mano). Popup **Filtros y métricas**, **Ordenar** por cualquier métrica, y botón **Ver anuncio**.
+- **Dashboard de Lanzamiento**: debajo de país y ciudad hay una sección de **UTM** (fuente, medio, campaña, contenido y término) con los leads por valor; los leads sin ese dato cuentan como "(sin dato)".
+- **Límite importante**: el cruce de leads con anuncios se hace por `utm_content`, que tiene que traer el **id del anuncio** (`{{ad.id}}` en la URL del anuncio de Meta). Mientras eso no esté configurado en un cliente, las columnas y métricas de leads por anuncio salen en "—" o en 0.
+- **Filtro de fecha**: aplica al Administrador de Anuncios (tablas, totales y gráfico diario). El dashboard principal (Home) sigue en los últimos 30 días.
+
+### Pendientes de la etapa de anuncios (2026-10-06)
+- **Atribución por anuncio en los clientes**: configurar `utm_content={{ad.id}}` en cada anuncio de Meta y confirmar que las landings lo pasen. Sin eso, las métricas de leads por anuncio no tienen datos reales.
+- **Home en 30 días**: el dashboard principal todavía no usa el filtro de fecha del Administrador.
+- **Criterio "calificado" y "vio la clase"** no están entre los eventos de las conversiones personalizadas todavía.
+- **Editar el nombre de una conversión o de un grupo** no existe: se crean, se actualizan o se eliminan.
+- **Vista previa**: el popup usa un alto fijo de 820 px; un anuncio más alto que eso se corta.
+- **Gráfico diario**: hasta 200 anuncios por consulta y 36 meses hacia atrás (límite de Meta). Los rangos largos tardan varios segundos.
+- **Pausar en lote**: la barra fija de "Pausar / Activar seleccionados" aparece también cuando la selección es solo para la visión consolidada. Pendiente decidir si se muestra solo para pausar o activar.
 
 ### Dónde está cada cosa (rápido)
 - Pantallas V3: `app/v3/*` y `components/v3/*`. Usuarios: `app/v3/usuarios` + `components/v3/UsuariosAdminPanel.tsx` (compartido con la versión vieja).
@@ -1184,3 +1200,182 @@ Las pruebas no quedan en el repositorio; se corren con un script temporal que cr
 - **"Sin match" de Grupos todavía no implementado** — `Integraciones — Eventos de Embudo (Cliente)` (id `0nueiQdNQCp2qlw9`) sigue respondiendo 404 cuando el endpoint de Grupos no encuentra un lead por correo/teléfono (típico cuando SendFlow manda un número de WhatsApp distinto al de registro), en vez de guardar la fila igual marcada `sin_match: true` para poder matchearla a mano después — esta extensión quedó diseñada en el plan de la sesión pero no se tocó, el foco de 2026-10-02 fue Hotmart/Soporte/Enlaces Cortos.
 - **Configuración real del workflow de GHL para `generar-enlace`, pendiente del lado del usuario/equipo Atlas, no es código**: el acortador de enlaces (sección arriba) está construido y verificado, pero ningún cliente real tiene todavía, dentro de su workflow de GHL, el paso de Webhook que llama a `generar-enlace` antes de mandar el mensaje 1a1 — hay que agregarlo manualmente en cada cliente que se active con esta feature, usando la URL que ahora se muestra en `/v3/[clienteId]/endpoints` (solo visible para admin).
 - **`LeadsWorldMap`: el diccionario de alias mapa↔país solo cubre Estados Unidos** (el único caso real que afecta a este cliente hoy) — si en el futuro aparecen leads de países cuyo nombre en inglés (el que da `ip-api.com`) no coincide con el nombre en la topología del mapa (ej. Rusia, Corea del Sur, República Checa), esos países no se van a colorear en el mapa aunque sí cuenten bien en las tablas de País/Ciudad (que no dependen de la topología). Agregar el alias correspondiente a `ALIAS_MAPA_A_DATOS` cuando se dé el caso.
+
+## 23. Administrador de Anuncios, Análisis de Anuncios y UTM del dashboard (2026-10-06)
+
+Esta sección describe todo lo construido el 2026-10-06 en la V3. Complementa la sección 22 (que describe la V3 en general) y el resumen vigente del inicio.
+
+### 23.1 Administrador de Anuncios (`/v3/[clienteId]/anuncios`)
+
+**Pestañas y barra de acciones.** Las tres pestañas (Campañas, Conjuntos de anuncios, Anuncios) usan `components/v3/Tabs.tsx`, que acepta controles opcionales a la derecha (prop `acciones`) y no tiene desplazamiento vertical (`overflow-y-hidden`, para que no aparezca una barra de 1 px). A la derecha están el botón **Gráfico** (se habilita con al menos una fila seleccionada) y **Columnas**.
+
+**Tabla (`components/v3/MetaAdsTable.tsx`).**
+- La selección vive en la tabla y se avisa a la página con `onSeleccionChange`.
+- La casilla aparece en todas las filas. La columna de Activo/Pausado (switch) solo aparece con permiso de escritura y solo para filas en estado `ACTIVE` o `PAUSED`.
+- La barra de lote (pausar/activar seleccionados) solo actúa sobre las filas que se pueden alternar.
+- Cambiar de pestaña limpia la selección y cierra la visión consolidada.
+
+**Columnas (`lib/v3/columnas-tabla.ts`, `components/v3/PersonalizarColumnas.tsx`).**
+- Métricas de **tráfico**: Gasto, Impresiones, Clics, Clics en enlace, CTR, CPM, CPC.
+- Métricas de **conversión**: Leads (Meta), Ventas, ROAS, CPA.
+- Categoría **Conversiones personalizadas**: una columna por cada conversión del cliente (ver 23.3).
+- El popup tiene búsqueda, orden con flechas, "Restablecer", "Activar", botón de eliminar por conversión y "+ Crear conversión".
+- La preferencia de columnas se guarda en el navegador, clave `vermetricas.v3.columnas-anuncios`. Es una comodidad por persona; no se comparte entre usuarios.
+- `sanitizarColumnas` acepta solo claves conocidas o `conv:<id>`. Una columna guardada cuya conversión ya no existe se oculta.
+- Sin dato se muestra "—" (no 0). Las campañas y conjuntos no tienen ventas ni ROAS (Meta solo los entrega a nivel anuncio).
+
+**Filtro de fecha.** Usa `V3PeriodFilter`, el mismo componente del dashboard. Ver 23.4.
+
+**Ver anuncio.** Cada tarjeta de anuncio tiene un botón "Ver anuncio" que abre `components/v3/VistaPreviaAnuncio.tsx`. Ver 23.5.
+
+**Popups.** Los popups de la V3 llevan `backdrop-blur-sm` en el fondo: filtros y métricas, historial y encuesta de leads, usuarios, vista previa, columnas y crear conversión.
+
+### 23.2 Visión consolidada (`components/v3/VisionConsolidada.tsx`)
+
+Se abre con el botón **Gráfico** cuando hay filas seleccionadas.
+
+- **Totales** (`lib/v3/totales-tabla.ts`): gasto, impresiones, clics, leads y ventas se suman. CTR, CPM, ROAS y CPA se calculan sobre los totales (ROAS = ingreso total / gasto de las filas con ROAS; CPA = gasto / ventas). Sin ventas, ROAS y CPA quedan en "—".
+- **Gráfico diario** (`components/v3/SerieDiariaChart.tsx`): mismo estilo que "Desempeño por día" del dashboard.
+  - **Barras**: una barra por métrica; la primera en el eje izquierdo y la segunda en el derecho.
+  - **Línea**: área suave con degradado y puntos huecos, igual que el gráfico de tendencia de Hotmart.
+  - Selector de hasta dos métricas entre nueve (gasto, impresiones, clics, leads, ventas, ROAS, CPA, CTR, CPM).
+- **Anuncios de la selección**: una fila de anuncio representa ese anuncio; una campaña o conjunto representa todos los anuncios que tiene dentro. Límite de 200 anuncios por consulta.
+- **Datos diarios** (`lib/v3/serie-diaria.ts`): cada día suma las cifras de los anuncios y las razones se calculan sobre esas sumas. La ruta `app/api/anuncios/meta/diario/route.ts` agrupa por cuenta publicitaria y aplica las mismas listas de acciones que el pull para leads (`lead`, `offsite_conversion.fb_pixel_custom`, `onsite_conversion.messaging_conversation_started_7d`) y ventas (`purchase`, `omni_purchase`).
+
+### 23.3 Conversiones personalizadas (`lib/v3/conversiones.ts`)
+
+Cada cliente puede crear conversiones que combinan dos eventos de sus leads, con un nombre propio. Se cuentan **por lead** y después se atribuyen a cada anuncio por `utm_content`. Campañas y conjuntos suman los anuncios que tienen dentro.
+
+**Combinaciones:**
+- **Y**: el lead tuvo los dos eventos.
+- **Luego**: el primer evento ocurrió antes o al mismo tiempo que el segundo.
+- **No**: el lead tuvo el primer evento y no el segundo.
+
+**Eventos disponibles** (cada uno sale de un campo de `client_leads.extra` o del estado):
+- Respondió la encuesta (`encuesta_at`), vio la página de gracias (`gracias_visto_at`), recibió el mensaje 1a1 (`mensaje_1a1_recibido_at`), entró al grupo (`grupo_ingresado_at`), contactó a soporte (`contacto_soporte_at`).
+- Compró (`status = 'comprado'`, con `venta_at` o, si no está, `created_at`), abandonó el carrito (`carrito_abandonado_at`), tarjeta rechazada (`tarjeta_rechazada_at`), cuota pendiente (`cuota_pendiente_at`).
+
+**Persistencia:**
+- Tabla `v3_conversiones_personalizadas` (`id`, `cliente_id`, `nombre`, `config jsonb`, `created_at`, `actualizado_at`) con la misma estructura que los grupos.
+- Workflow de n8n `Integraciones — Conversiones Personalizadas (Cliente)`, id `r4zalCpTDP2yvMi8`, con cuatro webhooks (listar, crear, actualizar, eliminar).
+- Ruta `app/api/v3/conversiones/route.ts`: valida sesión y permiso (lectura para cualquier miembro; crear, actualizar y eliminar con escritura). Variable `N8N_V3_CONVERSIONES_URL`.
+- El constructor es `components/v3/CrearConversion.tsx`: nombre, combinación, dos eventos y una frase que resume la regla.
+
+### 23.4 Filtro de fecha en el Administrador de Anuncios
+
+**Qué cambia.** El período elegido (Hoy, 7, 30 o 90 días, Todo el período, o Rango personalizado) viaja como `fecha_inicio` y `fecha_fin` hasta:
+- La ruta `app/api/anuncios/meta/route.ts`, que pasa `time_range` al pull de n8n.
+- El pull `Integraciones — Pull Meta Ads (Cliente)` (id `g3kj8LgGQP9CeCgL`): los nodos de campañas, conjuntos y anuncios usan `time_range` en lugar de `date_preset=last_30d`. El nodo de serie diaria del dashboard principal (con `time_increment`) no cambió.
+- La ruta de la serie diaria, que también pasa `time_range` al workflow `Integraciones — Diario Meta Ads Anuncios (Cliente)` (id `fq6mEMqKau05PizC`).
+
+**Rango (`lib/meta-ads/rango.ts`).**
+- Sin rango, el valor por defecto son los últimos 30 días completos, sin hoy. Es el mismo equivalente de `last_30d`, así que el dashboard principal no cambia.
+- Meta solo entrega cifras de hasta 37 meses atrás. El servidor recorta el inicio a 36 meses.
+- "Todo el período" no trae fechas en el preset; la página pide desde 2000-01-01 y el servidor lo recorta.
+
+**Carga.** Solo la primera carga muestra la pantalla de carga completa (`primeraCarga` es una referencia). Los cambios de período no desmontan la página, así que no se pierde la selección. Mientras Meta responde aparece "Actualizando datos de Meta…".
+
+**Home.** El dashboard principal sigue en 30 días. Cambiarlo es otro paso.
+
+### 23.5 Ver anuncio — vista previa de Meta
+
+**Flujo.** `AdCreativeCard` → `VistaPreviaAnuncio.tsx` → `GET /api/anuncios/meta/vista-previa?cliente_id&ad_id` → workflow `Integraciones — Vista Previa Meta Ads (Cliente)` (id `LJca7dodTb7EMgRh`) → Graph API `/{ad_id}/previews?ad_format=DESKTOP_FEED_STANDARD` con el token del cliente.
+
+- La ruta valida sesión, permiso de lectura y que `ad_id` sea numérico.
+- Variable `N8N_META_ADS_VISTA_PREVIA_URL`.
+- Quien ve la vista previa **no necesita cuenta de Meta**.
+
+**Render.** Meta devuelve un iframe de 540 × 690 px. Vermetricas lo envuelve en un documento `srcDoc` con:
+- Tamaño natural (540 px de ancho disponible, alto de 820 px para que entre el pie del anuncio).
+- Una sola barra de desplazamiento vertical, la del documento. El iframe de Meta se fija con `scrolling="no"` reemplazando su valor original, no agregando otro atributo.
+- Horizontal oculta.
+
+**Por qué no el enlace al Administrador de Anuncios.** Ese enlace obliga a iniciar sesión en Facebook. La Biblioteca de Anuncios pública no mostró el anuncio al buscarlo por id.
+
+### 23.6 Análisis de Anuncios (`/v3/[clienteId]/analisis`)
+
+**Grupos guardados por cliente.**
+- Tabla `v3_grupos_anuncios` (`id`, `cliente_id`, `nombre`, `config jsonb`, `created_at`, `actualizado_at`).
+- Workflow `Integraciones — Grupos de Anuncios (Cliente)`, id `e8D08LZETDQ0FWUe`, con cuatro webhooks.
+- Ruta `app/api/v3/grupos-anuncios/route.ts`. Variable `N8N_V3_GRUPOS_ANUNCIOS_URL`.
+- La barra `components/v3/GruposAnuncios.tsx` muestra los predefinidos y, después de una línea separadora, los guardados. El botón "Ordenar" va en la misma fila, a la derecha; los grupos que no caben bajan de línea.
+- "+ Guardar como grupo" guarda la configuración actual, con los anuncios seleccionados si se elige. "Guardar cambios en el grupo" aparece cuando la configuración difiere del grupo guardado. Eliminar pide confirmación.
+- La configuración guardada incluye: `grupo`, `metricas`, `estado`, `gastoMinimo`, `campana`, `adIds`, `criterio` y `orden`.
+
+**Criterio de leads calificados (grupo "Mejores leads").** `components/v3/CriterioLeadsPanel.tsx`.
+- La pregunta sale de las respuestas reales de los leads del dashboard (`preguntasDisponibles`). Si la pregunta es una de las fijas de la encuesta muestra su texto; si no, la clave.
+- Reglas:
+  - **Las N de mayor monto**: el monto se lee como el número más alto del texto, con el punto como separador de miles. Los empates cuentan juntos.
+  - **Monto desde**: las respuestas con monto mayor o igual al mínimo.
+  - **Elegir a mano**: se marcan las respuestas tocándolas. Tocar una respuesta pasa el criterio a manual, partiendo de lo que ya estaba marcado.
+- Las respuestas sin monto solo cuentan si se marcan a mano.
+- Cambiar de pregunta borra las respuestas marcadas.
+- El criterio se puede guardar como grupo desde el mismo panel.
+- Al elegir un grupo guardado, el panel se muestra plegado con un resumen y el botón "Editar criterio".
+
+**Cruce con anuncios.** Los leads se cruzan con cada anuncio por `utm_content`. Por anuncio se calculan: total de leads, leads calificados y porcentaje. La métrica "Leads calificados" muestra "n (x%)". El grupo ordena por porcentaje y después por total de leads.
+
+**Filtros y métricas.** `components/v3/AnalisisFiltrosModal.tsx`: grupo, métricas (las que se muestran en cada tarjeta) y filtros de estado, campaña y gasto mínimo.
+
+**Ordenar.** `components/v3/OrdenarAnuncios.tsx`: cualquier métrica en ascendente o descendente. Los anuncios sin dato van al final. Con "Orden del grupo" se usa el orden del grupo.
+
+**Aviso de orden.** Si todos los anuncios empatan en la métrica del grupo, la página avisa que el orden es el de Meta, en lugar de mostrarlo como un ranking.
+
+**Tarjetas.** `components/v3/AdCreativeCard.tsx` muestra solo las métricas elegidas y el botón "Ver anuncio" (ver 23.5). Recibe `clienteId` para pedir la vista previa.
+
+### 23.7 UTM en el dashboard principal
+
+- `lib/v3/embudo.ts`: `calcularUtms(leads)` y `UTM_CLAVES`. Cuenta los leads por valor de cada UTM; los leads sin valor cuentan como "(sin dato)"; excluye los leads sin match.
+- Página `app/v3/[clienteId]/page.tsx`: sección debajo de país y ciudad con cinco tarjetas (`utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`), cada una con `GeoRankingTable` y columna "Valor".
+
+### 23.8 Soporte y guía de Meta
+
+- El sidebar de la V3 tiene un botón de soporte (ícono de salvavidas) que abre `/soporte`.
+- La guía `/soporte/conectar-meta-ads` ahora indica el rol **Empleado** para el usuario del sistema, en lugar de Administrador. La razón: la BM de un cliente puede tener solo un cupo de Administrador, que ya puede estar ocupado. Se probó con un token real de un usuario del sistema con rol Empleado: recibió `ads_read` y `ads_management`, y no vence.
+
+### 23.9 Variables de entorno nuevas
+
+Agregar en `.env.local` y en Vercel (production, preview y development):
+- `N8N_V3_GRUPOS_ANUNCIOS_URL`
+- `N8N_V3_CONVERSIONES_URL`
+- `N8N_META_ADS_VISTA_PREVIA_URL`
+- `N8N_META_ADS_DIARIO_URL`
+
+### 23.10 Workflows de n8n tocados o creados
+
+| Workflow | Id | Qué hace |
+|---|---|---|
+| Integraciones — Pull Meta Ads (Cliente) | `g3kj8LgGQP9CeCgL` | Modificado: campañas, conjuntos y anuncios usan `time_range` |
+| Integraciones — Diario Meta Ads Anuncios (Cliente) | `fq6mEMqKau05PizC` | Nuevo; luego modificado para `time_range` |
+| Integraciones — Vista Previa Meta Ads (Cliente) | `LJca7dodTb7EMgRh` | Nuevo |
+| Integraciones — Grupos de Anuncios (Cliente) | `e8D08LZETDQ0FWUe` | Nuevo |
+| Integraciones — Conversiones Personalizadas (Cliente) | `r4zalCpTDP2yvMi8` | Nuevo |
+
+Tablas nuevas en Postgres: `v3_grupos_anuncios` y `v3_conversiones_personalizadas`. Se crean solas con `CREATE TABLE IF NOT EXISTS` en el primer webhook que las usa.
+
+### 23.11 Despliegue
+
+- El commit `bf605c1` no generó despliegue en Vercel; el último despliegue de producción quedó en `c32f98b`.
+- Se forzó un despliegue con un commit vacío (`566b644`), que sí se construyó. Después de cada push conviene revisar la lista de despliegues.
+
+### 23.12 Gotchas de esta etapa
+
+- **ID de cliente interno, no el slug.** Las tablas referencian `clients.id`, que es el ID largo (por ejemplo `321737bed089b0cb5ddb350b`), no el nombre legible. Con el slug, el insert falla con violación de clave foránea y el workflow responde 500 genérico.
+- **PUT en n8n.** Solo se acepta `settings: { executionOrder: "v1" }`. Después de un PUT, desactivar y activar el workflow para que el webhook tome la versión nueva.
+- **Meta y el rango.** Meta no entrega cifras de más de 37 meses atrás. Los rangos largos tardan varios segundos.
+- **Iframe de Meta.** Trae `scrolling="yes"` y tamaño fijo de 690 px. Si se quita su desplazamiento, hay que darle alto suficiente, si no el contenido final queda cortado.
+- **Atributos HTML duplicados.** Si se agrega un atributo que ya existe, el navegador usa el primero. Hay que reemplazar el valor existente.
+- **`overflow-x-auto` activa el vertical.** En una fila de pestañas con un píxel de más aparece una barra vertical con flechas. Se resuelve con `overflow-y-hidden`.
+- **Tokens en el chat.** Un token de Meta pegado en el chat queda expuesto. Se revoca después de la prueba (se hizo con el token de prueba).
+- **Capturas de referencia de otras cuentas.** Son de otra cuenta y solo se toman como idea de diseño. No se copian nombres, campañas ni datos.
+- **Ancho de página.** Con una ventana de 839 px el contenido es más ancho que la ventana, y el botón de la derecha de la fila de pestañas queda fuera de la vista. En escritorio no pasa.
+
+### 23.13 Pendientes de esta etapa
+
+- Configurar `utm_content={{ad.id}}` en los anuncios de cada cliente, para que el cruce con anuncios tenga datos reales.
+- Extender el filtro de fecha al Home.
+- Agregar "calificado" y "vio la clase" como eventos de conversión personalizada.
+- Permitir editar el nombre de una conversión o de un grupo.
+- Ajustar la altura de la vista previa para anuncios más altos que 820 px.
+- Decidir si la barra de pausar/activar en lote se muestra solo cuando la selección es para pausar o activar.
+- Revisar el ancho de la página en pantallas chicas (la fila de pestañas y la tabla se salen de la vista).

@@ -537,7 +537,7 @@ export default function V3ClientePage() {
           <h2 className="text-sm font-semibold text-on-surface">
             Meta Ads <span className="text-on-surface-faint font-normal">· inversión/impresiones/clics siempre últimos 30 días</span>
           </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard icon={Wallet} label="Inversión publicitaria" value={numeroOGuion(m.inversion, formatMoney)} accent="primary" />
             <KpiCard icon={Eye} label="Impresiones" value={numeroOGuion(m.impresiones, formatNumber)} accent="primary" />
             <KpiCard icon={MousePointerClick} label="Clics" value={numeroOGuion(m.clics, formatNumber)} accent="primary" />
@@ -562,6 +562,7 @@ export default function V3ClientePage() {
               sub="Leads → Ventas (embudo completo)"
               accent="primary"
             />
+            <KpiCard icon={ShoppingCart} label="Ventas" value={numeroOGuion(m.ventasCount, formatNumber)} accent="success" />
             <KpiCard
               icon={DollarSign}
               label="Facturación bruta"
@@ -578,7 +579,6 @@ export default function V3ClientePage() {
             />
             <KpiCard icon={TrendingUp} label="ROAS bruto" value={numeroOGuion(m.roasBruto, (n) => `${n.toFixed(2)}x`)} accent="primary" />
             <KpiCard icon={BarChart3} label="ROAS neto" value={numeroOGuion(m.roasNeto, (n) => `${n.toFixed(2)}x`)} accent="primary" />
-            <KpiCard icon={ShoppingCart} label="Ventas" value={numeroOGuion(m.ventasCount, formatNumber)} accent="success" />
           </div>
 
           <div className="flex flex-col gap-3 mt-2">
