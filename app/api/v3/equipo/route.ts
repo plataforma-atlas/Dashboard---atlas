@@ -32,7 +32,8 @@ export async function GET(req: Request) {
       const body = await res.json().catch(() => ({}));
       return NextResponse.json({ error: body.error || "No se pudo listar el equipo" }, { status: res.status });
     }
-    const data = await res.json();
+    // n8n responde cuerpo vacío (no []) cuando el cliente no tiene miembros.
+    const data = await res.json().catch(() => []);
     return NextResponse.json({ miembros: Array.isArray(data) ? data : [] });
   } catch (err) {
     console.error("Error listando equipo:", err);
