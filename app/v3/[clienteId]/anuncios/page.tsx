@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import { useAcceso } from "@/components/v3/useAcceso";
 import { MetaAdsResponse } from "@/lib/meta-ads/types";
 import { V3Dashboard } from "@/lib/v3/types";
 import VermetricasLoader from "@/components/VermetricasLoader";
@@ -12,6 +13,7 @@ import MetaAdsTable from "@/components/v3/MetaAdsTable";
 export default function V3AnunciosPage() {
   const params = useParams<{ clienteId: string }>();
   const clienteId = params.clienteId;
+  const acceso = useAcceso(clienteId);
   const searchParams = useSearchParams();
   const dashboardIdParam = searchParams.get("dashboard") ?? "";
 
@@ -122,7 +124,7 @@ export default function V3AnunciosPage() {
           {activeTab === "campanhas" && (
             <MetaAdsTable
               nombreColumna="Campaña"
-              onToggleEstado={handleToggleEstado}
+              onToggleEstado={acceso.puedeEscribir ? handleToggleEstado : undefined}
               rows={data.campanas.map((c) => ({
                 id: c.campaign_id,
                 nombre: c.campaign_name,
@@ -140,7 +142,7 @@ export default function V3AnunciosPage() {
           {activeTab === "conjuntos" && (
             <MetaAdsTable
               nombreColumna="Conjunto de anuncios"
-              onToggleEstado={handleToggleEstado}
+              onToggleEstado={acceso.puedeEscribir ? handleToggleEstado : undefined}
               rows={data.conjuntos.map((s) => ({
                 id: s.adset_id,
                 nombre: s.adset_name,
@@ -158,7 +160,7 @@ export default function V3AnunciosPage() {
           {activeTab === "anuncios" && (
             <MetaAdsTable
               nombreColumna="Anuncio"
-              onToggleEstado={handleToggleEstado}
+              onToggleEstado={acceso.puedeEscribir ? handleToggleEstado : undefined}
               rows={data.anuncios.map((a) => ({
                 id: a.ad_id,
                 nombre: a.ad_name,

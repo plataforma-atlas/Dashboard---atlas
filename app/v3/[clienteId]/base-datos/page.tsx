@@ -9,6 +9,7 @@ import LeadHistorialPanel from "@/components/v3/LeadHistorialPanel";
 import LeadEncuestaPanel from "@/components/v3/LeadEncuestaPanel";
 import RecorridoCompraChart from "@/components/v3/RecorridoCompraChart";
 import { obtenerRespuestasLead, esLeadAltoValor } from "@/lib/v3/embudo";
+import { useAcceso } from "@/components/v3/useAcceso";
 import { V3AnalisisRecorrido, V3Lead, V3LeadStatus } from "@/lib/v3/types";
 
 const TABS: { status: V3LeadStatus; label: string }[] = [
@@ -23,6 +24,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50];
 export default function V3BaseDatosPage() {
   const params = useParams<{ clienteId: string }>();
   const clienteId = params.clienteId;
+  const acceso = useAcceso(clienteId);
   const searchParams = useSearchParams();
   const dashboardIdParam = searchParams.get("dashboard") ?? "";
 
@@ -152,6 +154,7 @@ export default function V3BaseDatosPage() {
               {t.label}
             </button>
           ))}
+          {acceso.accesoCompleto && (
           <button
             type="button"
             onClick={() => setTab(TAB_RECORRIDO)}
@@ -161,6 +164,7 @@ export default function V3BaseDatosPage() {
           >
             Recorrido de compra
           </button>
+          )}
         </div>
         {tab !== TAB_RECORRIDO && leads.length > 0 && (
           <div className="flex items-center gap-2 mb-2">

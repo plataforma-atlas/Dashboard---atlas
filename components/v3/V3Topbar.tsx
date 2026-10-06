@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useAcceso } from "@/components/v3/useAcceso";
 import { Menu, Plus } from "lucide-react";
 import { V3Dashboard, V3DashboardTipo } from "@/lib/v3/types";
 
@@ -16,6 +17,7 @@ const LETRAS_PAGINA = ["A", "B", "C", "D", "E"];
 export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () => void }) {
   const params = useParams<{ clienteId?: string }>();
   const clienteId = typeof params?.clienteId === "string" ? params.clienteId : undefined;
+  const acceso = useAcceso(clienteId);
   const router = useRouter();
   const searchParams = useSearchParams();
   const dashboardIdParam = searchParams.get("dashboard") ?? "";
@@ -149,13 +151,15 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
             </select>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => setFormAbierto((v) => !v)}
-          className="press flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
-        >
-          <Plus size={14} /> Crear nuevo
-        </button>
+        {!acceso.soloLectura && (
+          <button
+            type="button"
+            onClick={() => setFormAbierto((v) => !v)}
+            className="press flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+          >
+            <Plus size={14} /> Crear nuevo
+          </button>
+        )}
       </div>
 
       {formAbierto && (

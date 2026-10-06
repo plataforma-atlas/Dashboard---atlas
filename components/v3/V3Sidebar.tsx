@@ -8,6 +8,7 @@ import SidebarCollapseButton from "@/components/SidebarCollapseButton";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import V3ClientSwitcher from "@/components/v3/V3ClientSwitcher";
+import { useAcceso } from "@/components/v3/useAcceso";
 
 type Session = { authenticated: boolean; role?: "admin" | "client"; clientes?: string[] };
 type Cliente = { id: string; name: string };
@@ -51,7 +52,8 @@ export default function V3Sidebar({
 
   const isAdmin = session.role === "admin";
   const clienteActual = clientes.find((c) => c.id === clienteIdActual);
-  const puedeCambiarCliente = isAdmin && clientes.length > 1;
+  const acceso = useAcceso(clienteIdActual);
+  const puedeCambiarCliente = clientes.length > 1;
 
   // Cada link de acá abajo es un <a> normal (navegación real, no SPA), así
   // que el layout no se desmonta entre páginas del mismo /v3/* — sin esto el
@@ -213,6 +215,7 @@ export default function V3Sidebar({
       {/* Configuraciones — conexiones y lo que se agregue a futuro (ej. integración con Claude) va acá abajo, separado del contenido principal. */}
       {clienteIdActual && (
         <nav className="flex flex-col gap-1 pt-4 border-t border-outline">
+          {!acceso.soloLectura && (
           <a
             href={`/v3/${clienteIdActual}/conexiones`}
             title="Conexiones"
@@ -227,6 +230,8 @@ export default function V3Sidebar({
             </span>
             <span className={`truncate ${collapsed ? "md:hidden" : ""}`}>Conexiones</span>
           </a>
+          )}
+          {!acceso.soloLectura && (
           <a
             href={`/v3/${clienteIdActual}/webhooks${dashboardQuery}`}
             title="Webhooks"
@@ -241,6 +246,7 @@ export default function V3Sidebar({
             </span>
             <span className={`truncate ${collapsed ? "md:hidden" : ""}`}>Webhooks</span>
           </a>
+          )}
           <a
             href={`/v3/${clienteIdActual}/equipo`}
             title="Equipo"

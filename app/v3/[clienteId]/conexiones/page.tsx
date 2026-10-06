@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Check, Link2, Plus, X } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
+import { useAcceso } from "@/components/v3/useAcceso";
 import Status from "@/components/ui/status";
 
 type EstadoConexion = { integration_type: string; status: string; updated_at: string; tiene_credencial: boolean };
@@ -22,6 +23,7 @@ function nuevaFila(): CuentaForm {
 export default function V3ConexionesPage() {
   const params = useParams<{ clienteId: string }>();
   const clienteId = params.clienteId;
+  const acceso = useAcceso(clienteId);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -309,7 +311,7 @@ export default function V3ConexionesPage() {
         </div>
         <div className="flex items-center flex-wrap gap-2 shrink-0">
           <Status variant={ghlGuardando ? "pending" : ghlConectado ? "success" : "neutral"} />
-          {!ghlFormAbierto && (
+          {!ghlFormAbierto && acceso.puedeEscribir && (
             <>
               {isAdmin && (
                 <button
@@ -430,7 +432,7 @@ export default function V3ConexionesPage() {
         </div>
         <div className="flex items-center flex-wrap gap-2 shrink-0">
           <Status variant={guardando ? "pending" : metaConectado ? "success" : "neutral"} />
-          {!formAbierto && (
+          {!formAbierto && acceso.puedeEscribir && (
             <>
               {!metaConectado && META_OAUTH_HABILITADO && (
                 <a
@@ -600,7 +602,7 @@ export default function V3ConexionesPage() {
         </div>
         <div className="flex items-center flex-wrap gap-2 shrink-0">
           <Status variant={hotmartGuardando ? "pending" : hotmartConectado ? "success" : "neutral"} />
-          {!hotmartFormAbierto && (
+          {!hotmartFormAbierto && acceso.puedeEscribir && (
             <>
               {hotmartConectado && (
                 <button

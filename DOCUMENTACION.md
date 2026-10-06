@@ -1142,7 +1142,18 @@ Cada persona-cliente tiene un **nivel** (`dueno`, `operador`, `solo_lectura`), u
 - **Servidor** (`lib/permisos.ts`, función `exigirAcceso`): en cada acción lee el nivel de la base (no del token), así un cambio aplica en la siguiente acción. Si no hay vínculo o la consulta falla, se niega. Lo usan todas las rutas de la V3 que escriben o leen por dashboard (dashboards, captación/webhooks, visitas, leads, historial, anuncios, conexiones de GHL/Hotmart/Meta, confirmación de Meta, equipo).
 - **Lecturas restringidas**: los leads exigen un dashboard permitido; el historial se filtra por dashboard; la lista de dashboards se filtra; los anuncios exigen que la nomenclatura corresponda a un dashboard permitido; el **análisis de recorrido** (cruza todos los dashboards) queda solo para acceso completo.
 - **Verificado en vivo** con dos miembros descartables sobre un cliente de prueba: solo lectura ve solo su dashboard, no crea ni invita; operador ve su dashboard, pasa el control de escritura, no invita. Los miembros se borraron después.
-- **Pendiente**: la pantalla no oculta todavía las secciones que el nivel no permite (etapa 3). Hoy el servidor bloquea, pero la interfaz todavía muestra botones que terminan en error. Selector de cliente para miembros con varios clientes (etapa 3).
+- **Pantalla (etapa 3)**: ver la sección siguiente.
+
+### Permisos en la pantalla (etapa 3, 2026-10-06)
+
+La pantalla consulta el nivel con `GET /api/v3/acceso?cliente_id=` (hook `components/v3/useAcceso.ts`) y oculta lo que no corresponde. El servidor sigue validando cada acción: esto es solo para no mostrar botones que terminan en error.
+
+- **Solo lectura**: no ve Conexiones ni Webhooks en la barra lateral, no ve "Crear nuevo", no ve el formulario de invitar ni los botones de quitar miembros, no ve el Recorrido de compra (cruza todos los dashboards), no ve los interruptores de pausar anuncios, y no puede crear ni guardar enlaces en Webhooks.
+- **Operador**: ve y crea todo lo que es de su alcance, excepto el equipo (invitar y quitar), que es solo del dueño.
+- **Dueño**: sin cambios.
+- **Selector de cliente**: ahora lo puede usar cualquier persona con más de un cliente (antes solo el admin). Así quien trabaja con varios cliente cambia de uno a otro desde la barra lateral.
+- **Verificado en vivo**: con un miembro de solo lectura sobre un cliente de prueba, la barra lateral, la barra superior, Base de datos y Equipo se ven como corresponde. El usuario se borró después.
+- **Pendiente**: la pantalla de Conexiones y Webhooks para solo lectura sigue mostrando los datos; solo se ocultan las acciones. Y la tabla de usuarios sigue sin versión móvil.
 
 ### Pendientes / deferred explícitamente
 

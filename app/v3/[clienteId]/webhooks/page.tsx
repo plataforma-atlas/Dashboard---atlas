@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import { useAcceso } from "@/components/v3/useAcceso";
 import { Check, Link2, Plus, Save } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import { V3CaptacionPunto, V3Dashboard, V3EndpointTipo } from "@/lib/v3/types";
@@ -41,6 +42,7 @@ function construirContenidoParaCopiar(tipo: "captacion" | V3EndpointTipo, token:
 export default function V3WebhooksPage() {
   const params = useParams<{ clienteId: string }>();
   const clienteId = params.clienteId;
+  const acceso = useAcceso(clienteId);
   const searchParams = useSearchParams();
   const dashboardIdParam = searchParams.get("dashboard") ?? "";
 
@@ -224,7 +226,7 @@ export default function V3WebhooksPage() {
                   <button
                     type="button"
                     onClick={() => guardarUrlEnlace(campo.tipo, campo.valor)}
-                    disabled={guardandoTipo === campo.tipo}
+                    disabled={guardandoTipo === campo.tipo || !acceso.puedeEscribir}
                     className="press flex items-center gap-1.5 text-[12px] px-3 py-2 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150 disabled:opacity-50"
                   >
                     {enlaceGuardado === campo.tipo ? (
@@ -338,6 +340,7 @@ export default function V3WebhooksPage() {
             </div>
           )}
 
+          {acceso.puedeEscribir && (
           <form onSubmit={crearPunto} className="rounded-lg border border-outline bg-surface p-4 flex flex-col sm:flex-row sm:items-end gap-3">
             <div className="flex flex-col gap-1.5 flex-1 min-w-0">
               <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Nombre del punto</label>
@@ -357,6 +360,7 @@ export default function V3WebhooksPage() {
               <Plus size={14} /> {creando ? "Creando…" : "Agregar punto"}
             </button>
           </form>
+          )}
           {formError && <p className="text-sm text-error">{formError}</p>}
         </>
       )}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useAcceso } from "@/components/v3/useAcceso";
 import { Mail, Trash2, UserPlus } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
 
@@ -34,6 +35,7 @@ const ETIQUETA_NIVEL: Record<Miembro["nivel"], string> = {
 export default function V3EquipoPage() {
   const params = useParams<{ clienteId: string }>();
   const clienteId = params.clienteId;
+  const acceso = useAcceso(clienteId);
 
   const [clienteNombre, setClienteNombre] = useState(clienteId);
   const [miUserId, setMiUserId] = useState<number | null>(null);
@@ -162,6 +164,7 @@ export default function V3EquipoPage() {
         </p>
       </header>
 
+      {acceso.esDueno && (
       <form onSubmit={invitar} className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-end gap-3">
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
@@ -223,6 +226,7 @@ export default function V3EquipoPage() {
           )}
         </div>
       </form>
+      )}
       {invitarError && <p className="text-sm text-error">{invitarError}</p>}
       {invitarOk && (
         <p className="text-sm text-success flex items-center gap-1.5">
@@ -276,7 +280,7 @@ export default function V3EquipoPage() {
                       )}
                     </td>
                     <td className="px-4 py-2.5">
-                      {!esYo && (
+                      {!esYo && acceso.esDueno && (
                         <button
                           type="button"
                           onClick={() => quitar(m.id)}
