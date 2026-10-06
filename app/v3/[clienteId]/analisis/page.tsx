@@ -9,16 +9,22 @@ import MetaNoConectado from "@/components/v3/MetaNoConectado";
 import AdCreativeCard from "@/components/v3/AdCreativeCard";
 import AnalisisFiltrosModal from "@/components/v3/AnalisisFiltrosModal";
 import GruposAnuncios from "@/components/v3/GruposAnuncios";
+import CriterioLeadsPanel from "@/components/v3/CriterioLeadsPanel";
 import Pagination from "@/components/ui/pagination";
 import { useAcceso } from "@/components/v3/useAcceso";
 import { SlidersHorizontal } from "lucide-react";
+import { V3Lead } from "@/lib/v3/types";
 import {
   CONFIG_POR_DEFECTO,
+  CriterioLeads,
   ConfigAnalisis,
   GrupoGuardado,
   GrupoKey,
   aplicarConfig,
+  calcularLeadsPorAnuncio,
   filtrosActivos,
+  respuestasCalificadas,
+  respuestasDePregunta,
   sanitizarConfig,
 } from "@/lib/v3/analisis-anuncios";
 
@@ -41,6 +47,7 @@ export default function V3AnalisisPage() {
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const [grupos, setGrupos] = useState<GrupoGuardado[]>([]);
   const [grupoActivo, setGrupoActivo] = useState<string>("g:todos");
+  const [leads, setLeads] = useState<V3Lead[]>([]);
   const acceso = useAcceso(clienteId);
 
   useEffect(() => {
@@ -60,6 +67,26 @@ export default function V3AnalisisPage() {
   }, [clienteId]);
 
   const dashboardActual = dashboards.find((d) => String(d.id) === dashboardIdParam) ?? null;
+  const dashboardActualId = dashboardActual?.id ?? null;
+
+  useEffect(() => {
+    if (!clienteId || dashboardActualId === null) {
+      setLeads([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/v3/leads?cliente_id=${clienteId}&dashboard_id=${dashboardActualId}`, { cache: "no-store" })
+      .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
+      .then(({ ok, body }) => {
+        if (!cancelled) setLeads(ok && Array.isArray(body.leads) ? body.leads : []);
+      })
+      .catch(() => {
+        if (!cancelled) setLeads([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [clienteId, dashboardActualId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,7 +148,14 @@ export default function V3AnalisisPage() {
     return <MetaNoConectado />;
   }
 
-  const anunciosOrdenados = aplicarConfig(data.anuncios, config);
+  const respuestasCriterio = config.criterio ? respuestasDePregunta(leads, config.criterio.pregunta) : [];
+  const calificadas = config.criterio ? respuestasCalificadas(config.criterio, respuestasCriterio) : new Set<string>();
+  const anunciosConLeads = calcularLeadsPorAnuncio(data.anuncios, leads, config.criterio, calificadas);
+  const anunciosOrdenados = aplicarConfig(anunciosConLeads, config);
+
+  function cambiarCriterio(criterio: CriterioLeads) {
+    setConfig((c) => ({ ...c, criterio }));
+  }
   const anunciosSeleccionados = anunciosOrdenados.filter((a) => seleccionados.includes(a.ad_id));
   const campanasDisponibles = Array.from(new Map(data.anuncios.map((a) => [a.campaign_id, a.campaign_name])), ([id, nombre]) => ({
     id,
@@ -232,6 +266,17 @@ export default function V3AnalisisPage() {
         onActualizar={actualizarGrupoActivo}
         onEliminar={eliminarGrupo}
       />
+
+      {config.grupo === "mejores_leads" && (
+        <CriterioLeadsPanel
+          leads={leads}
+          criterio={config.criterio}
+          dashboardElegido={dashboardActualId !== null}
+          puedeEscribir={acceso.puedeEscribir}
+          onChange={cambiarCriterio}
+          onGuardarGrupo={(nombre) => guardarNuevoGrupo(nombre, false)}
+        />
+      )}
 
       {filtrosAbiertos && (
         <AnalisisFiltrosModal

@@ -1,8 +1,7 @@
 "use client";
 
 import { Check, ImageOff } from "lucide-react";
-import { MetaAdRow } from "@/lib/meta-ads/types";
-import { METRICAS_POR_DEFECTO, MetricaKey, metricaDef } from "@/lib/v3/analisis-anuncios";
+import { AnuncioAnalisis, METRICAS_POR_DEFECTO, MetricaKey, metricaDef } from "@/lib/v3/analisis-anuncios";
 
 export default function AdCreativeCard({
   ad,
@@ -10,7 +9,7 @@ export default function AdCreativeCard({
   onToggle,
   metricas = METRICAS_POR_DEFECTO,
 }: {
-  ad: MetaAdRow;
+  ad: AnuncioAnalisis;
   selected: boolean;
   onToggle: () => void;
   metricas?: MetricaKey[];
