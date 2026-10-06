@@ -41,7 +41,7 @@ Esta sección es la foto de hoy. Las secciones de abajo son el historial de cóm
 - Los webhooks que pegan los clientes en sus landings o herramientas se llaman **Webhooks** en la V3 (sección renombrada desde "Endpoints"). La excepción es el **pixel de visitas**, que es un snippet de imagen y no un webhook; por eso se rotula como pixel.
 
 ### Pendientes conocidos
-- Límite de miembros de equipo y permisos granulares.
+- Límite de miembros de equipo (permisos por niveles y dashboards ya aplicados en el servidor; falta la pantalla que lo muestra a cada miembro).
 - Precios, planes y IDs de planes en Whop; encendido del webhook; lógica de alta automática y de bloqueo por cancelación o atraso.
 - **Check-in** (rol de personal externo de eventos): la pantalla existe, pero la gestión de ese personal queda para más adelante.
 - **Backoffice** para el equipo de Vermetricas: planeado, pendiente. Se contempla desde ahora en el modelo de roles.
@@ -1131,6 +1131,18 @@ Decisión de negocio (confirmada con John): las ventas se cobran por **Whop**, n
 - **Sin link a la clásica**: se sacó "Volver a la versión clásica" de la barra lateral de la V3, y el aviso de "Próximamente" ya no ofrece ir a la clásica.
 - **Usuarios en la V3**: nuevo ítem "Usuarios" en la barra lateral, visible solo para admin, que abre `/v3/usuarios`. La lógica de la pantalla vive ahora en `components/v3/UsuariosAdminPanel.tsx`, compartido por la V3 y por `app/admin/usuarios` (versión vieja, respaldo). El alta de usuario se abre en un popup con el botón "+ Nuevo usuario"; al crear, el popup se cierra y la lista se recarga.
 - **Verificado**: login del admin → entra a `/v3` y termina en la primera cuenta; la barra lateral muestra Dashboard y Usuarios; el popup se abre desde la pantalla de usuarios. La captura del navegador mostró la tabla "traspasando" el popup, pero en el DOM el popup es el elemento de arriba y tiene fondo sólido: es un artefacto de la captura, no del código.
+
+### Permisos por cliente: niveles y dashboards (2026-10-06)
+
+Cada persona-cliente tiene un **nivel** (`dueno`, `operador`, `solo_lectura`), una lista de **dashboards permitidos** (vacía = todos) y un **origen** (quién lo agregó). Viven en `user_clients`.
+
+- **Niveles**: *Dueño* = acceso completo (como hoy). *Operador* = crea y configura (dashboards, conexiones, webhooks, leads), no gestiona el equipo. *Solo lectura* = ve, no escribe.
+- **Quién gestiona el equipo**: solo el dueño invita y quita miembros.
+- **Dashboards por persona**: el dueño elige cuáles ve cada miembro, al invitarlo. Solo se pueden elegir dashboards del propio cliente.
+- **Servidor** (`lib/permisos.ts`, función `exigirAcceso`): en cada acción lee el nivel de la base (no del token), así un cambio aplica en la siguiente acción. Si no hay vínculo o la consulta falla, se niega. Lo usan todas las rutas de la V3 que escriben o leen por dashboard (dashboards, captación/webhooks, visitas, leads, historial, anuncios, conexiones de GHL/Hotmart/Meta, confirmación de Meta, equipo).
+- **Lecturas restringidas**: los leads exigen un dashboard permitido; el historial se filtra por dashboard; la lista de dashboards se filtra; los anuncios exigen que la nomenclatura corresponda a un dashboard permitido; el **análisis de recorrido** (cruza todos los dashboards) queda solo para acceso completo.
+- **Verificado en vivo** con dos miembros descartables sobre un cliente de prueba: solo lectura ve solo su dashboard, no crea ni invita; operador ve su dashboard, pasa el control de escritura, no invita. Los miembros se borraron después.
+- **Pendiente**: la pantalla no oculta todavía las secciones que el nivel no permite (etapa 3). Hoy el servidor bloquea, pero la interfaz todavía muestra botones que terminan en error. Selector de cliente para miembros con varios clientes (etapa 3).
 
 ### Pendientes / deferred explícitamente
 
