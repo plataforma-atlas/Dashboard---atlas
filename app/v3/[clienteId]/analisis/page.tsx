@@ -8,9 +8,19 @@ import VermetricasLoader from "@/components/VermetricasLoader";
 import MetaNoConectado from "@/components/v3/MetaNoConectado";
 import AdCreativeCard from "@/components/v3/AdCreativeCard";
 import AnalisisFiltrosModal from "@/components/v3/AnalisisFiltrosModal";
+import GruposAnuncios from "@/components/v3/GruposAnuncios";
 import Pagination from "@/components/ui/pagination";
+import { useAcceso } from "@/components/v3/useAcceso";
 import { SlidersHorizontal } from "lucide-react";
-import { CONFIG_POR_DEFECTO, ConfigAnalisis, aplicarConfig, filtrosActivos } from "@/lib/v3/analisis-anuncios";
+import {
+  CONFIG_POR_DEFECTO,
+  ConfigAnalisis,
+  GrupoGuardado,
+  GrupoKey,
+  aplicarConfig,
+  filtrosActivos,
+  sanitizarConfig,
+} from "@/lib/v3/analisis-anuncios";
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
 
@@ -29,6 +39,17 @@ export default function V3AnalisisPage() {
   const [pageSize, setPageSize] = useState(12);
   const [config, setConfig] = useState<ConfigAnalisis>(CONFIG_POR_DEFECTO);
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
+  const [grupos, setGrupos] = useState<GrupoGuardado[]>([]);
+  const [grupoActivo, setGrupoActivo] = useState<string>("g:todos");
+  const acceso = useAcceso(clienteId);
+
+  useEffect(() => {
+    if (!clienteId) return;
+    fetch(`/api/v3/grupos-anuncios?cliente_id=${clienteId}`, { cache: "no-store" })
+      .then((res) => res.json().then((body) => (res.ok && Array.isArray(body) ? body : [])))
+      .then((lista) => setGrupos(lista))
+      .catch(() => setGrupos([]));
+  }, [clienteId]);
 
   useEffect(() => {
     if (!clienteId) return;
@@ -110,8 +131,67 @@ export default function V3AnalisisPage() {
 
   function aplicarFiltros(nueva: ConfigAnalisis) {
     setConfig(nueva);
+    setGrupoActivo("libre");
     setPage(1);
     setFiltrosAbiertos(false);
+  }
+
+  const grupoGuardadoActivo = grupoActivo.startsWith("s:") ? grupos.find((g) => `s:${g.id}` === grupoActivo) : undefined;
+  const hayCambios = grupoGuardadoActivo
+    ? JSON.stringify(sanitizarConfig(grupoGuardadoActivo.config)) !== JSON.stringify(config)
+    : false;
+
+  function seleccionarPredefinido(key: GrupoKey) {
+    setConfig((c) => ({ ...c, grupo: key, adIds: [] }));
+    setGrupoActivo(`g:${key}`);
+    setPage(1);
+  }
+
+  function seleccionarGuardado(g: GrupoGuardado) {
+    setConfig(sanitizarConfig(g.config));
+    setGrupoActivo(`s:${g.id}`);
+    setPage(1);
+  }
+
+  async function guardarNuevoGrupo(nombre: string, soloSeleccionados: boolean): Promise<string | null> {
+    const configGuardar: ConfigAnalisis = { ...config, adIds: soloSeleccionados ? seleccionados : [] };
+    const res = await fetch("/api/v3/grupos-anuncios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cliente_id: clienteId, nombre, config: configGuardar }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return body.error || "No se pudo guardar el grupo";
+    const nuevo = body as GrupoGuardado;
+    setGrupos((prev) => [...prev, nuevo]);
+    setConfig(sanitizarConfig(nuevo.config));
+    setGrupoActivo(`s:${nuevo.id}`);
+    return null;
+  }
+
+  async function actualizarGrupoActivo(): Promise<string | null> {
+    if (!grupoGuardadoActivo) return "Elegí un grupo para actualizar";
+    const res = await fetch("/api/v3/grupos-anuncios", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: grupoGuardadoActivo.id, cliente_id: clienteId, nombre: grupoGuardadoActivo.nombre, config }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return body.error || "No se pudo actualizar el grupo";
+    setGrupos((prev) => prev.map((g) => (g.id === grupoGuardadoActivo.id ? (body as GrupoGuardado) : g)));
+    return null;
+  }
+
+  async function eliminarGrupo(id: number): Promise<string | null> {
+    const res = await fetch(`/api/v3/grupos-anuncios?id=${id}&cliente_id=${clienteId}`, { method: "DELETE" });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return body.error || "No se pudo eliminar el grupo";
+    setGrupos((prev) => prev.filter((g) => g.id !== id));
+    if (grupoActivo === `s:${id}`) {
+      setGrupoActivo("g:todos");
+      setConfig((c) => ({ ...c, grupo: "todos", adIds: [] }));
+    }
+    return null;
   }
   const totalPages = Math.max(1, Math.ceil(anunciosOrdenados.length / pageSize));
   const pageClamped = Math.min(page, totalPages);
@@ -139,6 +219,19 @@ export default function V3AnalisisPage() {
           )}
         </button>
       </header>
+
+      <GruposAnuncios
+        guardados={grupos}
+        activo={grupoActivo}
+        puedeEscribir={acceso.puedeEscribir}
+        hayCambios={hayCambios}
+        cantSeleccionados={seleccionados.length}
+        onSeleccionarPredefinido={seleccionarPredefinido}
+        onSeleccionarGuardado={seleccionarGuardado}
+        onGuardarNuevo={guardarNuevoGrupo}
+        onActualizar={actualizarGrupoActivo}
+        onEliminar={eliminarGrupo}
+      />
 
       {filtrosAbiertos && (
         <AnalisisFiltrosModal
