@@ -2,31 +2,22 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { formatMoney, formatNumber } from "@/lib/webinar-os/aggregate";
 import Pagination from "@/components/ui/pagination";
+import { ColumnaKey, DefColumna, FilaTabla, columnaDef } from "@/lib/v3/columnas-tabla";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
-
-type Row = {
-  id: string;
-  nombre: string;
-  subtitulo?: string;
-  status: string;
-  spend: number;
-  impressions: number;
-  clicks: number;
-  ctr: number;
-  cpm: number;
-  leads: number;
-};
 
 export default function MetaAdsTable({
   rows,
   nombreColumna,
+  columnas,
+  definiciones,
   onToggleEstado,
 }: {
-  rows: Row[];
+  rows: FilaTabla[];
   nombreColumna: string;
+  columnas: ColumnaKey[];
+  definiciones: DefColumna[];
   onToggleEstado?: (id: string, nuevoEstado: "ACTIVE" | "PAUSED") => Promise<void>;
 }) {
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
@@ -46,7 +37,7 @@ export default function MetaAdsTable({
   const totalPages = Math.max(1, Math.ceil(ordenadas.length / pageSize));
   const pageClamped = Math.min(page, totalPages);
   const visibles = ordenadas.slice((pageClamped - 1) * pageSize, pageClamped * pageSize);
-  const puedeAlternar = (r: Row) => r.status === "ACTIVE" || r.status === "PAUSED";
+  const puedeAlternar = (r: FilaTabla) => r.status === "ACTIVE" || r.status === "PAUSED";
   const alternables = visibles.filter(puedeAlternar);
   const todosSeleccionados = alternables.length > 0 && alternables.every((r) => seleccionados.has(r.id));
 
@@ -119,12 +110,11 @@ export default function MetaAdsTable({
                 </>
               )}
               <th className="py-2 pr-4 font-medium">{nombreColumna}</th>
-              <th className="py-2 pr-4 font-medium text-right">Gasto</th>
-              <th className="py-2 pr-4 font-medium text-right">Impresiones</th>
-              <th className="py-2 pr-4 font-medium text-right">Clics</th>
-              <th className="py-2 pr-4 font-medium text-right">CTR</th>
-              <th className="py-2 pr-4 font-medium text-right">CPM</th>
-              <th className="py-2 pr-4 font-medium text-right">Leads (Meta)</th>
+              {columnas.map((key) => (
+                <th key={key} className="py-2 pr-4 font-medium text-right whitespace-nowrap">
+                  {columnaDef(key, definiciones)?.label}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -198,12 +188,14 @@ export default function MetaAdsTable({
                   )}
                   {erroresPorFila[r.id] && <p className="text-[11px] text-error mt-1 max-w-[220px]">{erroresPorFila[r.id]}</p>}
                 </td>
-                <td className="py-2.5 pr-4 text-right text-on-surface tabular">{formatMoney(r.spend)}</td>
-                <td className="py-2.5 pr-4 text-right text-on-surface-variant tabular">{formatNumber(r.impressions)}</td>
-                <td className="py-2.5 pr-4 text-right text-on-surface-variant tabular">{formatNumber(r.clicks)}</td>
-                <td className="py-2.5 pr-4 text-right text-on-surface-variant tabular">{r.ctr.toFixed(2)}%</td>
-                <td className="py-2.5 pr-4 text-right text-on-surface-variant tabular">{formatMoney(r.cpm)}</td>
-                <td className="py-2.5 pr-4 text-right text-on-surface-variant tabular">{formatNumber(r.leads)}</td>
+                {columnas.map((key) => {
+                  const def = columnaDef(key, definiciones);
+                  return (
+                    <td key={key} className="py-2.5 pr-4 text-right text-on-surface-variant tabular">
+                      {def ? def.formatear(r) : "—"}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>

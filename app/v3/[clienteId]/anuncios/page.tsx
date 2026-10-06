@@ -9,6 +9,23 @@ import VermetricasLoader from "@/components/VermetricasLoader";
 import MetaNoConectado from "@/components/v3/MetaNoConectado";
 import Tabs from "@/components/v3/Tabs";
 import MetaAdsTable from "@/components/v3/MetaAdsTable";
+import PersonalizarColumnas from "@/components/v3/PersonalizarColumnas";
+import CrearConversion from "@/components/v3/CrearConversion";
+import { ConversionPersonalizada, ReglaConversion, contarConversionPorAnuncio } from "@/lib/v3/conversiones";
+import { V3Lead } from "@/lib/v3/types";
+import { COLUMNAS, COLUMNAS_POR_DEFECTO, ColumnaKey, columnasDeConversiones, sanitizarColumnas } from "@/lib/v3/columnas-tabla";
+import { Columns3 } from "lucide-react";
+
+// Columnas que eligió la persona para las tablas. Se guardan en su navegador.
+const CLAVE_COLUMNAS = "vermetricas.v3.columnas-anuncios";
+
+function guardarColumnas(columnas: ColumnaKey[]) {
+  try {
+    localStorage.setItem(CLAVE_COLUMNAS, JSON.stringify(columnas));
+  } catch {
+    // Sin acceso al almacenamiento, las columnas duran lo que la pantalla.
+  }
+}
 
 export default function V3AnunciosPage() {
   const params = useParams<{ clienteId: string }>();
@@ -23,6 +40,28 @@ export default function V3AnunciosPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"campanhas" | "conjuntos" | "anuncios">("campanhas");
+  const [columnas, setColumnas] = useState<ColumnaKey[]>(COLUMNAS_POR_DEFECTO);
+  const [columnasAbierto, setColumnasAbierto] = useState(false);
+  const [conversiones, setConversiones] = useState<ConversionPersonalizada[]>([]);
+  const [creandoConversion, setCreandoConversion] = useState(false);
+  const [leads, setLeads] = useState<V3Lead[]>([]);
+
+  useEffect(() => {
+    if (!clienteId) return;
+    fetch(`/api/v3/conversiones?cliente_id=${clienteId}`, { cache: "no-store" })
+      .then((res) => res.json().then((body) => (res.ok && Array.isArray(body) ? body : [])))
+      .then((lista) => setConversiones(lista))
+      .catch(() => setConversiones([]));
+  }, [clienteId]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(CLAVE_COLUMNAS);
+      if (raw) setColumnas(sanitizarColumnas(JSON.parse(raw)));
+    } catch {
+      // Si lo guardado está dañado, se usan las columnas por defecto.
+    }
+  }, []);
 
   // El selector de dashboard vive en la barra global (V3Topbar) — acá solo
   // leemos qué nomenclatura corresponde al elegido para filtrar los datos.
@@ -35,6 +74,26 @@ export default function V3AnunciosPage() {
   }, [clienteId]);
 
   const dashboardActual = dashboards.find((d) => String(d.id) === dashboardIdParam) ?? null;
+  const dashboardActualId = dashboardActual?.id ?? null;
+
+  useEffect(() => {
+    if (!clienteId || dashboardActualId === null) {
+      setLeads([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/v3/leads?cliente_id=${clienteId}&dashboard_id=${dashboardActualId}`, { cache: "no-store" })
+      .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
+      .then(({ ok, body }) => {
+        if (!cancelled) setLeads(ok && Array.isArray(body.leads) ? body.leads : []);
+      })
+      .catch(() => {
+        if (!cancelled) setLeads([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [clienteId, dashboardActualId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +162,64 @@ export default function V3AnunciosPage() {
     });
   }
 
+  // Conversiones por anuncio. Campañas y conjuntos suman los anuncios que tienen dentro.
+  const conversionesPorAnuncio = new Map<string, Record<string, number>>();
+  for (const conv of conversiones) {
+    const conteo = contarConversionPorAnuncio(leads, conv.config as ReglaConversion);
+    for (const [adId, n] of conteo) {
+      const actual = conversionesPorAnuncio.get(adId) ?? {};
+      actual[`conv:${conv.id}`] = n;
+      conversionesPorAnuncio.set(adId, actual);
+    }
+  }
+  const definiciones = [...COLUMNAS, ...columnasDeConversiones(conversiones)];
+  // Una columna guardada cuya conversión ya no existe no se muestra.
+  const columnasVisibles = columnas.filter((k) => definiciones.some((d) => d.key === k));
+  const hayConversiones = conversiones.length > 0 && dashboardActualId !== null;
+
+  function conversionesDe(anuncios: { ad_id: string }[]): Record<string, number> | undefined {
+    if (!hayConversiones) return undefined;
+    const total: Record<string, number> = {};
+    for (const conv of conversiones) total[`conv:${conv.id}`] = 0;
+    for (const { ad_id } of anuncios) {
+      const propias = conversionesPorAnuncio.get(ad_id) ?? {};
+      for (const [k, n] of Object.entries(propias)) total[k] = (total[k] ?? 0) + n;
+    }
+    return total;
+  }
+
+  async function eliminarConversion(key: ColumnaKey): Promise<string | null> {
+    const id = Number(key.slice("conv:".length));
+    const res = await fetch(`/api/v3/conversiones?id=${id}&cliente_id=${clienteId}`, { method: "DELETE" });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return body.error || "No se pudo eliminar la conversión";
+    setConversiones((prev) => prev.filter((c) => c.id !== id));
+    setColumnas((prev) => {
+      const siguientes = prev.filter((k) => k !== key);
+      guardarColumnas(siguientes);
+      return siguientes;
+    });
+    return null;
+  }
+
+  async function guardarConversion(nombre: string, config: ReglaConversion): Promise<string | null> {
+    const res = await fetch("/api/v3/conversiones", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cliente_id: clienteId, nombre, config }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return body.error || "No se pudo guardar la conversión";
+    const nueva = body as ConversionPersonalizada;
+    setConversiones((prev) => [...prev, nueva]);
+    setColumnas((prev) => {
+      const siguientes = [...prev, `conv:${nueva.id}` as ColumnaKey];
+      guardarColumnas(siguientes);
+      return siguientes;
+    });
+    return null;
+  }
+
   return (
     <div className="px-4 py-8 md:px-8 max-w-7xl mx-auto flex flex-col gap-6">
       <header className="flex flex-col gap-1">
@@ -121,9 +238,21 @@ export default function V3AnunciosPage() {
           onChange={(id) => setActiveTab(id as typeof activeTab)}
         />
         <div className="pt-4">
+          <div className="flex justify-end pb-3">
+            <button
+              type="button"
+              onClick={() => setColumnasAbierto(true)}
+              className="press inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-outline text-[13px] text-on-surface-variant hover:text-on-surface transition-colors duration-150"
+            >
+              <Columns3 size={14} strokeWidth={2} />
+              Columnas
+            </button>
+          </div>
           {activeTab === "campanhas" && (
             <MetaAdsTable
               nombreColumna="Campaña"
+              columnas={columnasVisibles}
+              definiciones={definiciones}
               onToggleEstado={acceso.puedeEscribir ? handleToggleEstado : undefined}
               rows={data.campanas.map((c) => ({
                 id: c.campaign_id,
@@ -133,15 +262,20 @@ export default function V3AnunciosPage() {
                 spend: c.spend,
                 impressions: c.impressions,
                 clicks: c.clicks,
+                link_clicks: c.link_clicks,
                 ctr: c.ctr,
                 cpm: c.cpm,
+                cpc: c.cpc,
                 leads: c.leads,
+                conversiones: conversionesDe(data.anuncios.filter((a) => a.campaign_id === c.campaign_id)),
               }))}
             />
           )}
           {activeTab === "conjuntos" && (
             <MetaAdsTable
               nombreColumna="Conjunto de anuncios"
+              columnas={columnasVisibles}
+              definiciones={definiciones}
               onToggleEstado={acceso.puedeEscribir ? handleToggleEstado : undefined}
               rows={data.conjuntos.map((s) => ({
                 id: s.adset_id,
@@ -151,15 +285,20 @@ export default function V3AnunciosPage() {
                 spend: s.spend,
                 impressions: s.impressions,
                 clicks: s.clicks,
+                link_clicks: s.link_clicks,
                 ctr: s.ctr,
                 cpm: s.cpm,
+                cpc: s.cpc,
                 leads: s.leads,
+                conversiones: conversionesDe(data.anuncios.filter((a) => a.adset_id === s.adset_id)),
               }))}
             />
           )}
           {activeTab === "anuncios" && (
             <MetaAdsTable
               nombreColumna="Anuncio"
+              columnas={columnasVisibles}
+              definiciones={definiciones}
               onToggleEstado={acceso.puedeEscribir ? handleToggleEstado : undefined}
               rows={data.anuncios.map((a) => ({
                 id: a.ad_id,
@@ -169,14 +308,38 @@ export default function V3AnunciosPage() {
                 spend: a.spend,
                 impressions: a.impressions,
                 clicks: a.clicks,
+                link_clicks: a.link_clicks,
                 ctr: a.ctr,
                 cpm: a.cpm,
                 leads: a.leads,
+                ventas: a.ventas,
+                roas: a.roas,
+                cpa: a.cpa,
+                conversiones: conversionesDe([a]),
               }))}
             />
           )}
         </div>
       </div>
+
+      {columnasAbierto && (
+        <PersonalizarColumnas
+          columnas={columnasVisibles}
+          definiciones={definiciones}
+          onCrearConversion={() => setCreandoConversion(true)}
+          onEliminarConversion={eliminarConversion}
+          onAplicar={(nuevas) => {
+            setColumnas(nuevas);
+            guardarColumnas(nuevas);
+            setColumnasAbierto(false);
+          }}
+          onClose={() => setColumnasAbierto(false)}
+        />
+      )}
+
+      {creandoConversion && (
+        <CrearConversion onGuardar={guardarConversion} onClose={() => setCreandoConversion(false)} />
+      )}
     </div>
   );
 }
