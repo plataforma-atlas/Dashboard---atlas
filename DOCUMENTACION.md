@@ -1155,6 +1155,19 @@ La pantalla consulta el nivel con `GET /api/v3/acceso?cliente_id=` (hook `compon
 - **Verificado en vivo**: con un miembro de solo lectura sobre un cliente de prueba, la barra lateral, la barra superior, Base de datos y Equipo se ven como corresponde. El usuario se borró después.
 - **Pendiente**: la pantalla de Conexiones y Webhooks para solo lectura sigue mostrando los datos; solo se ocultan las acciones. Y la tabla de usuarios sigue sin versión móvil.
 
+### Pruebas de permisos (etapa 4, 2026-10-06)
+
+Se probaron en vivo, contra las rutas reales, cinco perfiles descartables sobre un cliente de prueba: dueño, operador con acceso completo, operador restringido a un dashboard, solo lectura con acceso completo, y solo lectura restringida a un dashboard. Resultado: **0 fallas**.
+
+- **Dueño**: lee todo, pasa el control de escritura, y no puede quitarse a sí mismo del equipo.
+- **Operador (acceso completo)**: lee todos los dashboards y el análisis de recorrido, escribe, y no puede quitar miembros (403).
+- **Operador (un dashboard)**: lee solo ese dashboard (403 en los demás), la lista de dashboards muestra solo ese, y exige elegir un dashboard para ver leads.
+- **Solo lectura (acceso completo)**: lee todo, y todas las escrituras dan 403 (crear dashboard, crear punto de captación, invitar).
+- **Solo lectura (un dashboard)**: lee solo ese dashboard, y las escrituras dan 403.
+- **Cliente ajeno**: 403 aunque la persona tenga cuenta.
+
+Las pruebas no quedan en el repositorio; se corren con un script temporal que crea los usuarios, prueba, y los borra al final.
+
 ### Pendientes / deferred explícitamente
 
 - **OAuth de Meta — scaffolding completo, bloqueado por un trámite externo**: todo el código está construido y en producción (ver sección dedicada arriba), pero apagado hasta que el usuario (1) cree la app en developers.facebook.com con el producto "Facebook Login for Business", (2) configure el redirect URI `https://www.vermetricas.com/api/oauth/meta/callback` y cargue las URLs de `/legal/privacidad`/`/legal/eliminar-datos`, y (3) pase el App ID/App Secret — recién ahí se activa el botón (funciona sin revisión para la cuenta del propio creador de la app, por "Standard Access") y se prepara el texto/guion del video para la revisión final de Meta (necesaria para que funcione con cuentas de clientes reales, no solo las del dueño de la app).
