@@ -154,6 +154,18 @@ export default function V3AnalisisPage() {
   const anunciosConLeads = calcularLeadsPorAnuncio(data.anuncios, leads, config.criterio, calificadas);
   const anunciosOrdenados = aplicarConfig(anunciosConLeads, config);
 
+  // Si todos los anuncios empatan en la métrica del grupo, el orden que se ve es el
+  // de Meta, no un ranking. Se avisa en vez de dejar que parezca un orden real.
+  const todosEmpatan = (valores: number[]) => valores.length > 0 && valores.every((v) => v === valores[0]);
+  const avisoOrden =
+    anunciosOrdenados.length < 2
+      ? null
+      : config.grupo === "mejores_leads" && config.criterio && todosEmpatan(anunciosOrdenados.map((a) => a.leadsTotal))
+        ? "Todavía ningún lead llega con el id del anuncio, así que no hay orden por leads calificados. Se muestran en el orden de Meta."
+        : (config.grupo === "todos" || config.grupo === "mejor_roas") && todosEmpatan(anunciosOrdenados.map((a) => a.roas))
+          ? "Ningún anuncio tiene ROAS todavía (Meta no registra compras), así que se muestran en el orden de Meta."
+          : null;
+
   function cambiarCriterio(criterio: CriterioLeads) {
     setConfig((c) => ({ ...c, criterio }));
   }
@@ -320,6 +332,9 @@ export default function V3AnalisisPage() {
         </p>
       ) : (
         <>
+          {avisoOrden && (
+            <p className="text-[13px] text-on-surface-variant bg-surface border border-outline rounded-lg px-4 py-3">{avisoOrden}</p>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {visibles.map((ad) => (
               <AdCreativeCard
