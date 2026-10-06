@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, Clapperboard, Database, LayoutDashboard, Link2, LogOut, Megaphone, UserCog, UserPlus, Users, X } from "lucide-react";
+import { ChevronDown, Clapperboard, Database, LayoutDashboard, LifeBuoy, Link2, LogOut, Megaphone, UserCog, UserPlus, Users, X } from "lucide-react";
 import ThemeModeToggle from "@/components/ThemeModeToggle";
 import SidebarCollapseButton from "@/components/SidebarCollapseButton";
 import { useSidebarCollapse } from "@/components/useSidebarCollapse";
@@ -273,6 +273,14 @@ export default function V3Sidebar({
           <ThemeModeToggle mode={mode} onToggle={toggleMode} />
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <a
+            href="/soporte"
+            title="Soporte"
+            aria-label="Soporte"
+            className="press w-9 h-9 rounded-lg bg-surface-high hover:bg-outline grid place-items-center text-on-surface-variant hover:text-on-surface transition-colors duration-150"
+          >
+            <LifeBuoy size={16} strokeWidth={2} />
+          </a>
           {isAdmin && (
             <a
               href="/v3/usuarios"
