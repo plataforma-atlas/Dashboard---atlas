@@ -288,6 +288,7 @@ export default function V3AnalisisPage() {
         onGuardarNuevo={guardarNuevoGrupo}
         onActualizar={actualizarGrupoActivo}
         onEliminar={eliminarGrupo}
+        acciones={<OrdenarAnuncios orden={config.orden} onChange={cambiarOrden} />}
       />
 
       {config.grupo === "mejores_leads" && (
@@ -340,12 +341,9 @@ export default function V3AnalisisPage() {
         </p>
       ) : (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-[13px] text-on-surface-faint">
-              {anunciosOrdenados.length} {anunciosOrdenados.length === 1 ? "anuncio" : "anuncios"}
-            </span>
-            <OrdenarAnuncios orden={config.orden} onChange={cambiarOrden} />
-          </div>
+          <span className="text-[13px] text-on-surface-faint">
+            {anunciosOrdenados.length} {anunciosOrdenados.length === 1 ? "anuncio" : "anuncios"}
+          </span>
           {avisoOrden && (
             <p className="text-[13px] text-on-surface-variant bg-surface border border-outline rounded-lg px-4 py-3">{avisoOrden}</p>
           )}

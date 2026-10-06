@@ -17,6 +17,7 @@ export default function GruposAnuncios({
   onGuardarNuevo,
   onActualizar,
   onEliminar,
+  acciones,
 }: {
   guardados: GrupoGuardado[];
   activo: string;
@@ -28,6 +29,8 @@ export default function GruposAnuncios({
   onGuardarNuevo: (nombre: string, soloSeleccionados: boolean) => Promise<string | null>;
   onActualizar: () => Promise<string | null>;
   onEliminar: (id: number) => Promise<string | null>;
+  // Controles que van en la misma fila que los grupos, alineados a la derecha.
+  acciones?: React.ReactNode;
 }) {
   const [formAbierto, setFormAbierto] = useState(false);
   const [nombre, setNombre] = useState("");
@@ -69,7 +72,8 @@ export default function GruposAnuncios({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-start gap-3">
+      <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
         {GRUPOS.map((g) => {
           const esActivo = activo === `g:${g.key}`;
           return (
@@ -136,6 +140,10 @@ export default function GruposAnuncios({
             + Guardar como grupo
           </button>
         )}
+
+      </div>
+
+        {acciones && <div className="shrink-0">{acciones}</div>}
       </div>
 
       {confirmarId !== null && (
