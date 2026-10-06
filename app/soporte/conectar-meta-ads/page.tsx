@@ -123,7 +123,7 @@ export default function ConectarMetaAdsGuiaPage() {
             { texto: <>Andá a <Codigo>business.facebook.com/settings</Codigo> (Configuración del negocio de tu Business Manager).</> },
             { texto: <>En el menú de la izquierda, bajo <Boton>Usuarios</Boton>, hacé clic en <Boton>Usuarios del sistema</Boton>.</> },
             { texto: <>Hacé clic en <Boton>Agregar</Boton>.</> },
-            { texto: <>Ponele un nombre (ej. &quot;Vermetricas API&quot;) y elegí el rol <Boton>Administrador</Boton>. Confirmá.</> },
+            { texto: <>Ponele un nombre (ej. &quot;Vermetricas API&quot;) y elegí el rol <Boton>Empleado</Boton>. Confirmá.</> },
             { texto: <>Con el usuario del sistema ya creado, seleccionalo de la lista y hacé clic en <Boton>Agregar activos</Boton>.</> },
             { texto: <>En la ventana que se abre, elegí la pestaña <Boton>Cuentas publicitarias</Boton>, buscá y seleccioná la cuenta (o cuentas) que querés conectar.</> },
             { texto: <>A la derecha, activá el permiso de <Boton>Control total</Boton> (o como mínimo &quot;Gestionar la cuenta&quot;) para esa cuenta.</> },
