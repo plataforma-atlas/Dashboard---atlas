@@ -6,10 +6,13 @@ export default function Tabs({
   tabs,
   active,
   onChange,
+  acciones,
 }: {
   tabs: TabDef[];
   active: string;
   onChange: (id: string) => void;
+  // Controles que van en la misma fila, alineados a la derecha.
+  acciones?: React.ReactNode;
 }) {
   return (
     <div className="flex items-center gap-5 border-b border-outline overflow-x-auto overflow-y-hidden">
@@ -25,6 +28,7 @@ export default function Tabs({
           {t.label}
         </button>
       ))}
+      {acciones && <div className="ml-auto shrink-0 pb-2">{acciones}</div>}
     </div>
   );
 }

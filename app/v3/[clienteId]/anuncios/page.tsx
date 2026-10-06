@@ -236,9 +236,7 @@ export default function V3AnunciosPage() {
           ]}
           active={activeTab}
           onChange={(id) => setActiveTab(id as typeof activeTab)}
-        />
-        <div className="pt-4">
-          <div className="flex justify-end pb-3">
+          acciones={
             <button
               type="button"
               onClick={() => setColumnasAbierto(true)}
@@ -247,7 +245,9 @@ export default function V3AnunciosPage() {
               <Columns3 size={14} strokeWidth={2} />
               Columnas
             </button>
-          </div>
+          }
+        />
+        <div className="pt-4">
           {activeTab === "campanhas" && (
             <MetaAdsTable
               nombreColumna="Campaña"
