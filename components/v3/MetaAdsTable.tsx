@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import Pagination from "@/components/ui/pagination";
 import { ColumnaKey, DefColumna, FilaTabla, columnaDef } from "@/lib/v3/columnas-tabla";
@@ -13,14 +13,20 @@ export default function MetaAdsTable({
   columnas,
   definiciones,
   onToggleEstado,
+  onSeleccionChange,
 }: {
   rows: FilaTabla[];
   nombreColumna: string;
   columnas: ColumnaKey[];
   definiciones: DefColumna[];
   onToggleEstado?: (id: string, nuevoEstado: "ACTIVE" | "PAUSED") => Promise<void>;
+  // Avisa a quien usa la tabla cada vez que cambia la selección (por ejemplo, para el gráfico).
+  onSeleccionChange?: (ids: Set<string>) => void;
 }) {
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    onSeleccionChange?.(seleccionados);
+  }, [seleccionados]);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
   const [aplicandoId, setAplicandoId] = useState<string | null>(null);
   const [erroresPorFila, setErroresPorFila] = useState<Record<string, string>>({});
@@ -39,7 +45,7 @@ export default function MetaAdsTable({
   const visibles = ordenadas.slice((pageClamped - 1) * pageSize, pageClamped * pageSize);
   const puedeAlternar = (r: FilaTabla) => r.status === "ACTIVE" || r.status === "PAUSED";
   const alternables = visibles.filter(puedeAlternar);
-  const todosSeleccionados = alternables.length > 0 && alternables.every((r) => seleccionados.has(r.id));
+  const todosSeleccionados = visibles.length > 0 && visibles.every((r) => seleccionados.has(r.id));
 
   function cambiarPageSize(size: number) {
     setPageSize(size);
@@ -56,7 +62,7 @@ export default function MetaAdsTable({
   }
 
   function toggleTodos() {
-    setSeleccionados(todosSeleccionados ? new Set() : new Set(alternables.map((r) => r.id)));
+    setSeleccionados(todosSeleccionados ? new Set() : new Set(visibles.map((r) => r.id)));
   }
 
   async function aplicarCambio(id: string, nuevoEstado: "ACTIVE" | "PAUSED") {
@@ -77,7 +83,7 @@ export default function MetaAdsTable({
     if (!onToggleEstado) return;
     setConfirmandoLote(null);
     setAplicandoLote(true);
-    const ids = Array.from(seleccionados);
+    const ids = Array.from(seleccionados).filter((id) => rows.some((r) => r.id === id && puedeAlternar(r)));
     for (const id of ids) {
       try {
         await onToggleEstado(id, nuevoEstado);
@@ -95,20 +101,16 @@ export default function MetaAdsTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-on-surface-faint text-[11px] uppercase tracking-wide">
-              {onToggleEstado && (
-                <>
-                  <th className="py-2 pr-2 w-8">
-                    <input
-                      type="checkbox"
-                      checked={todosSeleccionados}
-                      onChange={toggleTodos}
-                      disabled={alternables.length === 0}
-                      className="w-4 h-4 rounded accent-primary"
-                    />
-                  </th>
-                  <th className="py-2 pr-3 w-11" />
-                </>
-              )}
+              <th className="py-2 pr-2 w-8">
+                <input
+                  type="checkbox"
+                  checked={todosSeleccionados}
+                  onChange={toggleTodos}
+                  disabled={visibles.length === 0}
+                  className="w-4 h-4 rounded accent-primary"
+                />
+              </th>
+              {onToggleEstado && <th className="py-2 pr-3 w-11" />}
               <th className="py-2 pr-4 font-medium">{nombreColumna}</th>
               {columnas.map((key) => (
                 <th key={key} className="py-2 pr-4 font-medium text-right whitespace-nowrap">
@@ -120,18 +122,16 @@ export default function MetaAdsTable({
           <tbody>
             {visibles.map((r) => (
               <tr key={r.id} className="border-t border-outline align-top">
+                <td className="py-2.5 pr-2">
+                  <input
+                    type="checkbox"
+                    checked={seleccionados.has(r.id)}
+                    onChange={() => toggleFila(r.id)}
+                    className="w-4 h-4 rounded accent-primary"
+                  />
+                </td>
                 {onToggleEstado && (
                   <>
-                    <td className="py-2.5 pr-2">
-                      {puedeAlternar(r) && (
-                        <input
-                          type="checkbox"
-                          checked={seleccionados.has(r.id)}
-                          onChange={() => toggleFila(r.id)}
-                          className="w-4 h-4 rounded accent-primary"
-                        />
-                      )}
-                    </td>
                     <td className="py-2.5 pr-3">
                       {aplicandoId === r.id ? (
                         <Loader2 size={16} className="animate-spin text-on-surface-faint" />

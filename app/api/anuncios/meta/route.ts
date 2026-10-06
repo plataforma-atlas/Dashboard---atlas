@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { COOKIE_NAME, verifySession, clientesDeSesion } from "@/lib/auth";
 import { exigirAcceso } from "@/lib/permisos";
+import { rangoDesdeQuery } from "@/lib/meta-ads/rango";
 
 export async function GET(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
@@ -11,6 +12,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const cliente_id = searchParams.get("cliente_id") ?? "";
   const nomenclatura = searchParams.get("nomenclatura") ?? "";
+  const rango = rangoDesdeQuery(searchParams.get("fecha_inicio"), searchParams.get("fecha_fin"));
 
   const guardia = await exigirAcceso(session, cliente_id, {});
   if ("error" in guardia) return guardia.error;
@@ -37,6 +39,7 @@ export async function GET(req: Request) {
     const target = new URL(url);
     target.searchParams.set("cliente_id", cliente_id);
     if (nomenclatura) target.searchParams.set("nomenclatura", nomenclatura);
+    target.searchParams.set("time_range", JSON.stringify(rango));
     const res = await fetch(target.toString(), { method: "GET", cache: "no-store" });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));

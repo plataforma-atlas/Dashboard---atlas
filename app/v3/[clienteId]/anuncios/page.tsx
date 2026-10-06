@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useAcceso } from "@/components/v3/useAcceso";
 import { MetaAdsResponse } from "@/lib/meta-ads/types";
@@ -11,13 +11,28 @@ import Tabs from "@/components/v3/Tabs";
 import MetaAdsTable from "@/components/v3/MetaAdsTable";
 import PersonalizarColumnas from "@/components/v3/PersonalizarColumnas";
 import CrearConversion from "@/components/v3/CrearConversion";
+import VisionConsolidada from "@/components/v3/VisionConsolidada";
+import V3PeriodFilter from "@/components/v3/V3PeriodFilter";
+import { RANGO_RAPIDO_LABEL, RangoRapido, rangoRapido } from "@/lib/webinar-os/control-center/dateRanges";
 import { ConversionPersonalizada, ReglaConversion, contarConversionPorAnuncio } from "@/lib/v3/conversiones";
 import { V3Lead } from "@/lib/v3/types";
-import { COLUMNAS, COLUMNAS_POR_DEFECTO, ColumnaKey, columnasDeConversiones, sanitizarColumnas } from "@/lib/v3/columnas-tabla";
-import { Columns3 } from "lucide-react";
+import {
+  COLUMNAS,
+  COLUMNAS_POR_DEFECTO,
+  ColumnaKey,
+  FilaTabla,
+  columnasDeConversiones,
+  sanitizarColumnas,
+} from "@/lib/v3/columnas-tabla";
+import { BarChart3, Columns3 } from "lucide-react";
 
 // Columnas que eligió la persona para las tablas. Se guardan en su navegador.
 const CLAVE_COLUMNAS = "vermetricas.v3.columnas-anuncios";
+
+function hoyIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 function guardarColumnas(columnas: ColumnaKey[]) {
   try {
@@ -26,6 +41,8 @@ function guardarColumnas(columnas: ColumnaKey[]) {
     // Sin acceso al almacenamiento, las columnas duran lo que la pantalla.
   }
 }
+
+type Pestania = "campanhas" | "conjuntos" | "anuncios";
 
 export default function V3AnunciosPage() {
   const params = useParams<{ clienteId: string }>();
@@ -39,12 +56,21 @@ export default function V3AnunciosPage() {
   const [data, setData] = useState<MetaAdsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"campanhas" | "conjuntos" | "anuncios">("campanhas");
+  const [activeTab, setActiveTab] = useState<Pestania>("campanhas");
   const [columnas, setColumnas] = useState<ColumnaKey[]>(COLUMNAS_POR_DEFECTO);
   const [columnasAbierto, setColumnasAbierto] = useState(false);
   const [conversiones, setConversiones] = useState<ConversionPersonalizada[]>([]);
   const [creandoConversion, setCreandoConversion] = useState(false);
   const [leads, setLeads] = useState<V3Lead[]>([]);
+  // Filas seleccionadas en la pestaña activa, y si la visión consolidada está abierta.
+  const [seleccion, setSeleccion] = useState<Set<string>>(new Set());
+  const [graficoAbierto, setGraficoAbierto] = useState(false);
+  // Período de los datos de Meta (el mismo filtro que usa el dashboard).
+  const [periodo, setPeriodo] = useState<RangoRapido>("30days");
+  const [rangoPeriodo, setRangoPeriodo] = useState(() => rangoRapido("30days"));
+  // Solo la primera carga muestra la pantalla de carga; cambiar el período no la repite.
+  const primeraCarga = useRef(true);
+  const [actualizando, setActualizando] = useState(false);
 
   useEffect(() => {
     if (!clienteId) return;
@@ -97,10 +123,14 @@ export default function V3AnunciosPage() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    if (primeraCarga.current) setLoading(true);
+    else setActualizando(true);
     setError(null);
     const qs = new URLSearchParams({ cliente_id: clienteId });
     if (dashboardActual?.nomenclatura_filtro) qs.set("nomenclatura", dashboardActual.nomenclatura_filtro);
+    // "Todo el período" no trae fechas: se pide desde muy atrás y el servidor lo recorta al límite de Meta.
+    qs.set("fecha_inicio", rangoPeriodo.fecha_inicio || "2000-01-01");
+    qs.set("fecha_fin", rangoPeriodo.fecha_fin || hoyIso());
     fetch(`/api/anuncios/meta?${qs.toString()}`, { cache: "no-store" })
       .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
       .then(({ ok, body }) => {
@@ -110,17 +140,28 @@ export default function V3AnunciosPage() {
           return;
         }
         setData(body);
+        primeraCarga.current = false;
       })
       .catch(() => {
         if (!cancelled) setError("No se pudo conectar al servidor");
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setActualizando(false);
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [clienteId, dashboardActual?.nomenclatura_filtro]);
+  }, [clienteId, dashboardActual?.nomenclatura_filtro, rangoPeriodo.fecha_inicio, rangoPeriodo.fecha_fin]);
+
+  function aplicarPeriodo(p: RangoRapido, r: { fecha_inicio: string; fecha_fin: string }) {
+    setPeriodo(p);
+    setRangoPeriodo(r);
+    setSeleccion(new Set());
+    setGraficoAbierto(false);
+  }
 
   if (loading) {
     return (
@@ -188,6 +229,73 @@ export default function V3AnunciosPage() {
     return total;
   }
 
+  // Filas de cada pestaña. Se calculan una vez para usarlas en la tabla y en la visión consolidada.
+  const filasCampanas: FilaTabla[] = data.campanas.map((c) => ({
+    id: c.campaign_id,
+    nombre: c.campaign_name,
+    subtitulo: c.ad_account_label,
+    status: c.status,
+    spend: c.spend,
+    impressions: c.impressions,
+    clicks: c.clicks,
+    link_clicks: c.link_clicks,
+    ctr: c.ctr,
+    cpm: c.cpm,
+    cpc: c.cpc,
+    leads: c.leads,
+    conversiones: conversionesDe(data.anuncios.filter((a) => a.campaign_id === c.campaign_id)),
+  }));
+  const filasConjuntos: FilaTabla[] = data.conjuntos.map((s) => ({
+    id: s.adset_id,
+    nombre: s.adset_name,
+    subtitulo: `${s.ad_account_label} · ${s.campaign_name}`,
+    status: s.status,
+    spend: s.spend,
+    impressions: s.impressions,
+    clicks: s.clicks,
+    link_clicks: s.link_clicks,
+    ctr: s.ctr,
+    cpm: s.cpm,
+    cpc: s.cpc,
+    leads: s.leads,
+    conversiones: conversionesDe(data.anuncios.filter((a) => a.adset_id === s.adset_id)),
+  }));
+  const filasAnuncios: FilaTabla[] = data.anuncios.map((a) => ({
+    id: a.ad_id,
+    nombre: a.ad_name,
+    subtitulo: `${a.ad_account_label} · ${a.campaign_name} · ${a.adset_name}`,
+    status: a.status,
+    spend: a.spend,
+    impressions: a.impressions,
+    clicks: a.clicks,
+    link_clicks: a.link_clicks,
+    ctr: a.ctr,
+    cpm: a.cpm,
+    leads: a.leads,
+    ventas: a.ventas,
+    roas: a.roas,
+    cpa: a.cpa,
+    conversiones: conversionesDe([a]),
+  }));
+
+  const filasPestaniaActiva =
+    activeTab === "campanhas" ? filasCampanas : activeTab === "conjuntos" ? filasConjuntos : filasAnuncios;
+  const filasSeleccionadas = filasPestaniaActiva.filter((f) => seleccion.has(f.id));
+  // Anuncios que representa la selección: una campaña o conjunto trae los anuncios que tiene dentro.
+  const anunciosSeleccionados = data.anuncios
+    .filter((a) => {
+      if (activeTab === "anuncios") return seleccion.has(a.ad_id);
+      if (activeTab === "campanhas") return seleccion.has(a.campaign_id);
+      return seleccion.has(a.adset_id);
+    })
+    .map((a) => ({ ad_id: a.ad_id, ad_account_id: a.ad_account_id }));
+
+  function cambiarPestania(id: Pestania) {
+    setActiveTab(id);
+    setSeleccion(new Set());
+    setGraficoAbierto(false);
+  }
+
   async function eliminarConversion(key: ColumnaKey): Promise<string | null> {
     const id = Number(key.slice("conv:".length));
     const res = await fetch(`/api/v3/conversiones?id=${id}&cliente_id=${clienteId}`, { method: "DELETE" });
@@ -223,9 +331,26 @@ export default function V3AnunciosPage() {
   return (
     <div className="px-4 py-8 md:px-8 max-w-7xl mx-auto flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <span className="text-xs uppercase tracking-[0.14em] text-primary font-mono">Meta Ads · Últimos 30 días</span>
-        <h1 className="font-display text-2xl text-on-surface font-semibold">Administrador de Anuncios</h1>
+        <span className="text-xs uppercase tracking-[0.14em] text-primary font-mono">
+          Meta Ads · {periodo === "custom" ? "Rango personalizado" : RANGO_RAPIDO_LABEL[periodo]}
+        </span>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <h1 className="font-display text-2xl text-on-surface font-semibold">Administrador de Anuncios</h1>
+          <V3PeriodFilter periodo={periodo} rango={rangoPeriodo} onAplicar={aplicarPeriodo} />
+        </div>
+        {actualizando && <p className="text-[12px] text-on-surface-faint">Actualizando datos de Meta…</p>}
       </header>
+
+      {graficoAbierto && filasSeleccionadas.length > 0 && (
+        <VisionConsolidada
+          clienteId={clienteId}
+          rango={{ fecha_inicio: rangoPeriodo.fecha_inicio || "2000-01-01", fecha_fin: rangoPeriodo.fecha_fin || hoyIso() }}
+          filas={filasSeleccionadas}
+          anuncios={anunciosSeleccionados}
+          onLimpiar={() => setSeleccion(new Set())}
+          onCerrar={() => setGraficoAbierto(false)}
+        />
+      )}
 
       <div className="bg-surface border border-outline rounded-xl p-4">
         <Tabs
@@ -235,16 +360,32 @@ export default function V3AnunciosPage() {
             { id: "anuncios", label: "Anuncios" },
           ]}
           active={activeTab}
-          onChange={(id) => setActiveTab(id as typeof activeTab)}
+          onChange={(id) => cambiarPestania(id as Pestania)}
           acciones={
-            <button
-              type="button"
-              onClick={() => setColumnasAbierto(true)}
-              className="press inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-outline text-[13px] text-on-surface-variant hover:text-on-surface transition-colors duration-150"
-            >
-              <Columns3 size={14} strokeWidth={2} />
-              Columnas
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setGraficoAbierto((v) => !v)}
+                disabled={filasSeleccionadas.length === 0}
+                aria-pressed={graficoAbierto}
+                className={`press inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[13px] transition-colors duration-150 disabled:opacity-40 ${
+                  graficoAbierto
+                    ? "border-primary bg-primary/10 text-on-surface"
+                    : "border-outline text-on-surface-variant hover:text-on-surface"
+                }`}
+              >
+                <BarChart3 size={14} strokeWidth={2} />
+                Gráfico
+              </button>
+              <button
+                type="button"
+                onClick={() => setColumnasAbierto(true)}
+                className="press inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-outline text-[13px] text-on-surface-variant hover:text-on-surface transition-colors duration-150"
+              >
+                <Columns3 size={14} strokeWidth={2} />
+                Columnas
+              </button>
+            </div>
           }
         />
         <div className="pt-4">
@@ -254,21 +395,8 @@ export default function V3AnunciosPage() {
               columnas={columnasVisibles}
               definiciones={definiciones}
               onToggleEstado={acceso.puedeEscribir ? handleToggleEstado : undefined}
-              rows={data.campanas.map((c) => ({
-                id: c.campaign_id,
-                nombre: c.campaign_name,
-                subtitulo: c.ad_account_label,
-                status: c.status,
-                spend: c.spend,
-                impressions: c.impressions,
-                clicks: c.clicks,
-                link_clicks: c.link_clicks,
-                ctr: c.ctr,
-                cpm: c.cpm,
-                cpc: c.cpc,
-                leads: c.leads,
-                conversiones: conversionesDe(data.anuncios.filter((a) => a.campaign_id === c.campaign_id)),
-              }))}
+              onSeleccionChange={(ids) => setSeleccion(new Set(ids))}
+              rows={filasCampanas}
             />
           )}
           {activeTab === "conjuntos" && (
@@ -277,21 +405,8 @@ export default function V3AnunciosPage() {
               columnas={columnasVisibles}
               definiciones={definiciones}
               onToggleEstado={acceso.puedeEscribir ? handleToggleEstado : undefined}
-              rows={data.conjuntos.map((s) => ({
-                id: s.adset_id,
-                nombre: s.adset_name,
-                subtitulo: `${s.ad_account_label} · ${s.campaign_name}`,
-                status: s.status,
-                spend: s.spend,
-                impressions: s.impressions,
-                clicks: s.clicks,
-                link_clicks: s.link_clicks,
-                ctr: s.ctr,
-                cpm: s.cpm,
-                cpc: s.cpc,
-                leads: s.leads,
-                conversiones: conversionesDe(data.anuncios.filter((a) => a.adset_id === s.adset_id)),
-              }))}
+              onSeleccionChange={(ids) => setSeleccion(new Set(ids))}
+              rows={filasConjuntos}
             />
           )}
           {activeTab === "anuncios" && (
@@ -300,23 +415,8 @@ export default function V3AnunciosPage() {
               columnas={columnasVisibles}
               definiciones={definiciones}
               onToggleEstado={acceso.puedeEscribir ? handleToggleEstado : undefined}
-              rows={data.anuncios.map((a) => ({
-                id: a.ad_id,
-                nombre: a.ad_name,
-                subtitulo: `${a.ad_account_label} · ${a.campaign_name} · ${a.adset_name}`,
-                status: a.status,
-                spend: a.spend,
-                impressions: a.impressions,
-                clicks: a.clicks,
-                link_clicks: a.link_clicks,
-                ctr: a.ctr,
-                cpm: a.cpm,
-                leads: a.leads,
-                ventas: a.ventas,
-                roas: a.roas,
-                cpa: a.cpa,
-                conversiones: conversionesDe([a]),
-              }))}
+              onSeleccionChange={(ids) => setSeleccion(new Set(ids))}
+              rows={filasAnuncios}
             />
           )}
         </div>
