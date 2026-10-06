@@ -12,7 +12,7 @@ export default function Tabs({
   onChange: (id: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-5 border-b border-outline overflow-x-auto">
+    <div className="flex items-center gap-5 border-b border-outline overflow-x-auto overflow-y-hidden">
       {tabs.map((t) => (
         <button
           key={t.id}
