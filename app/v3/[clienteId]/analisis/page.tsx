@@ -10,6 +10,7 @@ import AdCreativeCard from "@/components/v3/AdCreativeCard";
 import AnalisisFiltrosModal from "@/components/v3/AnalisisFiltrosModal";
 import GruposAnuncios from "@/components/v3/GruposAnuncios";
 import CriterioLeadsPanel from "@/components/v3/CriterioLeadsPanel";
+import OrdenarAnuncios from "@/components/v3/OrdenarAnuncios";
 import Pagination from "@/components/ui/pagination";
 import { useAcceso } from "@/components/v3/useAcceso";
 import { SlidersHorizontal } from "lucide-react";
@@ -20,6 +21,8 @@ import {
   ConfigAnalisis,
   GrupoGuardado,
   GrupoKey,
+  OrdenAnuncios,
+  ORDEN_POR_DEFECTO,
   aplicarConfig,
   calcularLeadsPorAnuncio,
   filtrosActivos,
@@ -158,7 +161,7 @@ export default function V3AnalisisPage() {
   // de Meta, no un ranking. Se avisa en vez de dejar que parezca un orden real.
   const todosEmpatan = (valores: number[]) => valores.length > 0 && valores.every((v) => v === valores[0]);
   const avisoOrden =
-    anunciosOrdenados.length < 2
+    anunciosOrdenados.length < 2 || config.orden.metrica
       ? null
       : config.grupo === "mejores_leads" && config.criterio && todosEmpatan(anunciosOrdenados.map((a) => a.leadsTotal))
         ? "Todavía ningún lead llega con el id del anuncio, así que no hay orden por leads calificados. Se muestran en el orden de Meta."
@@ -188,8 +191,13 @@ export default function V3AnalisisPage() {
     ? JSON.stringify(sanitizarConfig(grupoGuardadoActivo.config)) !== JSON.stringify(config)
     : false;
 
+  function cambiarOrden(orden: OrdenAnuncios) {
+    setConfig((c) => ({ ...c, orden }));
+    setPage(1);
+  }
+
   function seleccionarPredefinido(key: GrupoKey) {
-    setConfig((c) => ({ ...c, grupo: key, adIds: [] }));
+    setConfig((c) => ({ ...c, grupo: key, adIds: [], orden: ORDEN_POR_DEFECTO }));
     setGrupoActivo(`g:${key}`);
     setCriterioAbierto(true);
     setPage(1);
@@ -332,6 +340,12 @@ export default function V3AnalisisPage() {
         </p>
       ) : (
         <>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="text-[13px] text-on-surface-faint">
+              {anunciosOrdenados.length} {anunciosOrdenados.length === 1 ? "anuncio" : "anuncios"}
+            </span>
+            <OrdenarAnuncios orden={config.orden} onChange={cambiarOrden} />
+          </div>
           {avisoOrden && (
             <p className="text-[13px] text-on-surface-variant bg-surface border border-outline rounded-lg px-4 py-3">{avisoOrden}</p>
           )}

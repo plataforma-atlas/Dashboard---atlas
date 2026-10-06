@@ -54,6 +54,25 @@ export const METRICAS: MetricaDef[] = [
 
 export const METRICAS_POR_DEFECTO: MetricaKey[] = ["gasto", "impresiones", "roas", "cpa", "ventas"];
 
+// Valor numérico de cada métrica para ordenar. null = sin dato (va al final).
+const VALOR_POR_METRICA: Record<MetricaKey, (ad: AnuncioAnalisis) => number | null> = {
+  gasto: (ad) => ad.spend,
+  impresiones: (ad) => ad.impressions,
+  clics_enlace: (ad) => ad.link_clicks,
+  ctr: (ad) => ad.ctr,
+  cpm: (ad) => ad.cpm,
+  leads: (ad) => ad.leads,
+  ventas: (ad) => ad.ventas,
+  roas: (ad) => (sinVentas(ad) ? null : ad.roas),
+  cpa: (ad) => (sinVentas(ad) ? null : ad.cpa),
+  calificados: (ad) => ad.pctCalificados,
+};
+
+// Orden elegido por la persona. metrica = null → se usa el orden del grupo.
+export type OrdenAnuncios = { metrica: MetricaKey | null; direccion: "asc" | "desc" };
+
+export const ORDEN_POR_DEFECTO: OrdenAnuncios = { metrica: null, direccion: "desc" };
+
 export function metricaDef(key: MetricaKey): MetricaDef {
   return METRICAS.find((m) => m.key === key)!;
 }
@@ -104,6 +123,7 @@ export type ConfigAnalisis = {
   // Anuncios elegidos a mano. Vacío = todos los que pasen los demás filtros.
   adIds: string[];
   criterio: CriterioLeads | null;
+  orden: OrdenAnuncios;
 };
 
 export const CONFIG_POR_DEFECTO: ConfigAnalisis = {
@@ -114,6 +134,7 @@ export const CONFIG_POR_DEFECTO: ConfigAnalisis = {
   campana: "",
   adIds: [],
   criterio: null,
+  orden: ORDEN_POR_DEFECTO,
 };
 
 // Grupo guardado por cliente (tabla v3_grupos_anuncios). `config` viene tal cual de
@@ -155,7 +176,12 @@ export function sanitizarConfig(raw: unknown): ConfigAnalisis {
     ? r.adIds.filter((id): id is string => typeof id === "string" && id.length > 0 && id.length <= 64).slice(0, 500)
     : [];
   const criterio = sanitizarCriterio(r.criterio);
-  return { grupo, metricas, estado, gastoMinimo, campana, adIds, criterio };
+  const ordenRaw = (r.orden && typeof r.orden === "object" ? r.orden : {}) as Record<string, unknown>;
+  const orden: OrdenAnuncios = {
+    metrica: METRICAS.some((m) => m.key === ordenRaw.metrica) ? (ordenRaw.metrica as MetricaKey) : null,
+    direccion: ordenRaw.direccion === "asc" ? "asc" : "desc",
+  };
+  return { grupo, metricas, estado, gastoMinimo, campana, adIds, criterio, orden };
 }
 
 export function filtrosActivos(config: ConfigAnalisis): number {
@@ -168,16 +194,27 @@ export function filtrosActivos(config: ConfigAnalisis): number {
 
 export function aplicarConfig(anuncios: AnuncioAnalisis[], config: ConfigAnalisis): AnuncioAnalisis[] {
   const grupo = GRUPOS.find((g) => g.key === config.grupo) ?? GRUPOS[0];
-  return anuncios
-    .filter((ad) => {
-      if (config.adIds.length > 0 && !config.adIds.includes(ad.ad_id)) return false;
-      if (config.estado === "activos" && ad.status !== "ACTIVE") return false;
-      if (config.estado === "pausados" && ad.status !== "PAUSED") return false;
-      if (ad.spend < config.gastoMinimo) return false;
-      if (config.campana && ad.campaign_id !== config.campana) return false;
-      return true;
-    })
-    .sort(grupo.ordenar);
+  const filtrados = anuncios.filter((ad) => {
+    if (config.adIds.length > 0 && !config.adIds.includes(ad.ad_id)) return false;
+    if (config.estado === "activos" && ad.status !== "ACTIVE") return false;
+    if (config.estado === "pausados" && ad.status !== "PAUSED") return false;
+    if (ad.spend < config.gastoMinimo) return false;
+    if (config.campana && ad.campaign_id !== config.campana) return false;
+    return true;
+  });
+  if (!config.orden.metrica) return filtrados.sort(grupo.ordenar);
+
+  // Orden elegido por la persona: los sin dato van siempre al final.
+  const valor = VALOR_POR_METRICA[config.orden.metrica];
+  const signo = config.orden.direccion === "asc" ? 1 : -1;
+  return filtrados.sort((a, b) => {
+    const va = valor(a);
+    const vb = valor(b);
+    if (va === null && vb === null) return 0;
+    if (va === null) return 1;
+    if (vb === null) return -1;
+    return (va - vb) * signo;
+  });
 }
 
 // --- Montos y leads -------------------------------------------------------
