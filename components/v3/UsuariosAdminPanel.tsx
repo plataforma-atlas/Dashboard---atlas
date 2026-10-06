@@ -378,7 +378,10 @@ export default function UsuariosAdminPanel() {
                                   tieneAcceso ? "bg-primary text-on-primary border-primary" : "border-outline text-on-surface-variant hover:text-on-surface"
                                 }`}
                               >
-                                {c.name}
+                                <span className="flex flex-col items-start leading-tight text-left">
+                                  <span>{c.name}</span>
+                                  <span className="font-mono text-[10px] opacity-70 break-all">{c.id}</span>
+                                </span>
                               </button>
                             );
                           })}
