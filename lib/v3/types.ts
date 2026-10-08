@@ -12,14 +12,25 @@ export type V3Dashboard = {
   // app/r/[token]/route.ts) — hoy "clase"/"replay", pero es un objeto libre
   // a propósito para poder sumar tipos nuevos sin migrar nada.
   url_enlaces: Record<string, string>;
+  // Endpoints únicos del dashboard (encuesta/grupos/mensaje_recibido/gracias)
+  // — uno solo por dashboard, compartido por todas sus páginas de captación.
+  // Ver V3EndpointTipo: a diferencia de "visita", estos NO se duplican por
+  // página (la encuesta y el webhook de grupos son los mismos sin importar
+  // cuál landing haya testeado la persona).
+  endpoints: V3PuntoEndpoint[];
   created_at: string;
 };
 
-// Un "punto de captación" es una landing/formulario específico que alimenta a un
-// dashboard de tipo Lanzamiento. Cada punto trae, además de su propio endpoint
-// de captación, un set fijo de endpoints hermanos para el resto del embudo —
-// todos enmascarados vía /api/hooks (nunca se ve n8n), autenticados por su
-// propio `token`, sin sesión.
+// Una "página de captación" (antes "punto de captación") es una landing
+// específica que se testea dentro de un dashboard de tipo Lanzamiento — la
+// cantidad de páginas la elige la persona al crear el dashboard (o las va
+// agregando después desde Webhooks). Cada página trae su propio endpoint de
+// Captación (necesario: hay que saber cuál landing convirtió) y su propio
+// pixel de Visitas (cuenta el tráfico de esa página en particular). El resto
+// del embudo (Encuesta/Gracias/Grupos/Mensaje 1a1) NO vive acá — es el mismo
+// para todas las páginas del dashboard, ver V3Dashboard.endpoints. Todo
+// enmascarado vía /api/hooks (nunca se ve n8n), autenticado por su propio
+// `token`, sin sesión.
 export type V3EndpointTipo = "encuesta" | "gracias" | "grupos" | "mensaje_recibido" | "visita";
 
 export type V3PuntoEndpoint = {
@@ -32,6 +43,8 @@ export type V3CaptacionPunto = {
   nombre: string;
   etiqueta_ghl: string;
   token_captacion: string;
+  // Hoy solo trae "visita" (el pixel) — encuesta/gracias/grupos/mensaje se
+  // movieron a V3Dashboard.endpoints.
   endpoints: V3PuntoEndpoint[];
   created_at: string;
 };

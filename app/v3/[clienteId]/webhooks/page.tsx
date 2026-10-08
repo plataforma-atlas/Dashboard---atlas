@@ -141,7 +141,7 @@ export default function V3WebhooksPage() {
     setFormError(null);
     if (!dashboardActual) return;
     if (!nombreNuevo.trim()) {
-      setFormError("Ponele un nombre al punto de captación.");
+      setFormError("Ponele un nombre a la página de captación.");
       return;
     }
     setCreando(true);
@@ -153,7 +153,7 @@ export default function V3WebhooksPage() {
       });
       const nuevo = await res.json();
       if (!res.ok) {
-        setFormError(nuevo.error || "No se pudo crear el punto de captación");
+        setFormError(nuevo.error || "No se pudo crear la página de captación");
         return;
       }
       setNombreNuevo("");
@@ -188,9 +188,9 @@ export default function V3WebhooksPage() {
     <div className="px-4 py-8 md:px-8 max-w-4xl mx-auto flex flex-col gap-6">
       <header className="flex flex-col gap-1">
         <span className="text-xs uppercase tracking-[0.14em] text-primary font-mono">Webhooks</span>
-        <h1 className="font-display text-2xl text-on-surface font-semibold">Puntos de captación y su embudo</h1>
+        <h1 className="font-display text-2xl text-on-surface font-semibold">Páginas de captación y su embudo</h1>
         <p className="text-sm text-on-surface-variant">
-          Cada punto es una landing distinta — copiá sus enlaces y pegalos donde corresponda (tu página, tu encuesta, SendFlow).
+          Cada página de captación es una landing distinta que estás testeando — tiene su propio enlace de Captación y su propio pixel de Visitas. La Encuesta, el Ingreso a grupos y el Mensaje 1a1 son un solo enlace para todo el dashboard, sin importar por cuál página haya entrado la persona.
         </p>
       </header>
 
@@ -283,20 +283,53 @@ export default function V3WebhooksPage() {
             )}
           </div>
 
+          {/* Encuesta / Ingreso a grupos / Mensaje 1a1 son del dashboard completo, no
+              de una página en particular — un mismo enlace sirve sin importar por
+              cuál página de captación haya entrado la persona. "Gracias" no tiene
+              forma real de trackearse (ver comentario más abajo), se deja afuera. */}
+          <div className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-3">
+            <div>
+              <div className="text-[14px] font-medium text-on-surface">Endpoints del dashboard</div>
+              <div className="text-[12px] text-on-surface-variant">
+                Un solo enlace de cada uno para todo {dashboardActual.nombre} — vale para cualquiera de sus páginas de captación.
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {dashboardActual.endpoints
+                .filter((e) => e.tipo !== "gracias" && (isAdmin || e.tipo !== "mensaje_recibido"))
+                .map((endpoint) => (
+                  <div key={endpoint.tipo} className="flex items-center justify-between gap-3 rounded-md bg-background px-3 py-2">
+                    <span className="text-[13px] text-on-surface-variant shrink-0">{ETIQUETAS_ENDPOINT[endpoint.tipo]}</span>
+                    <button
+                      type="button"
+                      onClick={() => copiar(endpoint.tipo, endpoint.token)}
+                      className="press flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150"
+                    >
+                      {copiado === endpoint.token ? (
+                        <>
+                          <Check size={12} /> Copiado
+                        </>
+                      ) : (
+                        <>
+                          <Link2 size={12} /> Copiar
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ))}
+            </div>
+          </div>
+
           {puntosLoading ? (
             <p className="text-[13px] text-on-surface-faint">Cargando…</p>
           ) : puntos.length === 0 ? (
-            <p className="text-[13px] text-on-surface-faint">Todavía no hay puntos de captación para {dashboardActual.nombre}.</p>
+            <p className="text-[13px] text-on-surface-faint">Todavía no hay páginas de captación para {dashboardActual.nombre}.</p>
           ) : (
             <div className="flex flex-col gap-3">
               {puntos.map((punto) => {
-                // "Página de gracias" no tiene forma real de trackearse: el botón de
-                // esa página manda directo a entrar al grupo, nunca dispara un ping
-                // propio — se deja de ofrecer este endpoint para no entregar un
-                // enlace que el cliente no tiene dónde pegar.
                 const filas: { tipo: "captacion" | V3EndpointTipo; token: string }[] = [
                   { tipo: "captacion", token: punto.token_captacion },
-                  ...punto.endpoints.filter((e) => e.tipo !== "gracias" && (isAdmin || e.tipo !== "mensaje_recibido")),
+                  ...punto.endpoints,
                 ];
                 return (
                   <div key={punto.id} className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-3">
@@ -343,12 +376,12 @@ export default function V3WebhooksPage() {
           {acceso.puedeEscribir && (
           <form onSubmit={crearPunto} className="rounded-lg border border-outline bg-surface p-4 flex flex-col sm:flex-row sm:items-end gap-3">
             <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-              <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Nombre del punto</label>
+              <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Nombre de la página</label>
               <input
                 type="text"
                 value={nombreNuevo}
                 onChange={(e) => setNombreNuevo(e.target.value)}
-                placeholder="Ej. Landing principal"
+                placeholder="Ej. Página F"
                 className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface focus:border-primary outline-none transition-colors duration-150"
               />
             </div>
@@ -357,7 +390,7 @@ export default function V3WebhooksPage() {
               disabled={creando}
               className="press flex items-center gap-1.5 rounded-md bg-primary text-on-primary text-[14px] font-medium px-4 py-2.5 disabled:opacity-50 shrink-0 transition-transform duration-150"
             >
-              <Plus size={14} /> {creando ? "Creando…" : "Agregar punto"}
+              <Plus size={14} /> {creando ? "Creando…" : "Agregar página"}
             </button>
           </form>
           )}
