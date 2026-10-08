@@ -327,9 +327,15 @@ export default function V3WebhooksPage() {
           ) : (
             <div className="flex flex-col gap-3">
               {puntos.map((punto) => {
+                // Páginas creadas antes de este cambio todavía pueden traer, en la
+                // respuesta de la API, filas viejas de encuesta/gracias/grupos/
+                // mensaje a nivel de página (quedaron en la base, ya no se generan
+                // más) — esos endpoints dejaron de usarse: Eventos de Embudo ahora
+                // busca por dashboard_id, no por punto_captacion_id, así que esos
+                // tokens viejos ya ni funcionan. Por página solo se muestra "visita".
                 const filas: { tipo: "captacion" | V3EndpointTipo; token: string }[] = [
                   { tipo: "captacion", token: punto.token_captacion },
-                  ...punto.endpoints,
+                  ...punto.endpoints.filter((e) => e.tipo === "visita"),
                 ];
                 return (
                   <div key={punto.id} className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-3">
