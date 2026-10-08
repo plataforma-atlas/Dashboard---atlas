@@ -1,4 +1,4 @@
-import { V3CaptacionPunto, V3CaptacionVisita, V3Lead } from "@/lib/v3/types";
+import { V3CaptacionPunto, V3CaptacionVisita, V3Lead, V3PreguntaEncuesta, V3PreguntaTipo } from "@/lib/v3/types";
 
 export type EmbudoEtapa = { key: string; label: string; count: number; sinMatch?: number };
 
@@ -249,7 +249,19 @@ export const ENCUESTA_PREGUNTAS: { clave: string; pregunta: string; opciones: st
   },
 ];
 
-export type EncuestaResultado = { clave: string; pregunta: string; total: number; opciones: { label: string; count: number }[] };
+// `pregunta`/`texto` es a la vez la etiqueta y la clave en `extra.respuestas`
+// — desde que las preguntas se registran por dashboard (ver V3PreguntaEncuesta),
+// ya no hace falta una `clave` corta aparte: el texto exacto ES la clave.
+export type EncuestaResultado = {
+  texto: string;
+  tipo: V3PreguntaTipo;
+  total: number;
+  opciones: { label: string; count: number }[];
+  // Solo para tipo "libre" — las respuestas tal cual se escribieron, sin
+  // agrupar (no tiene sentido armar un desglose de opciones de algo que es
+  // texto libre).
+  respuestasLibres: string[];
+};
 
 // `extra.respuestas` llega tal cual lo mergeó el endpoint `embudo-encuesta` —
 // puede faltar, venir vacío `{}`, o no ser un objeto. Único punto de lectura
@@ -260,20 +272,34 @@ export function obtenerRespuestasLead(lead: V3Lead): Record<string, string> | nu
   return null;
 }
 
-export function calcularEncuesta(leads: V3Lead[]): EncuestaResultado[] {
+// Preguntas registradas por dashboard (ver V3Dashboard.preguntas_encuesta) —
+// un dashboard sin preguntas configuradas devuelve `[]`, nunca una lista
+// genérica inventada (ver estado vacío en el Home).
+export function calcularEncuesta(leads: V3Lead[], preguntas: V3PreguntaEncuesta[]): EncuestaResultado[] {
   const respondieron = leads.map((l) => obtenerRespuestasLead(l)).filter((r): r is Record<string, string> => r !== null);
 
-  return ENCUESTA_PREGUNTAS.map(({ clave, pregunta, opciones }) => {
-    const conteo = new Map<string, number>(opciones.map((o) => [o, 0]));
+  return preguntas.map(({ texto, tipo, opciones: opcionesRegistradas }) => {
+    if (tipo === "libre") {
+      const respuestasLibres: string[] = [];
+      for (const respuestas of respondieron) {
+        const valor = respuestas[texto];
+        if (valor) respuestasLibres.push(valor);
+      }
+      return { texto, tipo, total: respuestasLibres.length, opciones: [], respuestasLibres };
+    }
+    // "opcion_multiple": arranca con las opciones registradas en 0 (para que
+    // se vean aunque nadie las haya elegido todavía); si llega una respuesta
+    // que no estaba anticipada, se agrega igual al final en vez de perderla.
+    const conteo = new Map<string, number>((opcionesRegistradas ?? []).map((o) => [o, 0]));
     let total = 0;
     for (const respuestas of respondieron) {
-      const valor = respuestas[clave];
-      if (valor && conteo.has(valor)) {
-        conteo.set(valor, (conteo.get(valor) ?? 0) + 1);
-        total += 1;
-      }
+      const valor = respuestas[texto];
+      if (!valor) continue;
+      conteo.set(valor, (conteo.get(valor) ?? 0) + 1);
+      total += 1;
     }
-    return { clave, pregunta, total, opciones: opciones.map((label) => ({ label, count: conteo.get(label) ?? 0 })) };
+    const opciones = [...conteo.entries()].map(([label, count]) => ({ label, count }));
+    return { texto, tipo, total, opciones, respuestasLibres: [] };
   });
 }
 

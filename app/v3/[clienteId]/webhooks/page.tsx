@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useAcceso } from "@/components/v3/useAcceso";
 import { Check, Link2, Plus, Save } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
+import PreguntasEncuesta from "@/components/v3/PreguntasEncuesta";
 import { V3CaptacionPunto, V3Dashboard, V3EndpointTipo } from "@/lib/v3/types";
 
 const ETIQUETAS_ENDPOINT: Record<"captacion" | V3EndpointTipo, string> = {
@@ -319,6 +320,16 @@ export default function V3WebhooksPage() {
                 ))}
             </div>
           </div>
+
+          <PreguntasEncuesta
+            clienteId={clienteId}
+            dashboardId={dashboardActual.id}
+            preguntas={dashboardActual.preguntas_encuesta}
+            puedeEscribir={acceso.puedeEscribir}
+            onGuardadas={(preguntas) =>
+              setDashboards((actuales) => actuales.map((d) => (d.id === dashboardActual.id ? { ...d, preguntas_encuesta: preguntas } : d)))
+            }
+          />
 
           {puntosLoading ? (
             <p className="text-[13px] text-on-surface-faint">Cargando…</p>

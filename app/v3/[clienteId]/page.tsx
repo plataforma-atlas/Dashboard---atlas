@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   Banknote,
@@ -401,7 +402,10 @@ export default function V3ClientePage() {
 
   const geografia = useMemo(() => calcularGeografia(leads), [leads]);
   const utms = useMemo(() => calcularUtms(leads), [leads]);
-  const encuesta = useMemo(() => calcularEncuesta(leads), [leads]);
+  const encuesta = useMemo(
+    () => calcularEncuesta(leads, dashboardActual?.preguntas_encuesta ?? []),
+    [leads, dashboardActual?.preguntas_encuesta]
+  );
 
   const selectedCampaign = useMemo(() => {
     const preferred = campaigns.find((c) => c.status === "active") ?? campaigns[0];
@@ -714,15 +718,34 @@ export default function V3ClientePage() {
                 <div className="flex flex-col gap-3 mt-2">
                   <h3 className="text-sm font-semibold text-on-surface">
                     Resultados de la encuesta{" "}
-                    <span className="text-on-surface-faint font-normal">
-                      · respuestas de los {encuesta[0]?.total ?? 0} leads que completaron la encuesta
-                    </span>
+                    {encuesta.length > 0 && (
+                      <span className="text-on-surface-faint font-normal">
+                        · respuestas de los {encuesta[0]?.total ?? 0} leads que completaron la encuesta
+                      </span>
+                    )}
                   </h3>
-                  <div className="grid lg:grid-cols-2 gap-4">
-                    {encuesta.map((p) => (
-                      <EncuestaPreguntaPanel key={p.clave} pregunta={p.pregunta} opciones={p.opciones} total={p.total} />
-                    ))}
-                  </div>
+                  {encuesta.length === 0 ? (
+                    <p className="text-sm text-on-surface-faint">
+                      Todavía no configuraste las preguntas de tu encuesta — agregalas en{" "}
+                      <Link href={`/v3/${clienteId}/webhooks?dashboard=${dashboardActual.id}`} className="text-primary hover:underline">
+                        Webhooks
+                      </Link>{" "}
+                      para empezar a ver las respuestas acá.
+                    </p>
+                  ) : (
+                    <div className="grid lg:grid-cols-2 gap-4">
+                      {encuesta.map((p) => (
+                        <EncuestaPreguntaPanel
+                          key={p.texto}
+                          pregunta={p.texto}
+                          tipo={p.tipo}
+                          opciones={p.opciones}
+                          respuestasLibres={p.respuestasLibres}
+                          total={p.total}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </>
             );

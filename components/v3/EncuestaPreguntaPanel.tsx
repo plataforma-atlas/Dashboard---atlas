@@ -1,12 +1,18 @@
 "use client";
 
+import { V3PreguntaTipo } from "@/lib/v3/types";
+
 export default function EncuestaPreguntaPanel({
   pregunta,
+  tipo,
   opciones,
+  respuestasLibres,
   total,
 }: {
   pregunta: string;
+  tipo: V3PreguntaTipo;
   opciones: { label: string; count: number }[];
+  respuestasLibres: string[];
   total: number;
 }) {
   const max = Math.max(1, ...opciones.map((o) => o.count));
@@ -16,6 +22,14 @@ export default function EncuestaPreguntaPanel({
       <h3 className="text-sm font-medium text-on-surface">{pregunta}</h3>
       {total === 0 ? (
         <p className="text-sm text-on-surface-faint">Sin respuestas todavía.</p>
+      ) : tipo === "libre" ? (
+        <div className="flex flex-col gap-2 max-h-56 overflow-y-auto">
+          {respuestasLibres.map((r, i) => (
+            <p key={i} className="text-xs text-on-surface-variant border-l-2 border-outline pl-2">
+              {r}
+            </p>
+          ))}
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
           {opciones.map((o) => (

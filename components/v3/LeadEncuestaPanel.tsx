@@ -30,13 +30,17 @@ export default function LeadEncuestaPanel({
         </div>
 
         <div className="flex flex-col gap-4">
-          {ENCUESTA_PREGUNTAS.map((p) => {
-            const respuesta = respuestas[p.clave];
+          {Object.entries(respuestas).map(([clave, respuesta]) => {
             if (!respuesta) return null;
-            const esAltoValor = p.clave === PREGUNTA_VALOR_ALTO.clave && respuesta === PREGUNTA_VALOR_ALTO.opcion;
+            // La clave ya es el texto real de la pregunta (preguntas registradas
+            // por dashboard) — ENCUESTA_PREGUNTAS solo queda como diccionario
+            // de respaldo para leads viejos de demo, capturados con el sistema
+            // de preguntas fijas anterior.
+            const pregunta = ENCUESTA_PREGUNTAS.find((p) => p.clave === clave)?.pregunta ?? clave;
+            const esAltoValor = respuesta === PREGUNTA_VALOR_ALTO.opcion;
             return (
-              <div key={p.clave} className="flex flex-col gap-1">
-                <p className="text-[12px] text-on-surface-faint">{p.pregunta}</p>
+              <div key={clave} className="flex flex-col gap-1">
+                <p className="text-[12px] text-on-surface-faint">{pregunta}</p>
                 <p className={`text-[13px] font-medium ${esAltoValor ? "text-success" : "text-on-surface"}`}>{respuesta}</p>
               </div>
             );

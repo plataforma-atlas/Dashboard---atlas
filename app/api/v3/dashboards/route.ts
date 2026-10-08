@@ -73,10 +73,11 @@ export async function POST(req: Request) {
   }
 }
 
-// Dos usos: guardar la URL real de destino de un enlace corto (tipo
-// "clase"/"replay", ver lib/v3/embudo.ts) con `tipo` + `url`, o archivar/
-// desarchivar el dashboard con `archivado` (boolean) — mutuamente
-// excluyentes, el body manda uno u otro.
+// Tres usos, mutuamente excluyentes según lo que traiga el body: guardar la
+// URL real de destino de un enlace corto (tipo "clase"/"replay") con `tipo`
+// + `url`, archivar/desarchivar con `archivado` (boolean), o reemplazar las
+// preguntas de la encuesta con `preguntas_encuesta` (array completo — se
+// reemplaza entero, no se mergea de a una).
 export async function PATCH(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
@@ -88,20 +89,25 @@ export async function PATCH(req: Request) {
   const tipo = (body?.tipo ?? "").toString().trim();
   const url = (body?.url ?? "").toString().trim();
   const archivado = typeof body?.archivado === "boolean" ? body.archivado : null;
+  const preguntasEncuesta = Array.isArray(body?.preguntas_encuesta) ? body.preguntas_encuesta : null;
 
   if (!clienteId || !dashboardId) return NextResponse.json({ error: "Falta cliente_id o dashboard_id" }, { status: 400 });
   const guardia = await exigirAcceso(session, clienteId, { escribir: true, dashboardId: dashboardId });
   if ("error" in guardia) return guardia.error;
-  if (archivado === null && (!tipo || !url)) return NextResponse.json({ error: "Falta tipo o url" }, { status: 400 });
+  if (archivado === null && preguntasEncuesta === null && (!tipo || !url)) {
+    return NextResponse.json({ error: "Falta tipo o url" }, { status: 400 });
+  }
 
   const urlBase = process.env.N8N_V3_DASHBOARDS_URL;
   if (!urlBase) return NextResponse.json({ error: "N8N_V3_DASHBOARDS_URL no está configurada" }, { status: 500 });
 
   try {
     const payload =
-      archivado !== null
-        ? { dashboard_id: dashboardId, cliente_id: clienteId, archivado }
-        : { dashboard_id: dashboardId, cliente_id: clienteId, tipo, url };
+      preguntasEncuesta !== null
+        ? { dashboard_id: dashboardId, cliente_id: clienteId, preguntas_encuesta: preguntasEncuesta }
+        : archivado !== null
+          ? { dashboard_id: dashboardId, cliente_id: clienteId, archivado }
+          : { dashboard_id: dashboardId, cliente_id: clienteId, tipo, url };
     const res = await fetch(urlBase, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

@@ -22,7 +22,28 @@ export type V3Dashboard = {
   // página (la encuesta y el webhook de grupos son los mismos sin importar
   // cuál landing haya testeado la persona).
   endpoints: V3PuntoEndpoint[];
+  // Preguntas reales de la encuesta de este dashboard, registradas a mano por
+  // quien lo configura — el texto tiene que ser idéntico (tildes, puntuación)
+  // al que usa el sistema externo (GHL, ManyChat, Google Forms, código
+  // propio), porque es la llave que usa el webhook de Encuesta para filtrar
+  // la respuesta real en medio de todo lo demás que mande ese sistema. Un
+  // dashboard sin preguntas acá simplemente no tiene encuesta configurada
+  // todavía — ver lib/v3/embudo.ts, calcularEncuesta().
+  preguntas_encuesta: V3PreguntaEncuesta[];
   created_at: string;
+};
+
+export type V3PreguntaTipo = "opcion_multiple" | "libre";
+
+export type V3PreguntaEncuesta = {
+  texto: string;
+  tipo: V3PreguntaTipo;
+  // Solo aplica a "opcion_multiple" — las opciones reales de esa pregunta,
+  // en el mismo texto exacto que usa el sistema externo. Se muestran todas
+  // en el dashboard aunque todavía nadie haya elegido alguna (en 0), y si
+  // llega una respuesta que no está en esta lista igual se cuenta (nunca se
+  // descarta un dato real por no haber sido anticipado).
+  opciones?: string[];
 };
 
 // Una "página de captación" (antes "punto de captación") es una landing
