@@ -73,9 +73,10 @@ export async function POST(req: Request) {
   }
 }
 
-// Hoy solo se usa para guardar la URL real de destino de un enlace corto
-// (tipo "clase"/"replay", ver lib/v3/embudo.ts) por dashboard — un `tipo` +
-// `url` a la vez, mergeados en `url_enlaces` sin pisar los demás.
+// Dos usos: guardar la URL real de destino de un enlace corto (tipo
+// "clase"/"replay", ver lib/v3/embudo.ts) con `tipo` + `url`, o archivar/
+// desarchivar el dashboard con `archivado` (boolean) — mutuamente
+// excluyentes, el body manda uno u otro.
 export async function PATCH(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
@@ -86,20 +87,25 @@ export async function PATCH(req: Request) {
   const dashboardId = Number(body?.dashboard_id) || 0;
   const tipo = (body?.tipo ?? "").toString().trim();
   const url = (body?.url ?? "").toString().trim();
+  const archivado = typeof body?.archivado === "boolean" ? body.archivado : null;
 
   if (!clienteId || !dashboardId) return NextResponse.json({ error: "Falta cliente_id o dashboard_id" }, { status: 400 });
   const guardia = await exigirAcceso(session, clienteId, { escribir: true, dashboardId: dashboardId });
   if ("error" in guardia) return guardia.error;
-  if (!tipo || !url) return NextResponse.json({ error: "Falta tipo o url" }, { status: 400 });
+  if (archivado === null && (!tipo || !url)) return NextResponse.json({ error: "Falta tipo o url" }, { status: 400 });
 
   const urlBase = process.env.N8N_V3_DASHBOARDS_URL;
   if (!urlBase) return NextResponse.json({ error: "N8N_V3_DASHBOARDS_URL no está configurada" }, { status: 500 });
 
   try {
+    const payload =
+      archivado !== null
+        ? { dashboard_id: dashboardId, cliente_id: clienteId, archivado }
+        : { dashboard_id: dashboardId, cliente_id: clienteId, tipo, url };
     const res = await fetch(urlBase, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dashboard_id: dashboardId, cliente_id: clienteId, tipo, url }),
+      body: JSON.stringify(payload),
       cache: "no-store",
     });
     const data = await res.json().catch(() => ({}));
@@ -107,6 +113,38 @@ export async function PATCH(req: Request) {
     return NextResponse.json(Array.isArray(data) ? data[0] : data);
   } catch (err) {
     console.error("Error actualizando dashboard de V3:", err);
+    return NextResponse.json({ error: "No se pudo conectar al servidor" }, { status: 502 });
+  }
+}
+
+// Borrado real — el workflow lo rechaza con 409 si el dashboard todavía
+// tiene leads (ahí corresponde archivar, no borrar).
+export async function DELETE(req: Request) {
+  const token = cookies().get(COOKIE_NAME)?.value;
+  const session = token ? await verifySession(token) : null;
+  if (!session) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const dashboardId = Number(searchParams.get("dashboard_id")) || 0;
+  const clienteId = (searchParams.get("cliente_id") ?? "").trim();
+  if (!dashboardId || !clienteId) return NextResponse.json({ error: "Falta dashboard_id o cliente_id" }, { status: 400 });
+
+  const guardia = await exigirAcceso(session, clienteId, { escribir: true, dashboardId });
+  if ("error" in guardia) return guardia.error;
+
+  const urlBase = process.env.N8N_V3_DASHBOARDS_URL;
+  if (!urlBase) return NextResponse.json({ error: "N8N_V3_DASHBOARDS_URL no está configurada" }, { status: 500 });
+
+  try {
+    const target = new URL(urlBase);
+    target.searchParams.set("dashboard_id", String(dashboardId));
+    target.searchParams.set("cliente_id", clienteId);
+    const res = await fetch(target.toString(), { method: "DELETE", cache: "no-store" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return NextResponse.json({ error: data?.error || "No se pudo borrar el dashboard" }, { status: res.status });
+    return NextResponse.json(data);
+  } catch (err) {
+    console.error("Error borrando dashboard de V3:", err);
     return NextResponse.json({ error: "No se pudo conectar al servidor" }, { status: 502 });
   }
 }

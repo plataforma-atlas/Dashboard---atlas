@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAcceso } from "@/components/v3/useAcceso";
-import { Menu, Plus } from "lucide-react";
+import { Archive, ArchiveRestore, Menu, Plus, Trash2 } from "lucide-react";
 import { V3Dashboard, V3DashboardTipo } from "@/lib/v3/types";
 
 // Letras de página de testeo (A, B, C...) — el usuario confirmó que no espera
@@ -35,6 +35,12 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
   const [paginasTesteo, setPaginasTesteo] = useState(1);
   const [creando, setCreando] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Panel de "Gestionar" — archivar/desarchivar/borrar. Separado del form de
+  // "Crear nuevo" porque son acciones sobre dashboards ya existentes.
+  const [gestionAbierto, setGestionAbierto] = useState(false);
+  const [accionEnCurso, setAccionEnCurso] = useState<number | null>(null);
+  const [erroresGestion, setErroresGestion] = useState<Record<number, string>>({});
 
   async function cargarDashboards() {
     if (!clienteId) return;
@@ -123,6 +129,52 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
     }
   }
 
+  async function archivarDashboard(dashboard: V3Dashboard, archivado: boolean) {
+    setAccionEnCurso(dashboard.id);
+    setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "" }));
+    try {
+      const res = await fetch("/api/v3/dashboards", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: clienteId, dashboard_id: dashboard.id, archivado }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: data.error || "No se pudo actualizar" }));
+        return;
+      }
+      setDashboards((actuales) => actuales.map((d) => (d.id === dashboard.id ? { ...d, archivado } : d)));
+      // Si se archivó el dashboard que está seleccionado en la barra, se
+      // deselecciona — no tiene sentido seguir viendo datos de algo oculto.
+      if (archivado && dashboardIdParam === String(dashboard.id)) seleccionarDashboard("");
+    } catch {
+      setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "No se pudo conectar al servidor" }));
+    } finally {
+      setAccionEnCurso(null);
+    }
+  }
+
+  async function borrarDashboard(dashboard: V3Dashboard) {
+    setAccionEnCurso(dashboard.id);
+    setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "" }));
+    try {
+      const res = await fetch(`/api/v3/dashboards?dashboard_id=${dashboard.id}&cliente_id=${clienteId}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: data.error || "No se pudo borrar" }));
+        return;
+      }
+      setDashboards((actuales) => actuales.filter((d) => d.id !== dashboard.id));
+      if (dashboardIdParam === String(dashboard.id)) seleccionarDashboard("");
+    } catch {
+      setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "No se pudo conectar al servidor" }));
+    } finally {
+      setAccionEnCurso(null);
+    }
+  }
+
+  const dashboardsVisibles = dashboards.filter((d) => !d.archivado);
+
   return (
     <div className="sticky top-0 z-10 bg-surface/95 backdrop-blur border-b border-outline">
       <div className="px-4 md:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -143,7 +195,7 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
               className="bg-surface-high border border-outline rounded-md px-3 py-1.5 text-[13px] text-on-surface outline-none focus:border-primary transition-colors duration-150"
             >
               <option value="">Todas las campañas</option>
-              {dashboards.map((d) => (
+              {dashboardsVisibles.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.tipo === "webinar" ? "Webinar" : "Lanzamiento"} · {d.nombre}
                 </option>
@@ -152,15 +204,73 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
           )}
         </div>
         {!acceso.soloLectura && (
-          <button
-            type="button"
-            onClick={() => setFormAbierto((v) => !v)}
-            className="press flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
-          >
-            <Plus size={14} /> Crear nuevo
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setGestionAbierto((v) => !v)}
+              title="Archivar o borrar dashboards"
+              aria-label="Gestionar dashboards"
+              className="press w-8 h-8 rounded-md border border-outline hover:border-primary grid place-items-center text-on-surface-variant hover:text-on-surface transition-colors duration-150"
+            >
+              <Archive size={14} strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormAbierto((v) => !v)}
+              className="press flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+            >
+              <Plus size={14} /> Crear nuevo
+            </button>
+          </div>
         )}
       </div>
+
+      {gestionAbierto && (
+        <div className="animate-fade-in-up px-4 md:px-8 pb-4 flex flex-col gap-2">
+          {dashboards.length === 0 ? (
+            <p className="text-[13px] text-on-surface-faint">Todavía no hay dashboards.</p>
+          ) : (
+            dashboards.map((d) => (
+              <div key={d.id} className="flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-3 rounded-md border border-outline bg-surface-high px-3 py-2">
+                  <div className="min-w-0 flex items-center gap-2">
+                    <span className={`text-[13px] font-medium truncate ${d.archivado ? "text-on-surface-faint" : "text-on-surface"}`}>
+                      {d.tipo === "webinar" ? "Webinar" : "Lanzamiento"} · {d.nombre}
+                    </span>
+                    {d.archivado && (
+                      <span className="text-[10px] uppercase tracking-[0.08em] px-1.5 py-0.5 rounded border border-outline text-on-surface-faint shrink-0">
+                        Archivado
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => archivarDashboard(d, !d.archivado)}
+                      disabled={accionEnCurso === d.id}
+                      title={d.archivado ? "Desarchivar" : "Archivar"}
+                      className="press flex items-center gap-1 text-[12px] px-2 py-1 rounded-md border border-outline hover:border-primary text-on-surface-variant hover:text-on-surface transition-colors duration-150 disabled:opacity-50"
+                    >
+                      {d.archivado ? <ArchiveRestore size={12} /> : <Archive size={12} />}
+                      {d.archivado ? "Desarchivar" : "Archivar"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => borrarDashboard(d)}
+                      disabled={accionEnCurso === d.id}
+                      title="Borrar (solo si no tiene leads)"
+                      className="press flex items-center gap-1 text-[12px] px-2 py-1 rounded-md border border-outline hover:border-error text-on-surface-variant hover:text-error transition-colors duration-150 disabled:opacity-50"
+                    >
+                      <Trash2 size={12} /> Borrar
+                    </button>
+                  </div>
+                </div>
+                {erroresGestion[d.id] && <p className="text-[12px] text-error px-1">{erroresGestion[d.id]}</p>}
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {formAbierto && (
         <form

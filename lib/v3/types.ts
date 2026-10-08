@@ -8,6 +8,10 @@ export type V3Dashboard = {
   nombre: string;
   tipo: V3DashboardTipo;
   nomenclatura_filtro: string | null;
+  // Un dashboard archivado sigue existiendo con todos sus datos — solo se
+  // oculta del selector normal. Reversible (ver V3Topbar). Distinto de un
+  // borrado real, que solo se permite cuando el dashboard no tiene leads.
+  archivado: boolean;
   // URL real de destino por "tipo" de enlace corto (ver lib/v3/embudo.ts y
   // app/r/[token]/route.ts) — hoy "clase"/"replay", pero es un objeto libre
   // a propósito para poder sumar tipos nuevos sin migrar nada.
