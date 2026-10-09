@@ -12,7 +12,7 @@ const SOPORTE_NAV: Categoria[] = [
     titulo: "Conectar fuentes de datos",
     items: [
       { href: "/soporte/conectar-meta-ads", label: "Meta Ads", icono: Link2, disponible: true },
-      { href: "/soporte/conectar-ghl", label: "Go High Level", icono: Users, disponible: false },
+      { href: "/soporte/conectar-ghl", label: "Go High Level", icono: Users, disponible: true },
       { href: "/soporte/conectar-hotmart", label: "Hotmart", icono: ShoppingCart, disponible: false },
       { href: "/soporte/conectar-clasespecial", label: "ClaseEspecial", icono: Radio, disponible: false },
     ],

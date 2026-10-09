@@ -17,7 +17,7 @@ const GUIAS = [
     icono: Users,
     titulo: "Conectar Go High Level",
     descripcion: "Para que tus leads lleguen y se etiqueten solos en tu CRM.",
-    disponible: false,
+    disponible: true,
   },
   {
     href: "/soporte/conectar-hotmart",
