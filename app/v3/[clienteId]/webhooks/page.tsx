@@ -327,9 +327,19 @@ export default function V3WebhooksPage() {
             clienteId={clienteId}
             dashboardId={dashboardActual.id}
             preguntas={dashboardActual.preguntas_encuesta}
+            ghlSurveyId={dashboardActual.ghl_survey_id}
             puedeEscribir={acceso.puedeEscribir}
             onGuardadas={(preguntas) =>
               setDashboards((actuales) => actuales.map((d) => (d.id === dashboardActual.id ? { ...d, preguntas_encuesta: preguntas } : d)))
+            }
+            onSincronizado={(datos) =>
+              setDashboards((actuales) =>
+                actuales.map((d) =>
+                  d.id === dashboardActual.id
+                    ? { ...d, preguntas_encuesta: datos.preguntas_encuesta, ghl_survey_id: datos.ghl_survey_id }
+                    : d
+                )
+              )
             }
           />
 

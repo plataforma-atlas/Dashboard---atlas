@@ -73,11 +73,13 @@ export async function POST(req: Request) {
   }
 }
 
-// Tres usos, mutuamente excluyentes según lo que traiga el body: guardar la
+// Cuatro usos, mutuamente excluyentes según lo que traiga el body: guardar la
 // URL real de destino de un enlace corto (tipo "clase"/"replay") con `tipo`
-// + `url`, archivar/desarchivar con `archivado` (boolean), o reemplazar las
+// + `url`, archivar/desarchivar con `archivado` (boolean), reemplazar las
 // preguntas de la encuesta con `preguntas_encuesta` (array completo — se
-// reemplaza entero, no se mergea de a una).
+// reemplaza entero, no se mergea de a una), o desvincular una encuesta de GHL
+// con `ghl_survey_id: null` (volver a modo manual — para vincular una encuesta
+// se usa /api/v3/ghl-encuestas, no este endpoint).
 export async function PATCH(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
@@ -90,11 +92,12 @@ export async function PATCH(req: Request) {
   const url = (body?.url ?? "").toString().trim();
   const archivado = typeof body?.archivado === "boolean" ? body.archivado : null;
   const preguntasEncuesta = Array.isArray(body?.preguntas_encuesta) ? body.preguntas_encuesta : null;
+  const desvincularGhl = Object.prototype.hasOwnProperty.call(body ?? {}, "ghl_survey_id") && body.ghl_survey_id === null;
 
   if (!clienteId || !dashboardId) return NextResponse.json({ error: "Falta cliente_id o dashboard_id" }, { status: 400 });
   const guardia = await exigirAcceso(session, clienteId, { escribir: true, dashboardId: dashboardId });
   if ("error" in guardia) return guardia.error;
-  if (archivado === null && preguntasEncuesta === null && (!tipo || !url)) {
+  if (archivado === null && preguntasEncuesta === null && !desvincularGhl && (!tipo || !url)) {
     return NextResponse.json({ error: "Falta tipo o url" }, { status: 400 });
   }
 
@@ -102,8 +105,9 @@ export async function PATCH(req: Request) {
   if (!urlBase) return NextResponse.json({ error: "N8N_V3_DASHBOARDS_URL no está configurada" }, { status: 500 });
 
   try {
-    const payload =
-      preguntasEncuesta !== null
+    const payload = desvincularGhl
+      ? { dashboard_id: dashboardId, cliente_id: clienteId, ghl_survey_id: null }
+      : preguntasEncuesta !== null
         ? { dashboard_id: dashboardId, cliente_id: clienteId, preguntas_encuesta: preguntasEncuesta }
         : archivado !== null
           ? { dashboard_id: dashboardId, cliente_id: clienteId, archivado }

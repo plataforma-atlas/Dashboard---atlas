@@ -30,6 +30,11 @@ export type V3Dashboard = {
   // dashboard sin preguntas acá simplemente no tiene encuesta configurada
   // todavía — ver lib/v3/embudo.ts, calcularEncuesta().
   preguntas_encuesta: V3PreguntaEncuesta[];
+  // Si está sincronizado con una encuesta de GHL, el id de esa encuesta —
+  // `preguntas_encuesta` se reemplaza entera cada vez que se sincroniza, y el
+  // webhook de Encuesta deja de confiar en el texto de lo que mande GHL (ver
+  // V3PreguntaEncuesta.claveGhl). `null` = modo manual (cualquier otro sistema).
+  ghl_survey_id: string | null;
   created_at: string;
 };
 
@@ -44,6 +49,12 @@ export type V3PreguntaEncuesta = {
   // llega una respuesta que no está en esta lista igual se cuenta (nunca se
   // descarta un dato real por no haber sido anticipado).
   opciones?: string[];
+  // Presente solo en preguntas sincronizadas desde una encuesta de GHL — es
+  // el id interno y estable del campo en GHL (no cambia si alguien edita el
+  // texto de la pregunta después). Cuando existe, el webhook de Encuesta
+  // matchea por esta clave en vez de por `texto` — ver lib/v3/embudo.ts y
+  // la sección 29 de DOCUMENTACION.md.
+  claveGhl?: string;
 };
 
 // Una "página de captación" (antes "punto de captación") es una landing
