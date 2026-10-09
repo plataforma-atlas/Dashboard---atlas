@@ -45,6 +45,7 @@ export async function POST(req: Request) {
   const clienteId = (body?.cliente_id ?? "").toString().trim();
   const dashboardId = (body?.dashboard_id ?? "").toString().trim();
   const nombre = (body?.nombre ?? "").toString().trim();
+  const canal = body?.canal === "organico" ? "organico" : "ads";
 
   if (!clienteId) return NextResponse.json({ error: "Falta cliente_id" }, { status: 400 });
   const guardia = await exigirAcceso(session, clienteId, { escribir: true, dashboardId: Number(dashboardId) || null });
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cliente_id: clienteId, dashboard_id: dashboardId, nombre }),
+      body: JSON.stringify({ cliente_id: clienteId, dashboard_id: dashboardId, nombre, canal }),
       cache: "no-store",
     });
     const data = await res.json().catch(() => ({}));

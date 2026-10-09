@@ -97,6 +97,22 @@ export default function V3ClientePage() {
     setRangoPeriodo(r);
   }
 
+  // Filtra todo lo que se calcula a partir de los leads propios (funnel,
+  // encuesta, UTMs, ventas...) por el canal de la página que los capturó.
+  // Los números que vienen directo de Meta (inversión/impresiones/clics) NO
+  // se filtran acá — Meta no sabe nada de nuestras páginas orgánicas, filtrar
+  // esos números daría un dato inventado. Ver lanzamientoMetrics más abajo.
+  const [canalFiltro, setCanalFiltro] = useState<"todos" | "ads" | "organico">("todos");
+  const leadsFiltrados = useMemo(() => {
+    if (canalFiltro === "todos") return leads;
+    const canalPorPunto = new Map(puntos.map((p) => [p.id, p.canal]));
+    return leads.filter((l) => l.punto_captacion_id != null && canalPorPunto.get(l.punto_captacion_id) === canalFiltro);
+  }, [leads, puntos, canalFiltro]);
+  const puntosFiltrados = useMemo(
+    () => (canalFiltro === "todos" ? puntos : puntos.filter((p) => p.canal === canalFiltro)),
+    [puntos, canalFiltro]
+  );
+
   const [eventoByAngle, setEventoByAngle] = useState<{ campaign: Campaign; rows: FunnelRow[] }[]>([]);
   const [adSpend, setAdSpend] = useState<EventoAdSpendRow[]>([]);
   const [adSpendConsolidated, setAdSpendConsolidated] = useState<EventoAdSpendConsolidatedRow[]>([]);
@@ -271,17 +287,19 @@ export default function V3ClientePage() {
   // (comisiones, pagos en cuotas), sin que haya que rehacer la UI.
   const lanzamientoMetrics = useMemo(() => {
     if (!metaData || !metaData.conectado) return null;
+    // Inversión/impresiones/clics vienen de Meta y nunca se filtran por canal
+    // — Meta no distingue ads de orgánico, filtrarlos daría un número inventado.
     const inversion = metaData.campanas.reduce((acc, c) => acc + c.spend, 0);
     const impresiones = metaData.campanas.reduce((acc, c) => acc + c.impressions, 0);
     const clics = metaData.campanas.reduce((acc, c) => acc + c.clicks, 0);
 
-    const ventas = leads.filter((l) => l.status === "comprado");
+    const ventas = leadsFiltrados.filter((l) => l.status === "comprado");
     // Los pings "sin match" (ver Integraciones — Eventos de Embudo, endpoint
     // de Grupos) son teléfonos que no matchearon ningún lead real — se
     // guardan igual para no perder el dato, pero nunca fueron un registro de
     // verdad: si se contaran acá, inflarían leadsCount y deflactarían las dos
     // tasas de conversión sin que nadie lo pida.
-    const leadsReales = leads.filter((l) => l.extra?.sin_match !== true);
+    const leadsReales = leadsFiltrados.filter((l) => l.extra?.sin_match !== true);
     const leadsCount = leadsReales.length;
     const ventasCount = ventas.length;
     // Hotmart manda el bruto (lo que pagó el comprador) y, cuando el payload
@@ -301,14 +319,21 @@ export default function V3ClientePage() {
     const primeraMoneda = ventas.find((l) => typeof l.extra?.moneda === "string" && l.extra.moneda);
     const moneda = typeof primeraMoneda?.extra?.moneda === "string" ? primeraMoneda.extra.moneda : "USD";
 
-    const roasBruto = inversion > 0 ? facturacionBruta / inversion : null;
-    const roasNeto = inversion > 0 ? facturacionNeta / inversion : null;
-    const conversionPagina = clics > 0 ? (leadsCount / clics) * 100 : null;
+    // Estas tres mezclan un número de Meta (inversión/clics, siempre global)
+    // con uno de leads (que si puede estar filtrado a orgánico) — dividir
+    // inversión publicitaria entre leads orgánicos no significa nada real, así
+    // que en la vista "Orgánico" se muestran en "—" en vez de un dato inventado.
+    // En "Ads" sí tienen sentido (y de hecho quedan más precisos que en "Todos",
+    // que hoy mezcla leads orgánicos en el denominador).
+    const sinMeta = canalFiltro === "organico";
+    const roasBruto = sinMeta ? null : inversion > 0 ? facturacionBruta / inversion : null;
+    const roasNeto = sinMeta ? null : inversion > 0 ? facturacionNeta / inversion : null;
+    const conversionPagina = sinMeta ? null : clics > 0 ? (leadsCount / clics) * 100 : null;
     const conversionGlobal = leadsCount > 0 ? (ventasCount / leadsCount) * 100 : null;
     // CPL = costo por lead — inversión de Meta entre los leads reales del
     // embudo propio (no "Leads (Meta)", que es lo que Meta reporta solo, ver
     // nota de Administrador de Anuncios sobre por qué no se cruzan).
-    const cpl = leadsCount > 0 ? inversion / leadsCount : null;
+    const cpl = sinMeta ? null : leadsCount > 0 ? inversion / leadsCount : null;
 
     return {
       inversion,
@@ -325,7 +350,7 @@ export default function V3ClientePage() {
       conversionGlobal,
       cpl,
     };
-  }, [metaData, leads]);
+  }, [metaData, leadsFiltrados, canalFiltro]);
 
   // Desempeño por día para el gráfico de abajo: Facturación/Ventas se arman
   // agrupando por día los leads con status='comprado' (respetan el filtro de
@@ -366,7 +391,7 @@ export default function V3ClientePage() {
       }));
   }, [metaData, leads, rangoPeriodo]);
 
-  const embudo = useMemo(() => calcularEmbudo(leads), [leads]);
+  const embudo = useMemo(() => calcularEmbudo(leadsFiltrados), [leadsFiltrados]);
 
   // Tendencia diaria de Ventas/Carrito abandonado/Tarjetas rechazadas, mismo
   // recorte por `rangoPeriodo` que ya usa `desempenoPorDia` — acá se cuentan
@@ -385,7 +410,7 @@ export default function V3ClientePage() {
       actual[campo] += 1;
       porFecha.set(fecha, actual);
     };
-    for (const l of leads) {
+    for (const l of leadsFiltrados) {
       if (l.status === "comprado") sumar(l.created_at, "ventas");
       if (typeof l.extra?.carrito_abandonado_at === "string") sumar(l.extra.carrito_abandonado_at, "carritoAbandonado");
       if (typeof l.extra?.tarjeta_rechazada_at === "string") sumar(l.extra.tarjeta_rechazada_at, "tarjetaRechazada");
@@ -393,18 +418,18 @@ export default function V3ClientePage() {
     return Array.from(porFecha.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([fecha, v]) => ({ fecha, ...v }));
-  }, [leads, rangoPeriodo]);
+  }, [leadsFiltrados, rangoPeriodo]);
 
   const paginasTesteo = useMemo(
-    () => calcularPaginasTesteo(leads, puntos, visitas, rangoPeriodo),
-    [leads, puntos, visitas, rangoPeriodo]
+    () => calcularPaginasTesteo(leadsFiltrados, puntosFiltrados, visitas, rangoPeriodo),
+    [leadsFiltrados, puntosFiltrados, visitas, rangoPeriodo]
   );
 
-  const geografia = useMemo(() => calcularGeografia(leads), [leads]);
-  const utms = useMemo(() => calcularUtms(leads), [leads]);
+  const geografia = useMemo(() => calcularGeografia(leadsFiltrados), [leadsFiltrados]);
+  const utms = useMemo(() => calcularUtms(leadsFiltrados), [leadsFiltrados]);
   const encuesta = useMemo(
-    () => calcularEncuesta(leads, dashboardActual?.preguntas_encuesta ?? []),
-    [leads, dashboardActual?.preguntas_encuesta]
+    () => calcularEncuesta(leadsFiltrados, dashboardActual?.preguntas_encuesta ?? []),
+    [leadsFiltrados, dashboardActual?.preguntas_encuesta]
   );
 
   const selectedCampaign = useMemo(() => {
@@ -536,6 +561,29 @@ export default function V3ClientePage() {
         </header>
 
         <V3PeriodFilter periodo={periodo} rango={rangoPeriodo} onAplicar={aplicarPeriodo} />
+
+        {puntos.some((p) => p.canal === "organico") && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Canal</span>
+            {(["todos", "ads", "organico"] as const).map((opcion) => (
+              <button
+                key={opcion}
+                type="button"
+                onClick={() => setCanalFiltro(opcion)}
+                className={`press text-[13px] px-3 py-1.5 rounded-md border font-medium transition-colors duration-150 ${
+                  canalFiltro === opcion
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-outline text-on-surface-variant hover:border-primary hover:text-on-surface"
+                }`}
+              >
+                {opcion === "todos" ? "Todos" : opcion === "ads" ? "Ads" : "Orgánico"}
+              </button>
+            ))}
+            {canalFiltro !== "todos" && (
+              <span className="text-[11px] text-on-surface-faint">La sección Meta Ads de abajo siempre muestra el total, sin filtrar.</span>
+            )}
+          </div>
+        )}
 
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-on-surface">

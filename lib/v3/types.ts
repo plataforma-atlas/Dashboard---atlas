@@ -63,11 +63,17 @@ export type V3PuntoEndpoint = {
   token: string;
 };
 
+// "ads" = página de testeo (A/B/C..., lo normal para anuncios de Meta).
+// "organico" = la página única de captación orgánica de un dashboard — no se
+// testea contra otras, solo sirve para poder filtrar sus métricas aparte.
+export type V3CanalCaptacion = "ads" | "organico";
+
 export type V3CaptacionPunto = {
   id: number;
   nombre: string;
   etiqueta_ghl: string;
   token_captacion: string;
+  canal: V3CanalCaptacion;
   // Hoy solo trae "visita" (el pixel) — encuesta/gracias/grupos/mensaje se
   // movieron a V3Dashboard.endpoints.
   endpoints: V3PuntoEndpoint[];

@@ -6,7 +6,7 @@ import { useAcceso } from "@/components/v3/useAcceso";
 import { Check, Link2, Plus, Save } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import PreguntasEncuesta from "@/components/v3/PreguntasEncuesta";
-import { V3CaptacionPunto, V3Dashboard, V3EndpointTipo } from "@/lib/v3/types";
+import { V3CanalCaptacion, V3CaptacionPunto, V3Dashboard, V3EndpointTipo } from "@/lib/v3/types";
 
 const ETIQUETAS_ENDPOINT: Record<"captacion" | V3EndpointTipo, string> = {
   captacion: "Captación",
@@ -54,6 +54,7 @@ export default function V3WebhooksPage() {
   const [puntos, setPuntos] = useState<V3CaptacionPunto[]>([]);
   const [puntosLoading, setPuntosLoading] = useState(false);
   const [nombreNuevo, setNombreNuevo] = useState("");
+  const [canalNuevo, setCanalNuevo] = useState<V3CanalCaptacion>("ads");
   const [creando, setCreando] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [copiado, setCopiado] = useState<string | null>(null);
@@ -150,7 +151,7 @@ export default function V3WebhooksPage() {
       const res = await fetch("/api/v3/captacion-puntos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cliente_id: clienteId, dashboard_id: dashboardActual.id, nombre: nombreNuevo.trim() }),
+        body: JSON.stringify({ cliente_id: clienteId, dashboard_id: dashboardActual.id, nombre: nombreNuevo.trim(), canal: canalNuevo }),
       });
       const nuevo = await res.json();
       if (!res.ok) {
@@ -158,6 +159,7 @@ export default function V3WebhooksPage() {
         return;
       }
       setNombreNuevo("");
+      setCanalNuevo("ads");
       await cargarPuntos();
     } catch {
       setFormError("No se pudo conectar al servidor");
@@ -336,62 +338,95 @@ export default function V3WebhooksPage() {
           ) : puntos.length === 0 ? (
             <p className="text-[13px] text-on-surface-faint">Todavía no hay páginas de captación para {dashboardActual.nombre}.</p>
           ) : (
-            <div className="flex flex-col gap-3">
-              {puntos.map((punto) => {
-                // Páginas creadas antes de este cambio todavía pueden traer, en la
-                // respuesta de la API, filas viejas de encuesta/gracias/grupos/
-                // mensaje a nivel de página (quedaron en la base, ya no se generan
-                // más) — esos endpoints dejaron de usarse: Eventos de Embudo ahora
-                // busca por dashboard_id, no por punto_captacion_id, así que esos
-                // tokens viejos ya ni funcionan. Por página solo se muestra "visita".
-                const filas: { tipo: "captacion" | V3EndpointTipo; token: string }[] = [
-                  { tipo: "captacion", token: punto.token_captacion },
-                  ...punto.endpoints.filter((e) => e.tipo === "visita"),
-                ];
+            <>
+              {(
+                [
+                  { canal: "ads" as const, titulo: "Páginas de Ads (testeo)", vacio: "Todavía no hay páginas de testeo." },
+                  { canal: "organico" as const, titulo: "Página orgánica", vacio: "Todavía no hay página orgánica." },
+                ] as const
+              ).map((grupo) => {
+                const deEsteGrupo = puntos.filter((p) => p.canal === grupo.canal);
+                if (deEsteGrupo.length === 0) return null;
                 return (
-                  <div key={punto.id} className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-3">
-                    <div>
-                      <div className="text-[14px] font-medium text-on-surface">{punto.nombre}</div>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      {filas.map((fila) => (
-                        <div key={fila.tipo} className="flex flex-col gap-1">
-                          <div className="flex items-center justify-between gap-3 rounded-md bg-background px-3 py-2">
-                            <span className="text-[13px] text-on-surface-variant shrink-0">{ETIQUETAS_ENDPOINT[fila.tipo]}</span>
-                            <button
-                              type="button"
-                              onClick={() => copiar(fila.tipo, fila.token)}
-                              className="press flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150"
-                            >
-                              {copiado === fila.token ? (
-                                <>
-                                  <Check size={12} /> Copiado
-                                </>
-                              ) : (
-                                <>
-                                  <Link2 size={12} /> {fila.tipo === "visita" ? "Copiar snippet" : "Copiar"}
-                                </>
-                              )}
-                            </button>
+                  <div key={grupo.canal} className="flex flex-col gap-3">
+                    <h3 className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">{grupo.titulo}</h3>
+                    {deEsteGrupo.map((punto) => {
+                      // Páginas creadas antes de este cambio todavía pueden traer, en la
+                      // respuesta de la API, filas viejas de encuesta/gracias/grupos/
+                      // mensaje a nivel de página (quedaron en la base, ya no se generan
+                      // más) — esos endpoints dejaron de usarse: Eventos de Embudo ahora
+                      // busca por dashboard_id, no por punto_captacion_id, así que esos
+                      // tokens viejos ya ni funcionan. Por página solo se muestra "visita".
+                      const filas: { tipo: "captacion" | V3EndpointTipo; token: string }[] = [
+                        { tipo: "captacion", token: punto.token_captacion },
+                        ...punto.endpoints.filter((e) => e.tipo === "visita"),
+                      ];
+                      return (
+                        <div key={punto.id} className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-3">
+                          <div>
+                            <div className="text-[14px] font-medium text-on-surface">{punto.nombre}</div>
                           </div>
-                          {fila.tipo === "visita" && (
-                            <p className="text-[11px] text-on-surface-faint px-1">
-                              Pegá esto en el <code className="font-mono">&lt;head&gt;</code> de la página (o justo antes de cerrar{" "}
-                              <code className="font-mono">&lt;/body&gt;</code>) — cuenta cada visita real, sin importar cuántos anuncios de
-                              Meta apunten acá.
-                            </p>
-                          )}
+                          <div className="flex flex-col gap-1.5">
+                            {filas.map((fila) => (
+                              <div key={fila.tipo} className="flex flex-col gap-1">
+                                <div className="flex items-center justify-between gap-3 rounded-md bg-background px-3 py-2">
+                                  <span className="text-[13px] text-on-surface-variant shrink-0">{ETIQUETAS_ENDPOINT[fila.tipo]}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => copiar(fila.tipo, fila.token)}
+                                    className="press flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150"
+                                  >
+                                    {copiado === fila.token ? (
+                                      <>
+                                        <Check size={12} /> Copiado
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Link2 size={12} /> {fila.tipo === "visita" ? "Copiar snippet" : "Copiar"}
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                                {fila.tipo === "visita" && (
+                                  <p className="text-[11px] text-on-surface-faint px-1">
+                                    Pegá esto en el <code className="font-mono">&lt;head&gt;</code> de la página (o justo antes de cerrar{" "}
+                                    <code className="font-mono">&lt;/body&gt;</code>) — cuenta cada visita real, sin importar cuántos
+                                    anuncios de Meta apunten acá.
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
                 );
               })}
-            </div>
+            </>
           )}
 
           {acceso.puedeEscribir && (
           <form onSubmit={crearPunto} className="rounded-lg border border-outline bg-surface p-4 flex flex-col sm:flex-row sm:items-end gap-3">
+            <div className="flex flex-col gap-1.5 shrink-0">
+              <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Canal</label>
+              <div className="flex items-center gap-1.5">
+                {(["ads", "organico"] as const).map((opcion) => (
+                  <button
+                    key={opcion}
+                    type="button"
+                    onClick={() => setCanalNuevo(opcion)}
+                    className={`press text-[13px] px-3 py-2 rounded-md border font-medium transition-colors duration-150 ${
+                      canalNuevo === opcion
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-outline text-on-surface-variant hover:border-primary hover:text-on-surface"
+                    }`}
+                  >
+                    {opcion === "organico" ? "Orgánico" : "Ads"}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="flex flex-col gap-1.5 flex-1 min-w-0">
               <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Nombre de la página</label>
               <input

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAcceso } from "@/components/v3/useAcceso";
-import { Archive, ArchiveRestore, Menu, Plus, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, Check, Menu, Plus, Trash2 } from "lucide-react";
 import { V3Dashboard, V3DashboardTipo } from "@/lib/v3/types";
 
 // Letras de página de testeo (A, B, C...) — el usuario confirmó que no espera
@@ -33,6 +33,9 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
   // captación (y los endpoints de cada uno), en vez de agregarlos uno por uno
   // a mano después desde Endpoints.
   const [paginasTesteo, setPaginasTesteo] = useState(1);
+  // La página orgánica es aparte de las de testeo — nunca se compara contra
+  // otras, solo existe para poder filtrar sus métricas del resto (Ads).
+  const [tieneOrganico, setTieneOrganico] = useState(false);
   const [creando, setCreando] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -93,7 +96,8 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
       // Para Lanzamiento, crear de una vez sus páginas de testeo (puntos de
       // captación "Página A"/"Página B"/...) — cada una ya trae sus 4
       // endpoints hermanos generados solos (ver Núcleo — V3 Puntos de
-      // Captación).
+      // Captación). La página orgánica, si la marcó, se crea aparte con su
+      // propio canal — nunca se mezcla con las letras de testeo de Ads.
       const erroresPaginas: string[] = [];
       if (tipoNuevo === "lanzamiento") {
         for (let i = 0; i < paginasTesteo; i++) {
@@ -102,11 +106,23 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
             const rPunto = await fetch("/api/v3/captacion-puntos", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ cliente_id: clienteId, dashboard_id: nuevo.id, nombre: `Página ${letra}` }),
+              body: JSON.stringify({ cliente_id: clienteId, dashboard_id: nuevo.id, nombre: `Página ${letra}`, canal: "ads" }),
             });
             if (!rPunto.ok) erroresPaginas.push(letra);
           } catch {
             erroresPaginas.push(letra);
+          }
+        }
+        if (tieneOrganico) {
+          try {
+            const rOrganico = await fetch("/api/v3/captacion-puntos", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ cliente_id: clienteId, dashboard_id: nuevo.id, nombre: "Orgánico", canal: "organico" }),
+            });
+            if (!rOrganico.ok) erroresPaginas.push("Orgánico");
+          } catch {
+            erroresPaginas.push("Orgánico");
           }
         }
       }
@@ -115,6 +131,7 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
       setNomenclaturaNueva("");
       setTipoNuevo("lanzamiento");
       setPaginasTesteo(1);
+      setTieneOrganico(false);
       await cargarDashboards();
       seleccionarDashboard(String(nuevo.id));
       if (erroresPaginas.length > 0) {
@@ -316,6 +333,30 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+          {tipoNuevo === "lanzamiento" && (
+            <div className="flex flex-col gap-1.5 shrink-0">
+              <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Orgánico</label>
+              <button
+                type="button"
+                onClick={() => setTieneOrganico((v) => !v)}
+                title="Agrega una página de captación orgánica aparte, sin testeo"
+                className={`press flex items-center gap-1.5 text-[13px] h-9 px-3 rounded-md border font-medium transition-colors duration-150 ${
+                  tieneOrganico
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-outline text-on-surface-variant hover:border-primary hover:text-on-surface"
+                }`}
+              >
+                <span
+                  className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${
+                    tieneOrganico ? "border-primary bg-primary" : "border-outline"
+                  }`}
+                >
+                  {tieneOrganico && <Check size={10} className="text-on-primary" />}
+                </span>
+                ¿Tenés captación orgánica?
+              </button>
             </div>
           )}
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
