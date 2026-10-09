@@ -307,7 +307,7 @@ export default function V3ConexionesPage() {
       <div className="rounded-lg border border-outline bg-surface p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-0.5">
           <span className="text-[14px] font-medium text-on-surface">Go High Level</span>
-          <span className="text-[13px] text-on-surface-variant">Tu CRM — se usa para funciones futuras. Vermetricas no envía ni modifica datos ahí automáticamente.</span>
+          <span className="text-[13px] text-on-surface-variant">Tu CRM — de acá traemos las preguntas y respuestas de tu encuesta. Vermetricas solo lee, nunca envía ni modifica datos ahí.</span>
         </div>
         <div className="flex items-center flex-wrap gap-2 shrink-0">
           <Status variant={ghlGuardando ? "pending" : ghlConectado ? "success" : "neutral"} />
@@ -373,10 +373,22 @@ export default function V3ConexionesPage() {
             <span className="text-[14px] font-medium text-on-surface">{ghlConectado ? "Reconectar Go High Level" : "Conectar Go High Level"}</span>
             <p className="text-[13px] text-on-surface-variant">
               Necesitamos el <span className="font-mono">Location ID</span> de tu sub-cuenta y un token de{" "}
-              <span className="font-medium">Integración Privada</span> (Settings → Private Integrations en GHL). Por ahora solo guardamos la
-              conexión para funciones futuras — Vermetricas no envía ni modifica nada en tu cuenta de GHL.
-              {ghlConectado && " Esto reemplaza la conexión guardada."}
+              <span className="font-medium">Integración Privada</span> (Settings → Private Integrations en GHL). Vermetricas
+              solo lee datos de tu cuenta — nunca envía ni modifica nada — pero necesitás marcar estos permisos (todos de solo
+              lectura) al crear el token:
             </p>
+            <ul className="text-[13px] text-on-surface-variant list-disc list-inside pl-1">
+              <li>
+                <span className="font-medium text-on-surface">Surveys</span> — ya lo usamos para traer las preguntas y
+                respuestas de tu encuesta.
+              </li>
+              <li>
+                <span className="font-medium text-on-surface">Contacts, Conversations, Conversation Messages, Opportunities,
+                Users</span> — todavía no los usamos, pero los vamos a necesitar pronto para medir el tiempo de respuesta de tus
+                closers. Marcalos ahora para no tener que pedirte un token nuevo después.
+              </li>
+            </ul>
+            {ghlConectado && <p className="text-[13px] text-on-surface-variant">Esto reemplaza la conexión guardada.</p>}
           </div>
 
           <div className="flex flex-col gap-1.5">

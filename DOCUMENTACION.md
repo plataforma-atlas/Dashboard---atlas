@@ -1603,3 +1603,7 @@ Contra `cliente-prueba-draft` (conectado temporalmente a una cuenta real de GHL 
 
 - No se investigó todavía qué pasa si la encuesta tiene preguntas de un tipo de dato distinto a texto/opción múltiple (fecha, numérico, etc.) — hoy cualquier campo sin `picklistOptions` cae en "libre", que probablemente sea razonable pero no se probó con esos tipos.
 - El nombre de la encuesta (`ghl_survey_name`) no se guarda en la base — se resuelve en el momento pidiéndole la lista a GHL de nuevo, así que si la conexión de GHL falla momentáneamente, el panel muestra el id crudo en vez del nombre (degradación aceptable, no bloquea nada).
+
+### Addendum (2026-10-09) — permisos de GHL visibles en Conexiones
+
+La tarjeta de Go High Level en Conexiones todavía decía "se usa para funciones futuras", desactualizada desde que la encuesta ya lee de verdad. Se actualizó el copy (tarjeta colapsada y formulario de conectar/reconectar) para listar los permisos de solo lectura que hay que marcar al crear el token de Integración Privada: **Surveys** (ya en uso) y, a pedido del usuario, **Contacts, Conversations, Conversation Messages, Opportunities, Users** — los que va a necesitar el futuro feature de tiempo de respuesta de closers (sección 24) — para que el cliente no tenga que generar un token nuevo cuando se construya eso.
