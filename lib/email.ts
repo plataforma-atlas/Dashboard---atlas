@@ -2,8 +2,12 @@ const FROM = "Vermetricas <noreply@vermetricas.com>";
 
 // Gmail (y otros clientes) bloquean imagenes embebidas como data: URI en el HTML
 // del correo, asi que el logo tiene que servirse desde una URL publica real.
-// TODO: una vez desplegado en Vercel, cambiar a la URL de brand/ del dominio de produccion.
-const LOGO_URL = "https://raw.githubusercontent.com/plataforma-atlas/Dashboard---atlas/main/public/brand/vermetricas-horizontal-light.png";
+// Ojo: raw.githubusercontent.com cachea agresivamente por URL (y Gmail/Outlook
+// tambien cachean imagenes del lado del cliente) - cambiar el contenido del PNG
+// sin cambiar la URL no alcanza para que el correo muestre la version nueva. Por
+// eso esto apunta al dominio real (su propio cache se invalida con el query ?v=)
+// en vez de a GitHub, y hay que subir el numero de v cada vez que cambie el logo.
+const LOGO_URL = "https://www.vermetricas.com/brand/vermetricas-horizontal-light.png?v=20261009";
 
 async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
   const apiKey = process.env.RESEND_API_KEY;

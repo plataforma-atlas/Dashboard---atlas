@@ -91,13 +91,6 @@ function LoginForm() {
             {loading ? "Ingresando…" : "Ingresar"}
           </button>
         </form>
-
-        <p className="animate-fade-in-up [animation-delay:120ms] text-center text-sm text-on-surface-variant mt-5">
-          ¿No tienes cuenta?{" "}
-          <Link href="/registro" className="press text-primary hover:underline">
-            Regístrate
-          </Link>
-        </p>
       </div>
       </div>
     </div>
