@@ -2,9 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { useAcceso } from "@/components/v3/useAcceso";
 import { MetaAdsResponse } from "@/lib/meta-ads/types";
-import { V3Dashboard } from "@/lib/v3/types";
+import { V3Dashboard, V3VTurbMetricaFila } from "@/lib/v3/types";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import MetaNoConectado from "@/components/v3/MetaNoConectado";
 import Tabs from "@/components/v3/Tabs";
@@ -47,7 +46,6 @@ type Pestania = "campanhas" | "conjuntos" | "anuncios";
 export default function V3AnunciosPage() {
   const params = useParams<{ clienteId: string }>();
   const clienteId = params.clienteId;
-  const acceso = useAcceso(clienteId);
   const searchParams = useSearchParams();
   const dashboardIdParam = searchParams.get("dashboard") ?? "";
 
@@ -101,6 +99,7 @@ export default function V3AnunciosPage() {
 
   const dashboardActual = dashboards.find((d) => String(d.id) === dashboardIdParam) ?? null;
   const dashboardActualId = dashboardActual?.id ?? null;
+  const [vturbPorClave, setVturbPorClave] = useState<Map<string, V3VTurbMetricaFila>>(new Map());
 
   useEffect(() => {
     if (!clienteId || dashboardActualId === null) {
@@ -120,6 +119,44 @@ export default function V3AnunciosPage() {
       cancelled = true;
     };
   }, [clienteId, dashboardActualId]);
+
+  // Métricas de video de VTurb, cruzadas por UTM — solo se piden si el
+  // dashboard tiene al menos un reproductor y un parámetro UTM configurados
+  // (ver endpoints/page.tsx). Mismo rango de fechas que el resto de la pantalla.
+  const vturbPlayerIds = dashboardActual?.vturb_player_ids ?? [];
+  const vturbUtmParam = dashboardActual?.vturb_utm_param ?? null;
+  useEffect(() => {
+    if (!clienteId || vturbPlayerIds.length === 0 || !vturbUtmParam) {
+      setVturbPorClave(new Map());
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/v3/vturb/metricas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        cliente_id: clienteId,
+        player_ids: vturbPlayerIds.map((p) => p.player_id),
+        query_key: vturbUtmParam,
+        start_date: `${rangoPeriodo.fecha_inicio || "2000-01-01"} 00:00:00`,
+        end_date: `${rangoPeriodo.fecha_fin || hoyIso()} 23:59:59`,
+      }),
+      cache: "no-store",
+    })
+      .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
+      .then(({ ok, body }) => {
+        if (cancelled || !ok) return;
+        const filas: V3VTurbMetricaFila[] = Array.isArray(body?.rows) ? body.rows : [];
+        setVturbPorClave(new Map(filas.map((f) => [f.grouped_field.trim().toLowerCase(), f])));
+      })
+      .catch(() => {
+        if (!cancelled) setVturbPorClave(new Map());
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteId, JSON.stringify(vturbPlayerIds), vturbUtmParam, rangoPeriodo.fecha_inicio, rangoPeriodo.fecha_fin]);
 
   useEffect(() => {
     let cancelled = false;
@@ -183,26 +220,6 @@ export default function V3AnunciosPage() {
     return <MetaNoConectado />;
   }
 
-  async function handleToggleEstado(id: string, nuevoEstado: "ACTIVE" | "PAUSED") {
-    const res = await fetch("/api/anuncios/meta/estado", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cliente_id: clienteId, id, status: nuevoEstado }),
-    });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error || "No se pudo cambiar el estado en Meta");
-
-    setData((prev) => {
-      if (!prev || !prev.conectado) return prev;
-      return {
-        ...prev,
-        campanas: prev.campanas.map((c) => (c.campaign_id === id ? { ...c, status: nuevoEstado } : c)),
-        conjuntos: prev.conjuntos.map((s) => (s.adset_id === id ? { ...s, status: nuevoEstado } : s)),
-        anuncios: prev.anuncios.map((a) => (a.ad_id === id ? { ...a, status: nuevoEstado } : a)),
-      };
-    });
-  }
-
   // Conversiones por anuncio. Campañas y conjuntos suman los anuncios que tienen dentro.
   const conversionesPorAnuncio = new Map<string, Record<string, number>>();
   for (const conv of conversiones) {
@@ -227,6 +244,21 @@ export default function V3AnunciosPage() {
       for (const [k, n] of Object.entries(propias)) total[k] = (total[k] ?? 0) + n;
     }
     return total;
+  }
+
+  // Cruza un anuncio con sus métricas de VTurb, matcheando por nombre o id del
+  // anuncio contra el valor del UTM configurado (ver endpoints/page.tsx) — no
+  // sabemos de antemano cuál de los dos usa el cliente en su URL de destino.
+  function vturbDe(ad: { ad_id: string; ad_name: string }): FilaTabla["vturb"] {
+    if (vturbPorClave.size === 0) return undefined;
+    const fila = vturbPorClave.get(ad.ad_name.trim().toLowerCase()) ?? vturbPorClave.get(ad.ad_id.trim().toLowerCase());
+    if (!fila) return undefined;
+    return {
+      clicsBoton: fila.clics_boton,
+      playRate: fila.play_rate,
+      audienciaPitch: fila.audiencia_pitch,
+      primerMinuto: fila.primer_minuto,
+    };
   }
 
   // Filas de cada pestaña. Se calculan una vez para usarlas en la tabla y en la visión consolidada.
@@ -276,6 +308,7 @@ export default function V3AnunciosPage() {
     roas: a.roas,
     cpa: a.cpa,
     conversiones: conversionesDe([a]),
+    vturb: vturbDe(a),
   }));
 
   const filasPestaniaActiva =
@@ -394,7 +427,6 @@ export default function V3AnunciosPage() {
               nombreColumna="Campaña"
               columnas={columnasVisibles}
               definiciones={definiciones}
-              onToggleEstado={acceso.puedeEscribir ? handleToggleEstado : undefined}
               onSeleccionChange={(ids) => setSeleccion(new Set(ids))}
               rows={filasCampanas}
             />
@@ -404,7 +436,6 @@ export default function V3AnunciosPage() {
               nombreColumna="Conjunto de anuncios"
               columnas={columnasVisibles}
               definiciones={definiciones}
-              onToggleEstado={acceso.puedeEscribir ? handleToggleEstado : undefined}
               onSeleccionChange={(ids) => setSeleccion(new Set(ids))}
               rows={filasConjuntos}
             />
@@ -414,7 +445,6 @@ export default function V3AnunciosPage() {
               nombreColumna="Anuncio"
               columnas={columnasVisibles}
               definiciones={definiciones}
-              onToggleEstado={acceso.puedeEscribir ? handleToggleEstado : undefined}
               onSeleccionChange={(ids) => setSeleccion(new Set(ids))}
               rows={filasAnuncios}
             />

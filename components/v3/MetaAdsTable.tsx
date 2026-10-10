@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 import Pagination from "@/components/ui/pagination";
 import { ColumnaKey, DefColumna, FilaTabla, columnaDef } from "@/lib/v3/columnas-tabla";
 
@@ -12,14 +11,12 @@ export default function MetaAdsTable({
   nombreColumna,
   columnas,
   definiciones,
-  onToggleEstado,
   onSeleccionChange,
 }: {
   rows: FilaTabla[];
   nombreColumna: string;
   columnas: ColumnaKey[];
   definiciones: DefColumna[];
-  onToggleEstado?: (id: string, nuevoEstado: "ACTIVE" | "PAUSED") => Promise<void>;
   // Avisa a quien usa la tabla cada vez que cambia la selección (por ejemplo, para el gráfico).
   onSeleccionChange?: (ids: Set<string>) => void;
 }) {
@@ -27,11 +24,6 @@ export default function MetaAdsTable({
   useEffect(() => {
     onSeleccionChange?.(seleccionados);
   }, [seleccionados]);
-  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
-  const [aplicandoId, setAplicandoId] = useState<string | null>(null);
-  const [erroresPorFila, setErroresPorFila] = useState<Record<string, string>>({});
-  const [confirmandoLote, setConfirmandoLote] = useState<"ACTIVE" | "PAUSED" | null>(null);
-  const [aplicandoLote, setAplicandoLote] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -43,8 +35,6 @@ export default function MetaAdsTable({
   const totalPages = Math.max(1, Math.ceil(ordenadas.length / pageSize));
   const pageClamped = Math.min(page, totalPages);
   const visibles = ordenadas.slice((pageClamped - 1) * pageSize, pageClamped * pageSize);
-  const puedeAlternar = (r: FilaTabla) => r.status === "ACTIVE" || r.status === "PAUSED";
-  const alternables = visibles.filter(puedeAlternar);
   const todosSeleccionados = visibles.length > 0 && visibles.every((r) => seleccionados.has(r.id));
 
   function cambiarPageSize(size: number) {
@@ -65,36 +55,6 @@ export default function MetaAdsTable({
     setSeleccionados(todosSeleccionados ? new Set() : new Set(visibles.map((r) => r.id)));
   }
 
-  async function aplicarCambio(id: string, nuevoEstado: "ACTIVE" | "PAUSED") {
-    if (!onToggleEstado) return;
-    setConfirmandoId(null);
-    setAplicandoId(id);
-    setErroresPorFila((prev) => ({ ...prev, [id]: "" }));
-    try {
-      await onToggleEstado(id, nuevoEstado);
-    } catch (err) {
-      setErroresPorFila((prev) => ({ ...prev, [id]: err instanceof Error ? err.message : "No se pudo cambiar el estado" }));
-    } finally {
-      setAplicandoId(null);
-    }
-  }
-
-  async function aplicarLote(nuevoEstado: "ACTIVE" | "PAUSED") {
-    if (!onToggleEstado) return;
-    setConfirmandoLote(null);
-    setAplicandoLote(true);
-    const ids = Array.from(seleccionados).filter((id) => rows.some((r) => r.id === id && puedeAlternar(r)));
-    for (const id of ids) {
-      try {
-        await onToggleEstado(id, nuevoEstado);
-      } catch {
-        // seguimos con el resto del lote aunque uno falle
-      }
-    }
-    setAplicandoLote(false);
-    setSeleccionados(new Set());
-  }
-
   return (
     <div className="relative">
       <div className="overflow-x-auto">
@@ -110,7 +70,7 @@ export default function MetaAdsTable({
                   className="w-4 h-4 rounded accent-primary"
                 />
               </th>
-              {onToggleEstado && <th className="py-2 pr-3 w-11" />}
+              <th className="py-2 pr-3 font-medium">Estado</th>
               <th className="py-2 pr-4 font-medium">{nombreColumna}</th>
               {columnas.map((key) => (
                 <th key={key} className="py-2 pr-4 font-medium text-right whitespace-nowrap">
@@ -130,32 +90,21 @@ export default function MetaAdsTable({
                     className="w-4 h-4 rounded accent-primary"
                   />
                 </td>
-                {onToggleEstado && (
-                  <>
-                    <td className="py-2.5 pr-3">
-                      {aplicandoId === r.id ? (
-                        <Loader2 size={16} className="animate-spin text-on-surface-faint" />
-                      ) : puedeAlternar(r) ? (
-                        <button
-                          type="button"
-                          onClick={() => setConfirmandoId(r.id)}
-                          title={r.status === "ACTIVE" ? "Pausar" : "Activar"}
-                          className={`press relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-150 ${
-                            r.status === "ACTIVE" ? "bg-primary" : "bg-surface-high border border-outline"
-                          }`}
-                        >
-                          <span
-                            className={`pointer-events-none block size-5 rounded-full bg-on-primary shadow-sm transition-transform duration-150 ${
-                              r.status === "ACTIVE" ? "translate-x-5" : "translate-x-0.5 bg-on-surface-faint"
-                            }`}
-                          />
-                        </button>
-                      ) : (
-                        r.status && <span className="text-[10px] text-on-surface-faint uppercase">{r.status}</span>
-                      )}
-                    </td>
-                  </>
-                )}
+                <td className="py-2.5 pr-3">
+                  {r.status && (
+                    <span
+                      className={`text-[10px] uppercase px-1.5 py-0.5 rounded ${
+                        r.status === "ACTIVE"
+                          ? "text-success bg-success-container"
+                          : r.status === "PAUSED"
+                            ? "text-on-surface-faint bg-surface-high"
+                            : "text-on-surface-faint border border-outline"
+                      }`}
+                    >
+                      {r.status === "ACTIVE" ? "Activo" : r.status === "PAUSED" ? "Pausado" : r.status}
+                    </span>
+                  )}
+                </td>
                 <td className="py-2.5 pr-4 max-w-[280px]">
                   <div className="text-on-surface truncate" title={r.nombre}>
                     {r.nombre}
@@ -165,28 +114,6 @@ export default function MetaAdsTable({
                       {r.subtitulo}
                     </div>
                   )}
-                  {confirmandoId === r.id && (
-                    <div className="flex items-center gap-1.5 mt-1 whitespace-nowrap">
-                      <span className="text-[12px] text-on-surface-variant">
-                        ¿{r.status === "ACTIVE" ? "Pausar" : "Activar"} esto?
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => aplicarCambio(r.id, r.status === "ACTIVE" ? "PAUSED" : "ACTIVE")}
-                        className="press text-[12px] font-medium text-primary hover:underline"
-                      >
-                        Sí
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmandoId(null)}
-                        className="press text-[12px] text-on-surface-faint hover:text-on-surface-variant"
-                      >
-                        No
-                      </button>
-                    </div>
-                  )}
-                  {erroresPorFila[r.id] && <p className="text-[11px] text-error mt-1 max-w-[220px]">{erroresPorFila[r.id]}</p>}
                 </td>
                 {columnas.map((key) => {
                   const def = columnaDef(key, definiciones);
@@ -212,59 +139,6 @@ export default function MetaAdsTable({
         pageSizeOptions={PAGE_SIZE_OPTIONS}
       />
 
-      {onToggleEstado && seleccionados.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 animate-fade-in-up">
-          <div className="bg-surface border border-outline rounded-xl px-4 py-2.5 shadow-lg flex items-center gap-4">
-            {confirmandoLote ? (
-              <>
-                <span className="text-[13px] text-on-surface">
-                  ¿{confirmandoLote === "PAUSED" ? "Pausar" : "Activar"} {seleccionados.size} seleccionados?
-                </span>
-                <button
-                  type="button"
-                  disabled={aplicandoLote}
-                  onClick={() => aplicarLote(confirmandoLote)}
-                  className="press text-[13px] font-medium text-primary hover:underline disabled:opacity-50"
-                >
-                  {aplicandoLote ? "Aplicando…" : "Sí"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmandoLote(null)}
-                  className="press text-[13px] text-on-surface-faint hover:text-on-surface-variant"
-                >
-                  No
-                </button>
-              </>
-            ) : (
-              <>
-                <span className="text-[13px] text-on-surface font-medium">{seleccionados.size} seleccionados</span>
-                <button
-                  type="button"
-                  onClick={() => setConfirmandoLote("PAUSED")}
-                  className="press text-[13px] px-3 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface transition-colors duration-150"
-                >
-                  Pausar seleccionados
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmandoLote("ACTIVE")}
-                  className="press text-[13px] px-3 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface transition-colors duration-150"
-                >
-                  Activar seleccionados
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSeleccionados(new Set())}
-                  className="press text-[13px] text-on-surface-faint hover:text-on-surface-variant"
-                >
-                  Cancelar
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

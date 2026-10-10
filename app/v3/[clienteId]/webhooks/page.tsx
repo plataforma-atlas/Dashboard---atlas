@@ -6,6 +6,7 @@ import { useAcceso } from "@/components/v3/useAcceso";
 import { Check, Link2, Plus, Save } from "lucide-react";
 import VermetricasLoader from "@/components/VermetricasLoader";
 import PreguntasEncuesta from "@/components/v3/PreguntasEncuesta";
+import VTurbConfig from "@/components/v3/VTurbConfig";
 import { V3CanalCaptacion, V3CaptacionPunto, V3Dashboard, V3EndpointTipo } from "@/lib/v3/types";
 
 const ETIQUETAS_ENDPOINT: Record<"captacion" | V3EndpointTipo, string> = {
@@ -285,6 +286,17 @@ export default function V3WebhooksPage() {
               </p>
             )}
           </div>
+
+          <VTurbConfig
+            clienteId={clienteId}
+            dashboardId={dashboardActual.id}
+            vturbPlayerIds={dashboardActual.vturb_player_ids}
+            vturbUtmParam={dashboardActual.vturb_utm_param}
+            puedeEscribir={acceso.puedeEscribir}
+            onGuardado={(vturbPlayerIds, vturbUtmParam) =>
+              setDashboards((actuales) => actuales.map((d) => (d.id === dashboardActual.id ? { ...d, vturb_player_ids: vturbPlayerIds, vturb_utm_param: vturbUtmParam } : d)))
+            }
+          />
 
           {/* Encuesta / Ingreso a grupos / Mensaje 1a1 son del dashboard completo, no
               de una página en particular — un mismo enlace sirve sin importar por

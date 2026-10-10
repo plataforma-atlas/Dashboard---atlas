@@ -35,7 +35,34 @@ export type V3Dashboard = {
   // webhook de Encuesta deja de confiar en el texto de lo que mande GHL (ver
   // V3PreguntaEncuesta.claveGhl). `null` = modo manual (cualquier otro sistema).
   ghl_survey_id: string | null;
+  // Reproductores (VSL) de VTurb cuyas métricas se cruzan con los anuncios de
+  // este dashboard — un dashboard puede tener más de uno (ver sección 30 de
+  // DOCUMENTACION.md). Vacío = VTurb no configurado para este dashboard.
+  vturb_player_ids: V3VTurbPlayerRef[];
+  // Parámetro UTM cuyo valor identifica al anuncio/creativo en la URL de la
+  // VSL (ej. "utm_content") — varía por cliente, se elige al configurar.
+  // null = VTurb no configurado para este dashboard.
+  vturb_utm_param: string | null;
   created_at: string;
+};
+
+export type V3VTurbPlayerRef = {
+  player_id: string;
+  nombre: string;
+};
+
+// Una fila por valor de UTM (ej. por anuncio) que devuelve
+// /api/v3/vturb/metricas — ya sumada entre todos los reproductores del
+// dashboard, con las tasas calculadas sobre los conteos sumados. grouped_field
+// es el valor real del parámetro UTM (ej. el nombre o id del anuncio en Meta,
+// según cómo lo haya tageado el cliente) — se cruza contra cada fila de
+// Administrador de Anuncios/Análisis por nombre o id de anuncio.
+export type V3VTurbMetricaFila = {
+  grouped_field: string;
+  clics_boton: number;
+  play_rate: number | null;
+  audiencia_pitch: number | null;
+  primer_minuto: number | null;
 };
 
 export type V3PreguntaTipo = "opcion_multiple" | "libre";

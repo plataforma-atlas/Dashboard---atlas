@@ -1607,3 +1607,91 @@ Contra `cliente-prueba-draft` (conectado temporalmente a una cuenta real de GHL 
 ### Addendum (2026-10-09) — permisos de GHL visibles en Conexiones
 
 La tarjeta de Go High Level en Conexiones todavía decía "se usa para funciones futuras", desactualizada desde que la encuesta ya lee de verdad. Se actualizó el copy (tarjeta colapsada y formulario de conectar/reconectar) para listar los permisos de solo lectura que hay que marcar al crear el token de Integración Privada: **Surveys** (ya en uso) y, a pedido del usuario, **Contacts, Conversations, Conversation Messages, Opportunities, Users** — los que va a necesitar el futuro feature de tiempo de respuesta de closers (sección 24) — para que el cliente no tenga que generar un token nuevo cuando se construya eso.
+
+## 30. VTurb — métricas de video cruzadas por UTM (2026-10-09)
+
+### El pedido
+
+El cliente pidió traer métricas de reproducción de sus videos de venta (VSL) — clics en el botón, audiencia en el pitch,
+play rate, retención al primer minuto — como columnas nuevas en Administrador de Anuncios y Análisis de Anuncios, cruzadas
+por anuncio. El usuario de paso avisó que viene un tipo de dashboard nuevo ("VSL") con una configuración distinta a la
+actual, que va a necesitar traer bastante más información de VTurb (informe diario, curva de retención completa, clics y
+ventas por segundo) — esta entrega se diseñó para que ese backend se pueda extender sin rehacerlo, pero el dashboard de VSL
+en sí **no se construyó** todavía.
+
+### La API de Analytics de VTurb (investigación)
+
+Base `https://analytics.vturb.com`, autenticación por tres headers en cada request (`X-Api-Token`, `X-Api-Version: v1`,
+`User-Agent`). Los endpoints relevantes para esta entrega:
+
+- `GET /players/list` — lista los reproductores (VSL) de la cuenta: `id`, `name`, `pitch_time`, `duration`.
+- `POST /traffic_origin/valid_utms` — qué parámetros UTM le están llegando de verdad a un reproductor (para no asumir uno
+  fijo — distintos clientes usan `utm_content`, `utm_term`, u otro).
+- `POST /traffic_origin/stats` con `query_key` — una fila por valor de ese parámetro (`grouped_field`, ej. el nombre de un
+  anuncio), con `total_viewed_device_uniq`, `total_started_device_uniq`, `total_clicked_device_uniq`, `total_over_pitch`,
+  `total_under_pitch`, etc.
+- `POST /times/user_engagement_by_traffic_origin` — la curva de retención (sesiones detenidas en cada segundo, en pasos de
+  5) separada por valor de UTM — de acá se calcula la retención al segundo 60 ("Primer minuto").
+
+**Pendiente de confirmar en vivo**: no se tuvo una cuenta real de VTurb para probar — toda esta investigación viene de la
+documentación pública (`docs.vturb.com`), no de un request real. En particular, no está confirmado que `/traffic_origin/stats`
+incluya `total_clicked_device_uniq` (el ejemplo de la documentación lo omite, pero dice que "tiene los mismos campos que el
+informe diario") — si al conectar una cuenta real ese campo no viene, `Clics en botón (VTurb)` queda en 0 hasta ajustar el
+nombre del campo en `VTurb - Combinar Metricas` (n8n).
+
+### Diseño
+
+- **Conexión**: `client_connections` gana `'vturb'` al CHECK de `integration_type` (antes `ghl, meta_ads, whop, webinarkit,
+  hotmart, wordpress`) — mismo patrón que Hotmart, solo un API key (sin prefijo), tarjeta nueva en Conexiones.
+- **Configuración por dashboard**: `v3_dashboards` gana `vturb_player_ids jsonb DEFAULT '[]'` (array de `{player_id, nombre}`
+  — un dashboard puede tener más de un reproductor, por pedido explícito del usuario) y `vturb_utm_param text` (el parámetro
+  elegido). Se guarda con el mismo `PATCH /api/v3/dashboards` que ya usaba `url_clase`/`url_replay`/`preguntas_encuesta`/
+  `ghl_survey_id` (ahora un quinto modo mutuamente excluyente). UI nueva: `components/v3/VTurbConfig.tsx`, un bloque en
+  Webhooks (`app/v3/[clienteId]/webhooks/page.tsx`) que lista los reproductores de la cuenta (checkboxes) y, al elegir uno,
+  pregunta a VTurb qué parámetros UTM le llegan de verdad para elegir el correcto con datos reales en vez de adivinar.
+- **Backend — nuevo workflow n8n `Integraciones — VTurb (Cliente)`** (id `aRstQyksk8QGvdOo`), tres webhooks, todos
+  decriptando el API key del cliente con el mismo patrón `pgp_sym_decrypt` de siempre:
+  - `GET integraciones/vturb-players-listar?cliente_id=` → proxy de `/players/list`.
+  - `GET integraciones/vturb-utms-validos?cliente_id=&player_id=&start_date=` → proxy de `/traffic_origin/valid_utms`.
+  - `POST integraciones/vturb-metricas-player` body `{cliente_id, player_id, query_key, start_date, end_date}` → llama
+    `/traffic_origin/stats` y, con los valores de UTM que devuelve, `/times/user_engagement_by_traffic_origin` para la
+    retención al segundo 60, y devuelve una fila por valor de UTM con los **conteos crudos** (no tasas ya calculadas) —
+    `total_viewed_device_uniq`, `total_started_device_uniq`, `total_clicked_device_uniq`, `total_over_pitch`,
+    `total_under_pitch`, `retention_reached_60`, `retention_total`.
+- **Por qué conteos crudos y no tasas**: como un dashboard puede tener varios reproductores, `app/api/v3/vturb/metricas/route.ts`
+  le pide a n8n un reproductor a la vez (`Promise.all`) y **suma los conteos crudos entre todos antes de calcular ningún
+  porcentaje** — promediar tasas ya calculadas de reproductores con volúmenes distintos da un número sesgado. Devuelve
+  `play_rate`, `audiencia_pitch` y `primer_minuto` ya como porcentaje, listos para mostrar.
+- **Cruce con los anuncios de Meta**: `lib/v3/columnas-tabla.ts` gana la categoría "VTurb" con cuatro columnas (Clics en
+  botón, Play rate, Audiencia en el pitch, Primer minuto) y `FilaTabla.vturb`. En `app/v3/[clienteId]/anuncios/page.tsx`,
+  `vturbDe()` cruza cada anuncio contra el `grouped_field` que devolvió VTurb, probando primero el **nombre** del anuncio y
+  después su **id** (no sabemos de antemano cuál de los dos usa el cliente en su UTM) — solo a nivel Anuncio, igual que
+  `ventas`/`roas`/`cpa` (en Campañas/Conjuntos queda sin cruzar, "—"). **Análisis de Anuncios no se tocó** — usa un sistema
+  de tarjetas (`AdCreativeCard`) distinto al de columnas, queda pendiente si se pide después.
+
+### Gotcha encontrado y corregido en la verificación en vivo
+
+`components/v3/PersonalizarColumnas.tsx` tiene una constante `CATEGORIAS` con la lista fija de categorías que renderiza
+(`Tráfico`, `Conversión`, `Conversiones personalizadas`) — agregar una categoría nueva a `lib/v3/columnas-tabla.ts` no
+alcanza, también hay que agregarla acá o las columnas nuevas quedan invisibles en el buscador sin ningún error. Se detectó
+probando en vivo (buscar "VTurb" no encontraba nada) y se corrigió agregando `"VTurb"` a esa lista.
+
+### Verificado en vivo
+
+Contra `cliente-prueba-draft` (sin conexión real de VTurb, no se tuvo una cuenta de prueba disponible): los tres webhooks
+nuevos responden bien el camino sin conexión (404 `"Este cliente no tiene VTurb conectado"`) y de datos inválidos (400); el
+quinto modo del `PATCH /v3-dashboards` guarda y lee `vturb_player_ids`/`vturb_utm_param` correctamente (probado y revertido
+a vacío); la tarjeta de Conexiones y el bloque de configuración en Webhooks muestran el estado "no conectado" con un enlace
+a Conexiones; Administrador de Anuncios sigue funcionando igual sin VTurb configurado, y las cuatro columnas nuevas
+aparecen en "Personalizar columnas" y en la tabla mostrando "—" (sin datos).
+
+### Pendiente
+
+- **Conectar una cuenta real de VTurb y confirmar los nombres de campo** de `/traffic_origin/stats` (en particular
+  `total_clicked_device_uniq`) y el resultado real de `/times/user_engagement_by_traffic_origin` — toda la integración se
+  construyó a partir de la documentación pública, nunca contra un request real.
+- **Análisis de Anuncios** (`AdCreativeCard`/`analisis-anuncios.ts`) no tiene las métricas de VTurb — usa un sistema de
+  tarjetas distinto al de columnas de Administrador de Anuncios, se deja para una entrega aparte.
+- **El dashboard de tipo "VSL"** que el usuario adelantó sigue sin diseñarse ni construirse — cuando se defina, va a
+  necesitar acciones nuevas en el mismo workflow `Integraciones — VTurb (Cliente)` (informe diario, curva de retención
+  completa, clics/ventas por segundo), reusando el mismo patrón de decrypt + proxy que ya está armado acá.

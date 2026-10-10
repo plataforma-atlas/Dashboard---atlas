@@ -21,6 +21,15 @@ export type FilaTabla = {
   cpa?: number;
   // Cantidad de leads que cumplen cada conversión personalizada, por "conv:<id>".
   conversiones?: Record<string, number>;
+  // Métricas de video de VTurb cruzadas por UTM contra este anuncio — ausente
+  // si el dashboard no tiene VTurb configurado, o si este anuncio en
+  // particular no tuvo ninguna sesión de video en el período.
+  vturb?: {
+    clicsBoton: number;
+    playRate: number | null;
+    audienciaPitch: number | null;
+    primerMinuto: number | null;
+  };
 };
 
 export type ColumnaBase =
@@ -34,12 +43,16 @@ export type ColumnaBase =
   | "leads"
   | "ventas"
   | "roas"
-  | "cpa";
+  | "cpa"
+  | "vturb_clics_boton"
+  | "vturb_play_rate"
+  | "vturb_audiencia_pitch"
+  | "vturb_primer_minuto";
 
 // Las conversiones personalizadas se identifican por su id: "conv:12".
 export type ColumnaKey = ColumnaBase | `conv:${number}`;
 
-export type CategoriaColumna = "Tráfico" | "Conversión" | "Conversiones personalizadas";
+export type CategoriaColumna = "Tráfico" | "Conversión" | "Conversiones personalizadas" | "VTurb";
 
 export type DefColumna = {
   key: ColumnaKey;
@@ -89,6 +102,30 @@ export const COLUMNAS: DefColumna[] = [
     label: "CPA",
     categoria: "Conversión",
     formatear: (f) => (f.cpa === undefined || sinVentas(f) ? SIN_DATO : formatMoney(f.cpa)),
+  },
+  {
+    key: "vturb_clics_boton",
+    label: "Clics en botón (VTurb)",
+    categoria: "VTurb",
+    formatear: (f) => (f.vturb === undefined ? SIN_DATO : formatNumber(f.vturb.clicsBoton)),
+  },
+  {
+    key: "vturb_play_rate",
+    label: "Play rate (VTurb)",
+    categoria: "VTurb",
+    formatear: (f) => (f.vturb?.playRate == null ? SIN_DATO : formatPercent(f.vturb.playRate)),
+  },
+  {
+    key: "vturb_audiencia_pitch",
+    label: "Audiencia en el pitch (VTurb)",
+    categoria: "VTurb",
+    formatear: (f) => (f.vturb?.audienciaPitch == null ? SIN_DATO : formatPercent(f.vturb.audienciaPitch)),
+  },
+  {
+    key: "vturb_primer_minuto",
+    label: "Primer minuto (VTurb)",
+    categoria: "VTurb",
+    formatear: (f) => (f.vturb?.primerMinuto == null ? SIN_DATO : formatPercent(f.vturb.primerMinuto)),
   },
 ];
 

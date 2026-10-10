@@ -59,6 +59,11 @@ export default function V3ConexionesPage() {
   const [hotmartWebhookAbierto, setHotmartWebhookAbierto] = useState(false);
   const [hotmartCopiado, setHotmartCopiado] = useState(false);
 
+  const [vturbFormAbierto, setVturbFormAbierto] = useState(false);
+  const [vturbApiKey, setVturbApiKey] = useState("");
+  const [vturbGuardando, setVturbGuardando] = useState(false);
+  const [vturbFormError, setVturbFormError] = useState<string | null>(null);
+
   async function cargarEstado() {
     setLoading(true);
     setError(null);
@@ -153,6 +158,7 @@ export default function V3ConexionesPage() {
   const metaConectado = estado.find((e) => e.integration_type === "meta_ads" && e.status === "active" && e.tiene_credencial) || null;
   const ghlConectado = estado.find((e) => e.integration_type === "ghl" && e.status === "active" && e.tiene_credencial) || null;
   const hotmartConectado = estado.find((e) => e.integration_type === "hotmart" && e.status === "active" && e.tiene_credencial) || null;
+  const vturbConectado = estado.find((e) => e.integration_type === "vturb" && e.status === "active" && e.tiene_credencial) || null;
   const hotmartWebhookUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/api/hooks/integraciones/hotmart-venta?cliente_id=${clienteId}`;
   const soporteWebhookUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/api/hooks/integraciones/soporte-contacto?cliente_id=${clienteId}`;
 
@@ -274,6 +280,35 @@ export default function V3ConexionesPage() {
         setTimeout(() => setHotmartCopiado(false), 2000);
       })
       .catch(() => {});
+  }
+
+  async function conectarVturb(e: React.FormEvent) {
+    e.preventDefault();
+    setVturbFormError(null);
+    if (!vturbApiKey.trim()) {
+      setVturbFormError("Falta el API key de VTurb.");
+      return;
+    }
+    setVturbGuardando(true);
+    try {
+      const res = await fetch("/api/onboarding/conectar-vturb", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: clienteId, apiKey: vturbApiKey.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setVturbFormError(data.error || "No se pudo guardar la conexión");
+        return;
+      }
+      setVturbApiKey("");
+      setVturbFormAbierto(false);
+      await cargarEstado();
+    } catch {
+      setVturbFormError("No se pudo conectar al servidor");
+    } finally {
+      setVturbGuardando(false);
+    }
   }
 
   function copiarWebhookSoporte() {
@@ -705,6 +740,74 @@ export default function V3ConexionesPage() {
               onClick={() => {
                 setHotmartFormAbierto(false);
                 setHotmartFormError(null);
+              }}
+              className="press text-[14px] text-on-surface-variant hover:text-on-surface transition-colors duration-150"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
+
+      <div className="rounded-lg border border-outline bg-surface p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[14px] font-medium text-on-surface">VTurb</span>
+          <span className="text-[13px] text-on-surface-variant">Métricas de tus videos de venta (VSL) — clics en el botón, audiencia en el pitch y más, por anuncio.</span>
+        </div>
+        <div className="flex items-center flex-wrap gap-2 shrink-0">
+          <Status variant={vturbGuardando ? "pending" : vturbConectado ? "success" : "neutral"} />
+          {!vturbFormAbierto && acceso.puedeEscribir && (
+            <button
+              onClick={() => setVturbFormAbierto(true)}
+              className={
+                vturbConectado
+                  ? "press text-[13px] px-3 py-1.5 rounded-full border border-outline hover:border-primary text-on-surface font-medium transition-colors duration-150"
+                  : "press text-[13px] px-3 py-1.5 rounded-full bg-primary text-on-primary font-medium shrink-0 transition-transform duration-150"
+              }
+            >
+              {vturbConectado ? "Reconectar" : "Conectar"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {vturbFormAbierto && (
+        <form onSubmit={conectarVturb} className="animate-fade-in-up rounded-lg border border-outline bg-surface p-5 flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-[14px] font-medium text-on-surface">{vturbConectado ? "Reconectar VTurb" : "Conectar VTurb"}</span>
+            <p className="text-[13px] text-on-surface-variant">
+              Necesitamos el <span className="font-medium">API key</span> de la API de Analytics de tu cuenta de VTurb
+              (Configuración → API de Analytics).
+              {vturbConectado && " Esto reemplaza el API key guardado."}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">API key</label>
+            <input
+              type="password"
+              value={vturbApiKey}
+              onChange={(e) => setVturbApiKey(e.target.value)}
+              placeholder="Tu API key de VTurb"
+              className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
+            />
+          </div>
+
+          {vturbFormError && <p className="text-sm text-error">{vturbFormError}</p>}
+
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={vturbGuardando}
+              className="press rounded-md bg-primary text-on-primary text-[14px] font-medium px-4 py-2.5 disabled:opacity-50 disabled:active:scale-100 transition-transform duration-150"
+            >
+              {vturbGuardando ? "Guardando…" : "Guardar conexión"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setVturbFormAbierto(false);
+                setVturbFormError(null);
               }}
               className="press text-[14px] text-on-surface-variant hover:text-on-surface transition-colors duration-150"
             >

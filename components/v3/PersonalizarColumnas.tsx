@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Check, Search, Trash2, X } from "lucide-react";
 import { COLUMNAS_POR_DEFECTO, CategoriaColumna, ColumnaKey, DefColumna, columnaDef } from "@/lib/v3/columnas-tabla";
 
-const CATEGORIAS: CategoriaColumna[] = ["Tráfico", "Conversión", "Conversiones personalizadas"];
+const CATEGORIAS: CategoriaColumna[] = ["Tráfico", "Conversión", "VTurb", "Conversiones personalizadas"];
 
 // Popup para elegir qué columnas ve la persona en las tablas del Administrador de
 // Anuncios, y en qué orden. Los cambios se aplican al tocar "Activar".
