@@ -73,15 +73,18 @@ export async function POST(req: Request) {
   }
 }
 
-// Seis usos, mutuamente excluyentes según lo que traiga el body: guardar la
+// Cinco usos, mutuamente excluyentes según lo que traiga el body: guardar la
 // URL real de destino de un enlace corto (tipo "clase"/"replay") con `tipo`
 // + `url`, archivar/desarchivar con `archivado` (boolean), reemplazar las
 // preguntas de la encuesta con `preguntas_encuesta` (array completo — se
 // reemplaza entero, no se mergea de a una), desvincular una encuesta de GHL
 // con `ghl_survey_id: null` (volver a modo manual — para vincular una encuesta
-// se usa /api/v3/ghl-encuestas, no este endpoint), guardar la configuración de
-// VTurb con `vturb_player_ids` (array completo) + `vturb_utm_param`, o guardar
-// la clave de firma de ClasEspecial con `clasespecial_clave_firma`.
+// se usa /api/v3/ghl-encuestas, no este endpoint), o guardar la configuración
+// de VTurb con `vturb_player_ids` (array completo) + `vturb_utm_param`.
+// La encuesta de ClasEspecial NO pasa por acá — su sincronización guarda
+// `clasespecial_clave_firma`/`clasespecial_encuesta_id` directo desde
+// `Integraciones — ClasEspecial (Cliente)`, porque antes necesita registrar
+// (o borrar) un webhook en su API, algo que este endpoint genérico no hace.
 export async function PATCH(req: Request) {
   const token = cookies().get(COOKIE_NAME)?.value;
   const session = token ? await verifySession(token) : null;
@@ -98,14 +101,11 @@ export async function PATCH(req: Request) {
   const esVTurb = Object.prototype.hasOwnProperty.call(body ?? {}, "vturb_player_ids") || Object.prototype.hasOwnProperty.call(body ?? {}, "vturb_utm_param");
   const vturbPlayerIds = Array.isArray(body?.vturb_player_ids) ? body.vturb_player_ids : [];
   const vturbUtmParam = typeof body?.vturb_utm_param === "string" && body.vturb_utm_param.trim() ? body.vturb_utm_param.trim() : null;
-  const esClasEspecialFirma = Object.prototype.hasOwnProperty.call(body ?? {}, "clasespecial_clave_firma");
-  const clasespecialClaveFirma =
-    typeof body?.clasespecial_clave_firma === "string" && body.clasespecial_clave_firma.trim() ? body.clasespecial_clave_firma.trim() : null;
 
   if (!clienteId || !dashboardId) return NextResponse.json({ error: "Falta cliente_id o dashboard_id" }, { status: 400 });
   const guardia = await exigirAcceso(session, clienteId, { escribir: true, dashboardId: dashboardId });
   if ("error" in guardia) return guardia.error;
-  if (archivado === null && preguntasEncuesta === null && !desvincularGhl && !esVTurb && !esClasEspecialFirma && (!tipo || !url)) {
+  if (archivado === null && preguntasEncuesta === null && !desvincularGhl && !esVTurb && (!tipo || !url)) {
     return NextResponse.json({ error: "Falta tipo o url" }, { status: 400 });
   }
 
@@ -117,13 +117,11 @@ export async function PATCH(req: Request) {
       ? { dashboard_id: dashboardId, cliente_id: clienteId, ghl_survey_id: null }
       : esVTurb
         ? { dashboard_id: dashboardId, cliente_id: clienteId, vturb_player_ids: vturbPlayerIds, vturb_utm_param: vturbUtmParam }
-        : esClasEspecialFirma
-          ? { dashboard_id: dashboardId, cliente_id: clienteId, clasespecial_clave_firma: clasespecialClaveFirma }
-          : preguntasEncuesta !== null
-            ? { dashboard_id: dashboardId, cliente_id: clienteId, preguntas_encuesta: preguntasEncuesta }
-            : archivado !== null
-              ? { dashboard_id: dashboardId, cliente_id: clienteId, archivado }
-              : { dashboard_id: dashboardId, cliente_id: clienteId, tipo, url };
+        : preguntasEncuesta !== null
+          ? { dashboard_id: dashboardId, cliente_id: clienteId, preguntas_encuesta: preguntasEncuesta }
+          : archivado !== null
+            ? { dashboard_id: dashboardId, cliente_id: clienteId, archivado }
+            : { dashboard_id: dashboardId, cliente_id: clienteId, tipo, url };
     const res = await fetch(urlBase, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

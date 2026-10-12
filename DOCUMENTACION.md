@@ -1769,3 +1769,80 @@ clave fallaba con "Falta tipo o url" aunque el lado de n8n ya estaba listo.
 - No hay una cuenta/página real de ClasEspecial contra la cual probar un envío real (todo lo de arriba se armó y
   probó con requests sintéticos que replican exactamente el formato documentado) — falta un "Probar" real desde
   ClasEspecial apuntando a este endpoint para confirmar que su firma coincide con la nuestra en producción.
+
+**Actualizado el 2026-10-12 — el formulario manual de "Firma de ClasEspecial" descrito arriba ya no existe**: la
+sección 32 reemplaza ese paso por una sincronización real contra la API de ClasEspecial (trae las preguntas y registra
+el webhook sola, sin que nadie pegue una clave a mano). El endpoint que recibe las respuestas (`embudo-encuesta-clasespecial`)
+y toda la verificación de firma siguen exactamente igual — lo único que cambió es de dónde sale la clave.
+
+## 32. ClasEspecial — conexión por API key, sin escribir preguntas a mano (2026-10-12)
+
+### El pedido
+
+Evolución de la sección 31 (que solo recibía el webhook, con la clave de firma pegada a mano): el usuario quería que
+Vermetricas use la API real de ClasEspecial para traer las preguntas de la encuesta (igual que ya hace con GHL,
+sección 29) **y** que registre su propio webhook en ClasEspecial automáticamente — el cliente ya no pega ninguna URL
+ni clave en ningún lado, solo conecta su API key una vez y elige la encuesta.
+
+### Diseño
+
+- **Conexión por API key** (tarjeta nueva en Conexiones) — a diferencia de GHL/Meta/Hotmart/VTurb (que guardan ciego),
+  esta **valida la clave contra `GET /api/v1/cuenta` antes de guardar**, mismo patrón que WordPress (sección 21).
+  `client_connections` gana `'clasespecial'` al CHECK.
+- **Sincronizar una encuesta** (`PreguntasEncuesta.tsx`, ahora con tres fuentes posibles: manual, GHL o ClasEspecial,
+  mutuamente excluyentes) hace tres cosas en una sola acción:
+  1. Trae el detalle real de la encuesta (`GET /api/v1/encuestas/{id}`) y arma `preguntas_encuesta` (tipo `"abierta"` →
+     `"libre"`, cualquier otro → `"opcion_multiple"` con sus `opciones`).
+  2. **Registra nuestro propio webhook** en ClasEspecial (`POST /api/v1/webhooks`), con la URL enmascarada +
+     token que ese dashboard ya tenía desde la sección 31 (`integraciones/embudo-encuesta-clasespecial?token=...` —
+     el endpoint que RECIBE las respuestas no cambió nada, sigue igual). Guarda `webhook.id` y `webhook.clave_firma` que
+     devuelve, sin que la persona los vea ni los copie.
+  3. Si el dashboard ya estaba sincronizado con OTRA encuesta antes, borra el webhook viejo (`DELETE /api/v1/webhooks/{id}`)
+     — **después** de registrar el nuevo con éxito, no antes, para no quedarse sin ningún webhook activo si el registro
+     fallara a mitad de camino.
+  - `v3_dashboards` gana `clasespecial_encuesta_id` y `clasespecial_webhook_id` (este último solo para poder borrarlo
+    después, no se expone al frontend). `clasespecial_clave_firma` (de la sección 31) ahora se completa sola acá, nunca
+    se pega a mano — se sacó el input manual de Webhooks.
+- **Desvincular** primero borra el webhook en ClasEspecial (si había uno) y recién después limpia los tres campos del
+  dashboard — por eso tiene su propia ruta (`/api/v3/clasespecial/desvincular`), no reusa el PATCH genérico de
+  dashboards como hace GHL (ese no sabe llamar a ninguna API externa).
+- **Nuevo workflow n8n `Integraciones — ClasEspecial (Cliente)`** (id `cU7DsPGhbxzZJXsR`), 4 acciones: conectar (valida +
+  guarda), listar encuestas, sincronizar (detalle + registrar/reemplazar webhook + guardar), desvincular (borrar webhook
+  + limpiar). Mismo patrón `pgp_sym_encrypt`/`pgp_sym_decrypt` de siempre para el API key.
+- **URL base de la API de ClasEspecial** (hoy `http://localhost:3200`, local — todavía no tiene dominio de producción):
+  no hay forma de setear una variable de entorno real de n8n desde la API pública que usamos (eso requiere el panel de
+  administración de esa instancia) — queda como un valor literal al principio del código de cada uno de los 4 webhooks
+  (`ClasEspecial - Preparar Conectar` y los 3 nodos HTTP equivalentes de listar/sincronizar/desvincular), con un
+  comentario `<-- CAMBIAR ACA cuando haya dominio de producción`. Buscar ese comentario en el workflow el día que
+  ClasEspecial tenga una URL pública real.
+
+### Bug de infraestructura real encontrado y corregido: el código 502 queda interceptado
+
+Probando el camino "no se pudo traer la encuesta" (la API de ClasEspecial inalcanzable desde n8n), la respuesta que
+llegaba al cliente **no era nuestro JSON** — era la página genérica "Service is not reachable" de EasyPanel (la
+plataforma que hospeda esta instancia de n8n). Se confirmó con un probador aislado (un respond node devolviendo 502 sin
+ninguna llamada externa de por medio): **EasyPanel intercepta específicamente el código 502** y lo reemplaza con su
+propia página, sin importar el cuerpo de la respuesta — 503, 504, 500, 422, 400 y 409 pasan bien, probados uno por uno.
+Se corrigieron **todos** los nodos de respuesta que usaban 502 en este proyecto (no solo los de ClasEspecial — también
+dos en `Integraciones — GHL Encuestas (Cliente)`, sección 29, que tenían el mismo problema sin haber sido notados antes
+porque esas ramas de error nunca se habían disparado de verdad en una prueba en vivo) — todos pasaron a 503.
+
+### Verificado en vivo (contra `cliente-prueba-draft`)
+
+No hay forma de probar las llamadas reales a la API de ClasEspecial — corre en `localhost:3200` del propio usuario,
+inalcanzable desde el servidor de n8n (que está en la nube). Se verificó en cambio **todo lo que sí se puede probar sin
+esa API**: validación de datos faltantes (400) en las 4 acciones; "cliente sin conexión" (404) en listar/sincronizar;
+degradación correcta cuando la API de ClasEspecial no responde (conectar → 401 "no se pudo validar"; listar → lista
+vacía; sincronizar → 503 con JSON propio, ya no la página de EasyPanel); "dashboard no encontrado" (404); desvincular
+sin webhook previo (200 directo, sin intentar llamar a nada). Se probó también el camino completo desde la UI real
+(botón "Conectar" en Conexiones → Next.js → n8n → error de ClasEspecial inalcanzable mostrado en pantalla) y el panel
+"¿Usás ClasEspecial?" en Webhooks (abre, pide la lista, muestra "Este cliente no tiene ClasEspecial conectado").
+
+### Pendiente
+
+- **Conectar una cuenta real de ClasEspecial una vez tenga una URL pública** (ngrok, un túnel, o su dominio de
+  producción) para confirmar en vivo: que `GET /api/v1/cuenta` valida bien, que `POST /api/v1/webhooks` registra el
+  webhook y que las respuestas que llegan después matchean contra las preguntas recién sincronizadas.
+- Actualizar la URL base en los 4 nodos marcados cuando ClasEspecial tenga su dominio de producción.
+- Importar respuestas anteriores (`GET /api/v1/encuestas/{id}/respuestas`) — descartado para esta entrega a pedido
+  explícito del usuario ("la idea es tomar todo desde cero").

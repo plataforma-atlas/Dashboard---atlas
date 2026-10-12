@@ -45,8 +45,14 @@ export type V3Dashboard = {
   vturb_utm_param: string | null;
   // Clave de firma para verificar los webhooks de encuesta de ClasEspecial
   // (HMAC-SHA256, ver endpoint `encuesta_clasespecial` y DOCUMENTACION.md) —
-  // null = ese endpoint rechaza todo porque no puede verificar la firma.
+  // se completa sola al sincronizar una encuesta (ver clasespecial_encuesta_id),
+  // nunca se pega a mano. null = ese endpoint rechaza todo.
   clasespecial_clave_firma: string | null;
+  // Si está sincronizado con una encuesta de ClasEspecial, su id — igual que
+  // ghl_survey_id, pero esta sincronización además registra (o reemplaza)
+  // nuestro propio webhook en la API de ClasEspecial, sin que la persona
+  // pegue ninguna URL a mano. `null` = no sincronizado (modo manual u otra fuente).
+  clasespecial_encuesta_id: string | null;
   created_at: string;
 };
 

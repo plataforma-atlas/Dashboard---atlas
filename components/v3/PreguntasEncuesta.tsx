@@ -5,23 +5,33 @@ import { Plus, RefreshCw, Trash2, Unlink, X } from "lucide-react";
 import { V3PreguntaEncuesta, V3PreguntaTipo } from "@/lib/v3/types";
 
 type GhlEncuesta = { id: string; name: string };
+type ClasEspecialEncuesta = { id: string; nombre: string };
 
 export default function PreguntasEncuesta({
   clienteId,
   dashboardId,
   preguntas,
   ghlSurveyId,
+  clasespecialEncuestaId,
+  clasespecialToken,
   puedeEscribir,
   onGuardadas,
   onSincronizado,
+  onSincronizadoClasEspecial,
 }: {
   clienteId: string;
   dashboardId: number;
   preguntas: V3PreguntaEncuesta[];
   ghlSurveyId: string | null;
+  // Token propio del endpoint "encuesta_clasespecial" de este dashboard — se
+  // usa para armar la URL del webhook que registramos en ClasEspecial al
+  // sincronizar (la misma URL enmascarada de siempre, nunca se ve n8n).
+  clasespecialEncuestaId: string | null;
+  clasespecialToken: string | null;
   puedeEscribir: boolean;
   onGuardadas: (preguntas: V3PreguntaEncuesta[]) => void;
   onSincronizado: (datos: { preguntas_encuesta: V3PreguntaEncuesta[]; ghl_survey_id: string | null }) => void;
+  onSincronizadoClasEspecial: (datos: { preguntas_encuesta: V3PreguntaEncuesta[]; clasespecial_encuesta_id: string | null }) => void;
 }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +48,32 @@ export default function PreguntasEncuesta({
   const [ghlSeleccionada, setGhlSeleccionada] = useState("");
   const [ghlSincronizando, setGhlSincronizando] = useState(false);
   const [ghlNombreActual, setGhlNombreActual] = useState<string | null>(null);
+
+  // Flujo de ClasEspecial — igual que GHL, pero sincronizar también registra
+  // (o reemplaza) nuestro propio webhook en su API, sin que la persona pegue
+  // ninguna URL ni clave a mano.
+  const [cePanelAbierto, setCePanelAbierto] = useState(false);
+  const [ceEncuestas, setCeEncuestas] = useState<ClasEspecialEncuesta[]>([]);
+  const [ceCargando, setCeCargando] = useState(false);
+  const [ceError, setCeError] = useState<string | null>(null);
+  const [ceSeleccionada, setCeSeleccionada] = useState("");
+  const [ceSincronizando, setCeSincronizando] = useState(false);
+  const [ceNombreActual, setCeNombreActual] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!clasespecialEncuestaId) {
+      setCeNombreActual(null);
+      return;
+    }
+    fetch(`/api/v3/clasespecial/encuestas?cliente_id=${clienteId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const encontrada = data?.encuestas?.find((e: ClasEspecialEncuesta) => e.id === clasespecialEncuestaId);
+        setCeNombreActual(encontrada?.nombre ?? null);
+      })
+      .catch(() => setCeNombreActual(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clasespecialEncuestaId, clienteId]);
 
   // Si ya está sincronizado, trae la lista una vez para poder mostrar el
   // nombre de la encuesta en vez de solo su id — es solo para mostrar, no
@@ -162,6 +198,80 @@ export default function PreguntasEncuesta({
     }
   }
 
+  async function abrirPanelCe() {
+    setCePanelAbierto(true);
+    if (ceEncuestas.length > 0) return;
+    setCeCargando(true);
+    setCeError(null);
+    try {
+      const res = await fetch(`/api/v3/clasespecial/encuestas?cliente_id=${clienteId}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setCeError(data.error || "No se pudo conectar con ClasEspecial");
+        return;
+      }
+      setCeEncuestas(data.encuestas ?? []);
+    } catch {
+      setCeError("No se pudo conectar al servidor");
+    } finally {
+      setCeCargando(false);
+    }
+  }
+
+  async function sincronizarCe(encuestaId: string) {
+    if (!clasespecialToken) {
+      setCeError("Este dashboard todavía no tiene su endpoint de ClasEspecial — recargá la página.");
+      return;
+    }
+    setCeSincronizando(true);
+    setCeError(null);
+    try {
+      const webhookUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/api/hooks/integraciones/embudo-encuesta-clasespecial?token=${clasespecialToken}`;
+      const res = await fetch("/api/v3/clasespecial/encuestas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: clienteId, dashboard_id: dashboardId, encuesta_id: encuestaId, webhook_url: webhookUrl }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setCeError(data.error || "No se pudo sincronizar la encuesta");
+        return;
+      }
+      onSincronizadoClasEspecial({
+        preguntas_encuesta: data.preguntas_encuesta ?? [],
+        clasespecial_encuesta_id: data.clasespecial_encuesta_id ?? null,
+      });
+      setCeNombreActual(data.clasespecial_encuesta_nombre ?? null);
+      setCePanelAbierto(false);
+    } catch {
+      setCeError("No se pudo conectar al servidor");
+    } finally {
+      setCeSincronizando(false);
+    }
+  }
+
+  async function desvincularCe() {
+    setGuardando(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/v3/clasespecial/desvincular", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: clienteId, dashboard_id: dashboardId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "No se pudo desvincular");
+        return;
+      }
+      onSincronizadoClasEspecial({ preguntas_encuesta: preguntas, clasespecial_encuesta_id: null });
+    } catch {
+      setError("No se pudo conectar al servidor");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   return (
     <div className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-3">
       <div>
@@ -201,58 +311,141 @@ export default function PreguntasEncuesta({
             </div>
           )}
         </div>
-      ) : (
-        puedeEscribir && (
-          <div className="flex flex-col gap-2">
-            {!ghlPanelAbierto ? (
+      ) : clasespecialEncuestaId ? (
+        <div className="flex items-center justify-between gap-3 rounded-md bg-primary/10 border border-primary/30 px-3 py-2">
+          <p className="text-[12px] text-on-surface">
+            Sincronizado con la encuesta de ClasEspecial <strong>{ceNombreActual ?? clasespecialEncuestaId}</strong> — las
+            preguntas se traen solas y ya registramos nuestro webhook ahí, no hace falta pegar nada a mano.
+          </p>
+          {puedeEscribir && (
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
-                onClick={abrirPanelGhl}
-                className="press self-start text-[12px] text-primary hover:underline"
+                onClick={() => sincronizarCe(clasespecialEncuestaId)}
+                disabled={ceSincronizando}
+                title="Volver a traer las preguntas desde ClasEspecial"
+                className="press flex items-center gap-1 text-[12px] px-2 py-1 rounded-md border border-outline hover:border-primary text-on-surface-variant hover:text-on-surface transition-colors duration-150 disabled:opacity-50"
               >
-                ¿Usás Go High Level? Conectá tu encuesta en vez de escribir las preguntas a mano
+                <RefreshCw size={12} className={ceSincronizando ? "animate-spin" : ""} /> Sincronizar
               </button>
-            ) : (
-              <div className="rounded-md bg-background border border-outline px-3 py-2.5 flex flex-col gap-2">
-                {ghlCargando ? (
-                  <p className="text-[12px] text-on-surface-faint">Buscando tus encuestas de GHL…</p>
-                ) : ghlError ? (
-                  <p className="text-[12px] text-error">{ghlError}</p>
-                ) : ghlEncuestas.length === 0 ? (
-                  <p className="text-[12px] text-on-surface-faint">No se encontraron encuestas en tu cuenta de GHL.</p>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={ghlSeleccionada}
-                      onChange={(e) => setGhlSeleccionada(e.target.value)}
-                      className="flex-1 min-w-0 bg-surface border border-outline rounded-md px-2.5 py-1.5 text-[13px] text-on-surface focus:border-primary outline-none transition-colors duration-150"
-                    >
-                      <option value="">Elegí una encuesta…</option>
-                      {ghlEncuestas.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => ghlSeleccionada && sincronizar(ghlSeleccionada)}
-                      disabled={!ghlSeleccionada || ghlSincronizando}
-                      className="press text-[12px] px-3 py-1.5 rounded-md bg-primary text-on-primary font-medium disabled:opacity-50 transition-transform duration-150"
-                    >
-                      {ghlSincronizando ? "Sincronizando…" : "Sincronizar"}
-                    </button>
-                  </div>
-                )}
+              <button
+                type="button"
+                onClick={desvincularCe}
+                disabled={guardando}
+                title="Dejar de usar esta encuesta de ClasEspecial"
+                className="press flex items-center gap-1 text-[12px] px-2 py-1 rounded-md border border-outline hover:border-error text-on-surface-variant hover:text-error transition-colors duration-150 disabled:opacity-50"
+              >
+                <Unlink size={12} /> Desvincular
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        puedeEscribir && (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
+              {!ghlPanelAbierto ? (
                 <button
                   type="button"
-                  onClick={() => setGhlPanelAbierto(false)}
-                  className="press self-start text-[11px] text-on-surface-faint hover:text-on-surface transition-colors duration-150"
+                  onClick={abrirPanelGhl}
+                  className="press self-start text-[12px] text-primary hover:underline"
                 >
-                  Cancelar
+                  ¿Usás Go High Level? Conectá tu encuesta en vez de escribir las preguntas a mano
                 </button>
-              </div>
-            )}
+              ) : (
+                <div className="rounded-md bg-background border border-outline px-3 py-2.5 flex flex-col gap-2">
+                  {ghlCargando ? (
+                    <p className="text-[12px] text-on-surface-faint">Buscando tus encuestas de GHL…</p>
+                  ) : ghlError ? (
+                    <p className="text-[12px] text-error">{ghlError}</p>
+                  ) : ghlEncuestas.length === 0 ? (
+                    <p className="text-[12px] text-on-surface-faint">No se encontraron encuestas en tu cuenta de GHL.</p>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={ghlSeleccionada}
+                        onChange={(e) => setGhlSeleccionada(e.target.value)}
+                        className="flex-1 min-w-0 bg-surface border border-outline rounded-md px-2.5 py-1.5 text-[13px] text-on-surface focus:border-primary outline-none transition-colors duration-150"
+                      >
+                        <option value="">Elegí una encuesta…</option>
+                        {ghlEncuestas.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => ghlSeleccionada && sincronizar(ghlSeleccionada)}
+                        disabled={!ghlSeleccionada || ghlSincronizando}
+                        className="press text-[12px] px-3 py-1.5 rounded-md bg-primary text-on-primary font-medium disabled:opacity-50 transition-transform duration-150"
+                      >
+                        {ghlSincronizando ? "Sincronizando…" : "Sincronizar"}
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setGhlPanelAbierto(false)}
+                    className="press self-start text-[11px] text-on-surface-faint hover:text-on-surface transition-colors duration-150"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {!cePanelAbierto ? (
+                <button
+                  type="button"
+                  onClick={abrirPanelCe}
+                  className="press self-start text-[12px] text-primary hover:underline"
+                >
+                  ¿Usás ClasEspecial? Conectá tu encuesta en vez de escribir las preguntas a mano
+                </button>
+              ) : (
+                <div className="rounded-md bg-background border border-outline px-3 py-2.5 flex flex-col gap-2">
+                  {ceCargando ? (
+                    <p className="text-[12px] text-on-surface-faint">Buscando tus encuestas de ClasEspecial…</p>
+                  ) : ceError ? (
+                    <p className="text-[12px] text-error">{ceError}</p>
+                  ) : ceEncuestas.length === 0 ? (
+                    <p className="text-[12px] text-on-surface-faint">No se encontraron encuestas en tu cuenta de ClasEspecial.</p>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={ceSeleccionada}
+                        onChange={(e) => setCeSeleccionada(e.target.value)}
+                        className="flex-1 min-w-0 bg-surface border border-outline rounded-md px-2.5 py-1.5 text-[13px] text-on-surface focus:border-primary outline-none transition-colors duration-150"
+                      >
+                        <option value="">Elegí una encuesta…</option>
+                        {ceEncuestas.map((e) => (
+                          <option key={e.id} value={e.id}>
+                            {e.nombre}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => ceSeleccionada && sincronizarCe(ceSeleccionada)}
+                        disabled={!ceSeleccionada || ceSincronizando}
+                        className="press text-[12px] px-3 py-1.5 rounded-md bg-primary text-on-primary font-medium disabled:opacity-50 transition-transform duration-150"
+                      >
+                        {ceSincronizando ? "Sincronizando…" : "Sincronizar"}
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setCePanelAbierto(false)}
+                    className="press self-start text-[11px] text-on-surface-faint hover:text-on-surface transition-colors duration-150"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )
       )}
@@ -276,7 +469,7 @@ export default function PreguntasEncuesta({
                   ))}
                 </div>
               </div>
-              {puedeEscribir && !ghlSurveyId && (
+              {puedeEscribir && !ghlSurveyId && !clasespecialEncuestaId && (
                 <button
                   type="button"
                   onClick={() => borrar(p.texto)}
@@ -294,7 +487,7 @@ export default function PreguntasEncuesta({
 
       {error && <p className="text-[12px] text-error">{error}</p>}
 
-      {puedeEscribir && !ghlSurveyId && (
+      {puedeEscribir && !ghlSurveyId && !clasespecialEncuestaId && (
         <form onSubmit={agregar} className="flex flex-col gap-2.5 pt-1 border-t border-outline">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Texto exacto de la pregunta</label>
