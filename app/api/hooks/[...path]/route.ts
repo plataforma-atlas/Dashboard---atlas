@@ -13,6 +13,7 @@ const ALLOWED_PATHS = new Set([
   "dsm-webinarkit",
   "integraciones/captacion-lead",
   "integraciones/embudo-encuesta",
+  "integraciones/embudo-encuesta-clasespecial",
   "integraciones/embudo-gracias",
   "integraciones/embudo-grupos",
   "integraciones/embudo-mensaje-recibido",
@@ -45,10 +46,27 @@ async function proxy(req: Request, path: string[]) {
     const forwardedFor = req.headers.get("x-forwarded-for");
     const headers: Record<string, string> = { "Content-Type": req.headers.get("content-type") || "application/json" };
     if (forwardedFor) headers["x-forwarded-for"] = forwardedFor;
+    // ClasEspecial firma cada envío con estas cabeceras (ver "Integraciones —
+    // Eventos de Embudo", rama ClasEspecial) — sin reenviarlas, n8n nunca
+    // podría verificar la firma HMAC ni descartar el evento "prueba".
+    for (const h of ["x-clasespecial-evento", "x-clasespecial-envio", "x-clasespecial-timestamp", "x-clasespecial-firma"]) {
+      const value = req.headers.get(h);
+      if (value) headers[h] = value;
+    }
+    const bodyText = hasBody ? await req.text() : undefined;
+    // El webhook de n8n parsea el body como JSON y no garantiza devolver los
+    // bytes crudos originales — re-serializarlo ahí (JSON.stringify) no
+    // necesariamente coincide byte a byte con lo que mandó ClasEspecial (orden
+    // de claves, escapes de acentos/ñ), lo que rompería la verificación de
+    // firma HMAC en silencio. Mandamos el texto crudo ya en base64 en un
+    // header propio para que n8n lo use tal cual, sin pasar por ningún parser.
+    if (joined === "integraciones/embudo-encuesta-clasespecial" && bodyText !== undefined) {
+      headers["x-raw-body-b64"] = Buffer.from(bodyText, "utf8").toString("base64");
+    }
     const res = await fetch(target.toString(), {
       method: req.method,
       headers,
-      body: hasBody ? await req.text() : undefined,
+      body: bodyText,
       cache: "no-store",
     });
     const text = await res.text();

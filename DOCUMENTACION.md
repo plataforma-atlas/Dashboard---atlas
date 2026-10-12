@@ -1695,3 +1695,77 @@ aparecen en "Personalizar columnas" y en la tabla mostrando "—" (sin datos).
 - **El dashboard de tipo "VSL"** que el usuario adelantó sigue sin diseñarse ni construirse — cuando se defina, va a
   necesitar acciones nuevas en el mismo workflow `Integraciones — VTurb (Cliente)` (informe diario, curva de retención
   completa, clics/ventas por segundo), reusando el mismo patrón de decrypt + proxy que ya está armado acá.
+
+## 31. Encuesta de ClasEspecial (webinar propio, reemplazo de WebinarKit) (2026-10-12)
+
+### El pedido
+
+ClasEspecial es la plataforma de webinars propia del usuario (repo aparte, reemplazo de WebinarKit — ver
+`project_clasespecial` en memoria). Cada página de su constructor puede mandar un webhook con las respuestas de la
+encuesta tipo quiz al terminar — el pedido fue dejar un endpoint en Vermetricas que las reciba y las cruce con las
+preguntas registradas del dashboard, igual que ya hace `embudo-encuesta` (sección 25).
+
+**Importante — no confundir con la integración `webinarkit` vieja** (`dsm-webinarkit`, tarjeta "ClaseEspecial" del
+dashboard clásico, sección 21-22): esa es para trackear asistencia/% de reproducción de un webinar de un tercero, no
+tiene nada que ver con esto.
+
+### Por qué es un endpoint nuevo y no el mismo `embudo-encuesta`
+
+El body de ClasEspecial (`respuestas_por_pregunta` como objeto, `contacto.correo`/`contacto.telefono` anidados) no
+coincide con lo que lee `embudo-encuesta` (`correo`/`telefono` sueltos, `respuestas` como objeto) — reusarlo tal cual
+nunca hubiera encontrado nada, en silencio. Además ClasEspecial manda cosas que `embudo-encuesta` no tiene: firma
+HMAC, evento `"prueba"` a ignorar, y un id de envío para reintentos. Se construyó como rama hermana, mismo patrón que
+la encuesta sincronizada con GHL (sección 29): una "Encuesta" con más de una fuente posible.
+
+### Diseño
+
+- **`v3_dashboard_endpoints`** gana un tipo nuevo `encuesta_clasespecial` (CHECK ampliado, backfill para los 8
+  dashboards de Lanzamiento existentes, alta automática en los nuevos) — mismo patrón de token-por-dashboard que
+  encuesta/gracias/grupos/mensaje_recibido, **no** `cliente_id`+`campaign` por query string como se había propuesto
+  al principio (eso hubiera sido menos seguro y no encajaba con el resto de la pantalla de Webhooks).
+- **`v3_dashboards`** gana `clasespecial_clave_firma text` — la "Clave de firma" que muestra ClasEspecial al pegar el
+  webhook, pegada una vez en Webhooks (bloque nuevo "Firma de ClasEspecial", mismo patrón que enlace corto
+  clase/replay). **Sin esta clave configurada, el endpoint rechaza todo con 401** — se decidió así explícitamente
+  (el usuario pidió sumar la firma "desde ya", no dejarla opcional).
+- **Nueva rama en `Integraciones — Eventos de Embudo (Cliente)`**, webhook `integraciones/embudo-encuesta-clasespecial?token=`:
+  busca el endpoint por token → verifica la firma HMAC-SHA256 (`sha256=` + hex de `HMAC(clave, "<timestamp>.<cuerpo crudo>")`)
+  → si el evento es `"prueba"`, responde 200 sin guardar nada → busca el lead por `contacto.correo`/`contacto.telefono`
+  dentro del dashboard (mismo NULLIF-safe de siempre) → cruza `respuestas_por_pregunta` (con `respuestas` como
+  respaldo) contra `preguntas_encuesta[].texto`, texto exacto → guarda `extra.respuestas` + `extra.encuesta_at` +
+  `extra.clasespecial_envio_id` (para trazabilidad, no se usa para bloquear reintentos — mergear la misma respuesta
+  dos veces ya es idempotente de por sí, no hace falta lógica extra) + `extra.clasespecial_telefono`/`_nombre`.
+  **Las UTM de ClasEspecial se guardan aparte** (`extra.clasespecial_utm`), **nunca pisan** `utm_source`/`utm_campaign`
+  del lead — esos son los de verdad, de Captación, por pedido explícito del usuario.
+
+### Dos gotchas de n8n encontrados y corregidos en la verificación en vivo
+
+- **`require('crypto')` está deshabilitado** en el sandbox de Code nodes de esta instancia de n8n ("Module 'crypto' is
+  disallowed", confirmado con una ejecución real que tiró ese error) — a diferencia de lo que un `grep` rápido del
+  código podría sugerir (la generación de tokens usa `gen_random_bytes` de **Postgres**, no de un Code node, nunca fue
+  un precedente real de que `crypto` funcionara en JS). El HMAC-SHA256 se calcula en un nodo Postgres con
+  `encode(hmac($1, $2, 'sha256'), 'hex')` (pgcrypto, ya habilitado porque `pgp_sym_decrypt`/`gen_random_bytes` lo usan) —
+  verificado contra Python (`hmac.new(..., hashlib.sha256)`) que da exactamente el mismo hex.
+- **El webhook node de n8n no entrega el body crudo de forma confiable** incluso con la opción "Raw Body" activada —
+  en la práctica siguió llegando ya parseado como objeto JS (sin capturar binary). Reconstruirlo con
+  `JSON.stringify(objetoParsed)` es riesgoso para una firma HMAC (el orden de claves o el escape de acentos/ñ de
+  otro serializador no tiene por qué coincidir byte a byte). Se resolvió en el proxy propio
+  (`app/api/hooks/[...path]/route.ts`): para este path específico, manda el texto crudo que YA tenía
+  (`await req.text()`) en base64 dentro de un header propio (`X-Raw-Body-B64`), y el Code node de n8n lo prioriza
+  sobre cualquier reconstrucción. Probado en vivo con un body "feo" (multilínea, con acentos/ñ/¿invertidos) — la
+  firma validó correctamente byte a byte.
+
+### Verificado en vivo (contra `cliente-prueba-draft`, dashboard 16)
+
+Token inválido → 404; firma inválida → 401; `evento: "prueba"` → 200 sin tocar la base; lead sin match (ni correo ni
+teléfono) → 404 "Lead no encontrado"; caso real con una respuesta tipo `"respuesta áéíóú ñ ¿cómo andás?"` → se guardó
+byte a byte igual, cruzada contra `preguntas_encuesta`, con `clasespecial_utm`/`clasespecial_nombre`/`clasespecial_telefono`
+guardados aparte sin tocar los campos de atribución reales del lead. El formulario "Firma de ClasEspecial" en Webhooks
+se probó de punta a punta contra la ruta real de Next.js (no solo contra n8n directo) — ahí se encontró y corrigió un
+bug real: `app/api/v3/dashboards/route.ts` nunca se había extendido con el sexto modo del `PATCH`, así que guardar la
+clave fallaba con "Falta tipo o url" aunque el lado de n8n ya estaba listo.
+
+### Pendiente
+
+- No hay una cuenta/página real de ClasEspecial contra la cual probar un envío real (todo lo de arriba se armó y
+  probó con requests sintéticos que replican exactamente el formato documentado) — falta un "Probar" real desde
+  ClasEspecial apuntando a este endpoint para confirmar que su firma coincide con la nuestra en producción.

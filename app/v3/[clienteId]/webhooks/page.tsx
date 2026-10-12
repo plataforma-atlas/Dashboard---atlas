@@ -12,6 +12,7 @@ import { V3CanalCaptacion, V3CaptacionPunto, V3Dashboard, V3EndpointTipo } from 
 const ETIQUETAS_ENDPOINT: Record<"captacion" | V3EndpointTipo, string> = {
   captacion: "Captación",
   encuesta: "Encuesta",
+  encuesta_clasespecial: "Encuesta (ClasEspecial)",
   gracias: "Página de gracias",
   grupos: "Ingreso a grupos (SendFlow)",
   mensaje_recibido: "Mensaje 1a1 recibido",
@@ -21,6 +22,7 @@ const ETIQUETAS_ENDPOINT: Record<"captacion" | V3EndpointTipo, string> = {
 const PATH_ENDPOINT: Record<"captacion" | V3EndpointTipo, string> = {
   captacion: "integraciones/captacion-lead",
   encuesta: "integraciones/embudo-encuesta",
+  encuesta_clasespecial: "integraciones/embudo-encuesta-clasespecial",
   gracias: "integraciones/embudo-gracias",
   grupos: "integraciones/embudo-grupos",
   mensaje_recibido: "integraciones/embudo-mensaje-recibido",
@@ -66,6 +68,11 @@ export default function V3WebhooksPage() {
   const [enlaceError, setEnlaceError] = useState<string | null>(null);
   const [enlaceGuardado, setEnlaceGuardado] = useState<"clase" | "replay" | null>(null);
 
+  const [claveFirma, setClaveFirma] = useState("");
+  const [guardandoFirma, setGuardandoFirma] = useState(false);
+  const [firmaError, setFirmaError] = useState<string | null>(null);
+  const [firmaGuardada, setFirmaGuardada] = useState(false);
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then((res) => (res.ok ? res.json() : { authenticated: false }))
@@ -89,7 +96,38 @@ export default function V3WebhooksPage() {
     setUrlClase(dashboardActual?.url_enlaces?.clase ?? "");
     setUrlReplay(dashboardActual?.url_enlaces?.replay ?? "");
     setEnlaceError(null);
+    setClaveFirma(dashboardActual?.clasespecial_clave_firma ?? "");
+    setFirmaError(null);
   }, [dashboardActual?.id]);
+
+  async function guardarClaveFirma() {
+    if (!dashboardActual) return;
+    if (!claveFirma.trim()) {
+      setFirmaError("Pegá la clave de firma antes de guardar.");
+      return;
+    }
+    setGuardandoFirma(true);
+    setFirmaError(null);
+    try {
+      const res = await fetch("/api/v3/dashboards", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: clienteId, dashboard_id: dashboardActual.id, clasespecial_clave_firma: claveFirma.trim() }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFirmaError(body.error || "No se pudo guardar");
+        return;
+      }
+      setDashboards((actuales) => actuales.map((d) => (d.id === dashboardActual.id ? { ...d, clasespecial_clave_firma: claveFirma.trim() } : d)));
+      setFirmaGuardada(true);
+      setTimeout(() => setFirmaGuardada(false), 2000);
+    } catch {
+      setFirmaError("No se pudo conectar al servidor");
+    } finally {
+      setGuardandoFirma(false);
+    }
+  }
 
   async function guardarUrlEnlace(tipo: "clase" | "replay", url: string) {
     if (!dashboardActual) return;
@@ -333,6 +371,43 @@ export default function V3WebhooksPage() {
                   </div>
                 ))}
             </div>
+          </div>
+
+          <div className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-3">
+            <div>
+              <div className="text-[14px] font-medium text-on-surface">Firma de ClasEspecial</div>
+              <div className="text-[12px] text-on-surface-variant">
+                En ClasEspecial, Ajustes → Webhooks de cada página te muestra una &quot;Clave de firma&quot; al pegar el
+                enlace de arriba (&quot;Encuesta (ClasEspecial)&quot;) — pegala acá para que podamos verificar que cada
+                envío viene de verdad de ahí. Sin esto, ese endpoint rechaza todo.
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={claveFirma}
+                onChange={(e) => setClaveFirma(e.target.value)}
+                placeholder="Clave de firma"
+                className="flex-1 min-w-0 bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
+              />
+              <button
+                type="button"
+                onClick={guardarClaveFirma}
+                disabled={guardandoFirma || !acceso.puedeEscribir}
+                className="press flex items-center gap-1.5 text-[12px] px-3 py-2 rounded-md border border-outline hover:border-primary text-on-surface font-medium shrink-0 transition-colors duration-150 disabled:opacity-50"
+              >
+                {firmaGuardada ? (
+                  <>
+                    <Check size={12} /> Guardado
+                  </>
+                ) : (
+                  <>
+                    <Save size={12} /> {guardandoFirma ? "Guardando…" : "Guardar"}
+                  </>
+                )}
+              </button>
+            </div>
+            {firmaError && <p className="text-sm text-error">{firmaError}</p>}
           </div>
 
           <PreguntasEncuesta

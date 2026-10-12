@@ -43,6 +43,10 @@ export type V3Dashboard = {
   // VSL (ej. "utm_content") — varía por cliente, se elige al configurar.
   // null = VTurb no configurado para este dashboard.
   vturb_utm_param: string | null;
+  // Clave de firma para verificar los webhooks de encuesta de ClasEspecial
+  // (HMAC-SHA256, ver endpoint `encuesta_clasespecial` y DOCUMENTACION.md) —
+  // null = ese endpoint rechaza todo porque no puede verificar la firma.
+  clasespecial_clave_firma: string | null;
   created_at: string;
 };
 
@@ -94,7 +98,7 @@ export type V3PreguntaEncuesta = {
 // para todas las páginas del dashboard, ver V3Dashboard.endpoints. Todo
 // enmascarado vía /api/hooks (nunca se ve n8n), autenticado por su propio
 // `token`, sin sesión.
-export type V3EndpointTipo = "encuesta" | "gracias" | "grupos" | "mensaje_recibido" | "visita";
+export type V3EndpointTipo = "encuesta" | "gracias" | "grupos" | "mensaje_recibido" | "visita" | "encuesta_clasespecial";
 
 export type V3PuntoEndpoint = {
   tipo: V3EndpointTipo;
