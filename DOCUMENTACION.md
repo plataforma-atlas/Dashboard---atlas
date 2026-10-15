@@ -1846,3 +1846,39 @@ sin webhook previo (200 directo, sin intentar llamar a nada). Se probó también
 - Actualizar la URL base en los 4 nodos marcados cuando ClasEspecial tenga su dominio de producción.
 - Importar respuestas anteriores (`GET /api/v1/encuestas/{id}/respuestas`) — descartado para esta entrega a pedido
   explícito del usuario ("la idea es tomar todo desde cero").
+
+
+### Addendum (2026-10-15) — teléfono normalizado del lado de ClasEspecial + atribución de respaldo con `origin`
+
+La sesión de ClasEspecial avisó dos cambios en su API/webhooks que podían afectarnos:
+
+- **El teléfono ahora siempre llega limpio** (`"+573001234567"`, sin espacios/guiones/paréntesis). Revisado: no
+  separamos el indicativo buscando un espacio en ningún lado, así que ese patrón específico no nos rompía nada. Pero
+  de paso se confirmó algo más general — `client_leads.telefono` se guarda tal cual lo manda la landing del cliente en
+  Captación (`Integraciones — Captación Lead`, sin ninguna normalización), así que un match por teléfono por string
+  exacto contra lo que manda *cualquier* sistema externo (ClasEspecial, GHL, SendFlow) siempre pudo fallar por un
+  formato distinto. Se corrigió en las 5 queries de "buscar lead por correo/teléfono" de
+  `Integraciones — Eventos de Embudo (Cliente)` (Encuesta, Gracias, Grupos, Mensaje 1a1, Encuesta ClasEspecial):
+  ahora comparan `regexp_replace(telefono, '[^0-9+]', '', 'g')` de los dos lados, así que un teléfono guardado como
+  `"+506 3333-4444"` sí matchea contra `"+50633334444"`. Probado en vivo: un teléfono con espacio y guión encontró al
+  lead correcto (y solo a ese), sin falsos positivos.
+- **Los contactos de ClasEspecial ahora traen `origin`** (de dónde llegó la persona la primera vez: UTMs, `fbclid`/
+  `gclid`/`ttclid`, `referrer`, `landing`) vía `GET /api/v1/contacts/{id}`. El usuario lo quería como **respaldo**,
+  "por si fallara la página" de captación — nunca para duplicar datos. Se construyó así: al sincronizar una respuesta
+  de encuesta de ClasEspecial (rama `integraciones/embudo-encuesta-clasespecial` del mismo workflow), si el body trae
+  un `contacto.id` real (puede venir `null`) y el cliente tiene ClasEspecial conectado, se llama a ese endpoint y:
+  - El `origin` completo se guarda siempre en `extra.clasespecial_origin` (o `null` si no hay), solo de referencia.
+  - Los campos `utm_source`/`utm_medium`/`utm_campaign`/`utm_content`/`utm_term` del lead se **rellenan con
+    `COALESCE(NULLIF(col, ''), valor_de_origin)`** — es decir, solo se completan si el lead los tiene vacíos de
+    verdad; nunca se pisa un valor que ya vino real de Captación. Si `origin` no trae ese campo, el `COALESCE` es un
+    no-op y el valor existente queda intacto.
+  - Si no hay `contacto.id`, o el cliente no tiene ClasEspecial conectado, o la llamada falla (`onError:
+    continueErrorOutput`), se sigue de largo sin este dato — nunca bloquea el guardado de la respuesta en sí.
+
+Verificado en vivo con requests sintéticos (la API de ClasEspecial sigue inalcanzable, ver "Pendiente" más abajo): sin
+`contacto.id` → se salta todo el chequeo; con `contacto.id` pero sin conexión de ClasEspecial → igual se salta;
+con `contacto.id` y conexión (de prueba) presente → sí llama a `Llamar Contacto`, falla con gracia (inalcanzable) y
+guarda `clasespecial_origin: null` sin romper nada — confirmado revisando qué nodos corrieron en cada ejecución real.
+
+El punto 3 del aviso (`registration` → `capture` en el `type` de página) no nos afecta — no llamamos a
+`GET /api/v1/pages` en ningún lado. El punto 4 (horarios repetidos de webinar) tampoco, es ajeno a encuestas.
