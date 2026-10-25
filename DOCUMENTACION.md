@@ -1882,3 +1882,20 @@ guarda `clasespecial_origin: null` sin romper nada — confirmado revisando qué
 
 El punto 3 del aviso (`registration` → `capture` en el `type` de página) no nos afecta — no llamamos a
 `GET /api/v1/pages` en ningún lado. El punto 4 (horarios repetidos de webinar) tampoco, es ajeno a encuestas.
+
+## 33. Renombrar dashboards (2026-10-24)
+
+El usuario pidió poder cambiar el nombre de un dashboard después de creado (hasta ahora era fijo). Se agregó como un sexto modo del mismo `PATCH /v3-dashboards` genérico que ya usan `url_enlaces`/`archivado`/`preguntas_encuesta`/`ghl_survey_id`/`vturb_player_ids` (ver secciones 26, 27 y 30) — mismo patrón, nada nuevo.
+
+### Backend
+
+- **`Núcleo — V3 Dashboards`** (id `6lZrzNxN2PRXfjXK`): `V3Dash - Normalizar Actualizar` gana `esNombre`/`nombreNuevo` (true cuando `body.nombre` es un string no vacío). Nodo IF nuevo `V3Dash - Es Nombre?` insertado en la cadena entre `Es Desvincular GHL?` y `Es Preguntas?` (mismo patrón de cadena de IFs que el resto de los modos) → si es true, `V3Dash - Actualizar Nombre` (`UPDATE v3_dashboards SET nombre = $3 WHERE id = $1 AND cliente_id = $2 RETURNING id, tipo AS tipo_dashboard, nombre;`) converge en el mismo `V3Dash - Se Actualizo?` de siempre.
+
+### Frontend
+
+- `app/api/v3/dashboards/route.ts`: `PATCH` acepta `nombre` (string no vacío) como sexto modo mutuamente excluyente.
+- `components/v3/V3Topbar.tsx`: el panel "Gestionar dashboards" (el mismo de Archivar/Borrar, sección 26) gana un botón "Renombrar" por fila que abre una edición inline (input + Guardar/Cancelar, mismo patrón de confirmación inline que ya usa `MetaAdsTable` para pausar/activar anuncios) — reemplaza el nombre en el `<select>` de la barra sin recargar la lista completa.
+
+### Verificado en vivo
+
+Contra `cliente-prueba-draft` (cliente_id `321737bed089b0cb5ddb350b`): renombrar un dashboard real desde el panel, confirmado en el `<select>` de la barra; revertido al nombre original por la misma vía. Regresión: `archivado: true`/`false` en el mismo endpoint siguen funcionando igual después del cambio.

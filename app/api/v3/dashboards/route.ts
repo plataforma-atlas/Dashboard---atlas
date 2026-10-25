@@ -73,14 +73,15 @@ export async function POST(req: Request) {
   }
 }
 
-// Cinco usos, mutuamente excluyentes según lo que traiga el body: guardar la
+// Seis usos, mutuamente excluyentes según lo que traiga el body: guardar la
 // URL real de destino de un enlace corto (tipo "clase"/"replay") con `tipo`
 // + `url`, archivar/desarchivar con `archivado` (boolean), reemplazar las
 // preguntas de la encuesta con `preguntas_encuesta` (array completo — se
 // reemplaza entero, no se mergea de a una), desvincular una encuesta de GHL
 // con `ghl_survey_id: null` (volver a modo manual — para vincular una encuesta
-// se usa /api/v3/ghl-encuestas, no este endpoint), o guardar la configuración
-// de VTurb con `vturb_player_ids` (array completo) + `vturb_utm_param`.
+// se usa /api/v3/ghl-encuestas, no este endpoint), renombrar con `nombre`
+// (string no vacío), o guardar la configuración de VTurb con
+// `vturb_player_ids` (array completo) + `vturb_utm_param`.
 // La encuesta de ClasEspecial NO pasa por acá — su sincronización guarda
 // `clasespecial_clave_firma`/`clasespecial_encuesta_id` directo desde
 // `Integraciones — ClasEspecial (Cliente)`, porque antes necesita registrar
@@ -101,11 +102,12 @@ export async function PATCH(req: Request) {
   const esVTurb = Object.prototype.hasOwnProperty.call(body ?? {}, "vturb_player_ids") || Object.prototype.hasOwnProperty.call(body ?? {}, "vturb_utm_param");
   const vturbPlayerIds = Array.isArray(body?.vturb_player_ids) ? body.vturb_player_ids : [];
   const vturbUtmParam = typeof body?.vturb_utm_param === "string" && body.vturb_utm_param.trim() ? body.vturb_utm_param.trim() : null;
+  const nombreNuevo = typeof body?.nombre === "string" && body.nombre.trim() ? body.nombre.trim() : null;
 
   if (!clienteId || !dashboardId) return NextResponse.json({ error: "Falta cliente_id o dashboard_id" }, { status: 400 });
   const guardia = await exigirAcceso(session, clienteId, { escribir: true, dashboardId: dashboardId });
   if ("error" in guardia) return guardia.error;
-  if (archivado === null && preguntasEncuesta === null && !desvincularGhl && !esVTurb && (!tipo || !url)) {
+  if (archivado === null && preguntasEncuesta === null && !desvincularGhl && !esVTurb && !nombreNuevo && (!tipo || !url)) {
     return NextResponse.json({ error: "Falta tipo o url" }, { status: 400 });
   }
 
@@ -119,9 +121,11 @@ export async function PATCH(req: Request) {
         ? { dashboard_id: dashboardId, cliente_id: clienteId, vturb_player_ids: vturbPlayerIds, vturb_utm_param: vturbUtmParam }
         : preguntasEncuesta !== null
           ? { dashboard_id: dashboardId, cliente_id: clienteId, preguntas_encuesta: preguntasEncuesta }
-          : archivado !== null
-            ? { dashboard_id: dashboardId, cliente_id: clienteId, archivado }
-            : { dashboard_id: dashboardId, cliente_id: clienteId, tipo, url };
+          : nombreNuevo
+            ? { dashboard_id: dashboardId, cliente_id: clienteId, nombre: nombreNuevo }
+            : archivado !== null
+              ? { dashboard_id: dashboardId, cliente_id: clienteId, archivado }
+              : { dashboard_id: dashboardId, cliente_id: clienteId, tipo, url };
     const res = await fetch(urlBase, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

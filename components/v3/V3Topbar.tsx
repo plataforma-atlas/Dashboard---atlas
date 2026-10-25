@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAcceso } from "@/components/v3/useAcceso";
-import { Archive, ArchiveRestore, Check, Menu, Plus, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, Check, Menu, Pencil, Plus, Trash2, X } from "lucide-react";
 import { V3Dashboard, V3DashboardTipo } from "@/lib/v3/types";
 
 // Letras de página de testeo (A, B, C...) — el usuario confirmó que no espera
@@ -44,6 +44,10 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
   const [gestionAbierto, setGestionAbierto] = useState(false);
   const [accionEnCurso, setAccionEnCurso] = useState<number | null>(null);
   const [erroresGestion, setErroresGestion] = useState<Record<number, string>>({});
+  // Edición inline del nombre — separado de erroresGestion porque conviven
+  // (un error de archivar no debe tumbar el input de nombre a medio escribir).
+  const [renombrandoId, setRenombrandoId] = useState<number | null>(null);
+  const [nombreEdit, setNombreEdit] = useState("");
 
   async function cargarDashboards() {
     if (!clienteId) return;
@@ -171,6 +175,44 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
     }
   }
 
+  function abrirRenombrar(dashboard: V3Dashboard) {
+    setRenombrandoId(dashboard.id);
+    setNombreEdit(dashboard.nombre);
+    setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "" }));
+  }
+
+  async function guardarNombre(dashboard: V3Dashboard) {
+    const nombreNuevo = nombreEdit.trim();
+    if (!nombreNuevo) {
+      setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "El nombre no puede quedar vacío." }));
+      return;
+    }
+    if (nombreNuevo === dashboard.nombre) {
+      setRenombrandoId(null);
+      return;
+    }
+    setAccionEnCurso(dashboard.id);
+    setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "" }));
+    try {
+      const res = await fetch("/api/v3/dashboards", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: clienteId, dashboard_id: dashboard.id, nombre: nombreNuevo }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: data.error || "No se pudo renombrar" }));
+        return;
+      }
+      setDashboards((actuales) => actuales.map((d) => (d.id === dashboard.id ? { ...d, nombre: nombreNuevo } : d)));
+      setRenombrandoId(null);
+    } catch {
+      setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "No se pudo conectar al servidor" }));
+    } finally {
+      setAccionEnCurso(null);
+    }
+  }
+
   async function borrarDashboard(dashboard: V3Dashboard) {
     setAccionEnCurso(dashboard.id);
     setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "" }));
@@ -250,37 +292,87 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
             dashboards.map((d) => (
               <div key={d.id} className="flex flex-col gap-1">
                 <div className="flex items-center justify-between gap-3 rounded-md border border-outline bg-surface-high px-3 py-2">
-                  <div className="min-w-0 flex items-center gap-2">
-                    <span className={`text-[13px] font-medium truncate ${d.archivado ? "text-on-surface-faint" : "text-on-surface"}`}>
-                      {d.tipo === "webinar" ? "Webinar" : "Lanzamiento"} · {d.nombre}
-                    </span>
-                    {d.archivado && (
-                      <span className="text-[10px] uppercase tracking-[0.08em] px-1.5 py-0.5 rounded border border-outline text-on-surface-faint shrink-0">
-                        Archivado
+                  {renombrandoId === d.id ? (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        guardarNombre(d);
+                      }}
+                      className="min-w-0 flex items-center gap-2 flex-1"
+                    >
+                      <span className="text-[13px] text-on-surface-faint shrink-0">{d.tipo === "webinar" ? "Webinar" : "Lanzamiento"} ·</span>
+                      <input
+                        autoFocus
+                        type="text"
+                        value={nombreEdit}
+                        onChange={(e) => setNombreEdit(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") setRenombrandoId(null);
+                        }}
+                        className="min-w-0 flex-1 bg-background border border-primary rounded-md px-2 py-1 text-[13px] text-on-surface outline-none"
+                      />
+                      <button
+                        type="submit"
+                        disabled={accionEnCurso === d.id}
+                        title="Guardar nombre"
+                        className="press w-6 h-6 rounded-md border border-outline hover:border-primary grid place-items-center text-on-surface-variant hover:text-primary transition-colors duration-150 disabled:opacity-50 shrink-0"
+                      >
+                        <Check size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRenombrandoId(null)}
+                        disabled={accionEnCurso === d.id}
+                        title="Cancelar"
+                        className="press w-6 h-6 rounded-md border border-outline hover:border-error grid place-items-center text-on-surface-variant hover:text-error transition-colors duration-150 disabled:opacity-50 shrink-0"
+                      >
+                        <X size={12} />
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="min-w-0 flex items-center gap-2">
+                      <span className={`text-[13px] font-medium truncate ${d.archivado ? "text-on-surface-faint" : "text-on-surface"}`}>
+                        {d.tipo === "webinar" ? "Webinar" : "Lanzamiento"} · {d.nombre}
                       </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => archivarDashboard(d, !d.archivado)}
-                      disabled={accionEnCurso === d.id}
-                      title={d.archivado ? "Desarchivar" : "Archivar"}
-                      className="press flex items-center gap-1 text-[12px] px-2 py-1 rounded-md border border-outline hover:border-primary text-on-surface-variant hover:text-on-surface transition-colors duration-150 disabled:opacity-50"
-                    >
-                      {d.archivado ? <ArchiveRestore size={12} /> : <Archive size={12} />}
-                      {d.archivado ? "Desarchivar" : "Archivar"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => borrarDashboard(d)}
-                      disabled={accionEnCurso === d.id}
-                      title="Borrar (solo si no tiene leads)"
-                      className="press flex items-center gap-1 text-[12px] px-2 py-1 rounded-md border border-outline hover:border-error text-on-surface-variant hover:text-error transition-colors duration-150 disabled:opacity-50"
-                    >
-                      <Trash2 size={12} /> Borrar
-                    </button>
-                  </div>
+                      {d.archivado && (
+                        <span className="text-[10px] uppercase tracking-[0.08em] px-1.5 py-0.5 rounded border border-outline text-on-surface-faint shrink-0">
+                          Archivado
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {renombrandoId !== d.id && (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => abrirRenombrar(d)}
+                        disabled={accionEnCurso === d.id}
+                        title="Cambiar nombre"
+                        className="press flex items-center gap-1 text-[12px] px-2 py-1 rounded-md border border-outline hover:border-primary text-on-surface-variant hover:text-on-surface transition-colors duration-150 disabled:opacity-50"
+                      >
+                        <Pencil size={12} /> Renombrar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => archivarDashboard(d, !d.archivado)}
+                        disabled={accionEnCurso === d.id}
+                        title={d.archivado ? "Desarchivar" : "Archivar"}
+                        className="press flex items-center gap-1 text-[12px] px-2 py-1 rounded-md border border-outline hover:border-primary text-on-surface-variant hover:text-on-surface transition-colors duration-150 disabled:opacity-50"
+                      >
+                        {d.archivado ? <ArchiveRestore size={12} /> : <Archive size={12} />}
+                        {d.archivado ? "Desarchivar" : "Archivar"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => borrarDashboard(d)}
+                        disabled={accionEnCurso === d.id}
+                        title="Borrar (solo si no tiene leads)"
+                        className="press flex items-center gap-1 text-[12px] px-2 py-1 rounded-md border border-outline hover:border-error text-on-surface-variant hover:text-error transition-colors duration-150 disabled:opacity-50"
+                      >
+                        <Trash2 size={12} /> Borrar
+                      </button>
+                    </div>
+                  )}
                 </div>
                 {erroresGestion[d.id] && <p className="text-[12px] text-error px-1">{erroresGestion[d.id]}</p>}
               </div>
