@@ -164,7 +164,7 @@ export default function V3AnunciosPage() {
     else setActualizando(true);
     setError(null);
     const qs = new URLSearchParams({ cliente_id: clienteId });
-    if (dashboardActual?.nomenclatura_filtro) qs.set("nomenclatura", dashboardActual.nomenclatura_filtro);
+    if (dashboardActualId !== null) qs.set("dashboard_id", String(dashboardActualId));
     // "Todo el período" no trae fechas: se pide desde muy atrás y el servidor lo recorta al límite de Meta.
     qs.set("fecha_inicio", rangoPeriodo.fecha_inicio || "2000-01-01");
     qs.set("fecha_fin", rangoPeriodo.fecha_fin || hoyIso());
@@ -191,7 +191,7 @@ export default function V3AnunciosPage() {
     return () => {
       cancelled = true;
     };
-  }, [clienteId, dashboardActual?.nomenclatura_filtro, rangoPeriodo.fecha_inicio, rangoPeriodo.fecha_fin]);
+  }, [clienteId, dashboardActualId, rangoPeriodo.fecha_inicio, rangoPeriodo.fecha_fin]);
 
   function aplicarPeriodo(p: RangoRapido, r: { fecha_inicio: string; fecha_fin: string }) {
     setPeriodo(p);

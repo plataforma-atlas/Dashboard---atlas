@@ -3,12 +3,85 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAcceso } from "@/components/v3/useAcceso";
-import { Archive, ArchiveRestore, Check, Menu, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, Check, Menu, Pencil, Plus, Tags, Trash2, X } from "lucide-react";
 import { V3Dashboard, V3DashboardTipo } from "@/lib/v3/types";
 
 // Letras de página de testeo (A, B, C...) — el usuario confirmó que no espera
 // testear más de 5 páginas a la vez en un mismo lanzamiento.
 const LETRAS_PAGINA = ["A", "B", "C", "D", "E"];
+
+// Input de "chips" para los patrones de nomenclatura — se usa tanto en el
+// form de "Crear nuevo" como en la edición inline del panel de Gestionar.
+// Cada patrón es independiente (se agrega uno, después otro, sin perder los
+// anteriores) porque una campaña cuenta para el dashboard si matchea
+// CUALQUIERA de ellos (ver V3Dashboard.nomenclaturas_filtro).
+function ChipsNomenclatura({
+  valores,
+  onChange,
+  autoFocus,
+}: {
+  valores: string[];
+  onChange: (v: string[]) => void;
+  autoFocus?: boolean;
+}) {
+  const [input, setInput] = useState("");
+
+  function agregar() {
+    const v = input.trim();
+    if (!v || valores.includes(v)) {
+      setInput("");
+      return;
+    }
+    onChange([...valores, v]);
+    setInput("");
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {valores.map((v) => (
+          <span
+            key={v}
+            className="flex items-center gap-1 text-[12px] font-mono px-2 py-1 rounded-md bg-surface-high border border-outline text-on-surface"
+          >
+            {v}
+            <button
+              type="button"
+              onClick={() => onChange(valores.filter((x) => x !== v))}
+              className="press text-on-surface-faint hover:text-error transition-colors duration-150"
+              aria-label={`Quitar patrón ${v}`}
+            >
+              <X size={11} />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <input
+          autoFocus={autoFocus}
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              agregar();
+            }
+          }}
+          placeholder="Ej. LAN0826 — Enter para agregar"
+          className="bg-background border border-outline rounded-md px-3 py-1.5 text-[13px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150 flex-1 min-w-0"
+        />
+        <button
+          type="button"
+          onClick={agregar}
+          className="press text-[12px] px-2.5 py-1.5 rounded-md border border-outline hover:border-primary text-on-surface-variant hover:text-on-surface transition-colors duration-150 shrink-0"
+        >
+          Agregar
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // Barra global de dashboards (proyectos filtrados por nomenclatura) — vive en
 // el layout de la V3 para que el selector esté disponible en cualquier
@@ -27,7 +100,7 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
   const [formAbierto, setFormAbierto] = useState(false);
   const [tipoNuevo, setTipoNuevo] = useState<V3DashboardTipo>("lanzamiento");
   const [nombreNuevo, setNombreNuevo] = useState("");
-  const [nomenclaturaNueva, setNomenclaturaNueva] = useState("");
+  const [nomenclaturasNuevas, setNomenclaturasNuevas] = useState<string[]>([]);
   // Cuántas páginas de testeo (A, B, C...) va a correr este lanzamiento — se
   // preguntan al crear el dashboard para crear de una vez sus puntos de
   // captación (y los endpoints de cada uno), en vez de agregarlos uno por uno
@@ -48,6 +121,10 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
   // (un error de archivar no debe tumbar el input de nombre a medio escribir).
   const [renombrandoId, setRenombrandoId] = useState<number | null>(null);
   const [nombreEdit, setNombreEdit] = useState("");
+  // Edición inline de los patrones de nomenclatura — mismo criterio que el
+  // renombrado: un botón por fila abre un editor de chips con Guardar/Cancelar.
+  const [editandoNomId, setEditandoNomId] = useState<number | null>(null);
+  const [nomenclaturasEdit, setNomenclaturasEdit] = useState<string[]>([]);
 
   async function cargarDashboards() {
     if (!clienteId) return;
@@ -89,7 +166,7 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
       const res = await fetch("/api/v3/dashboards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cliente_id: clienteId, nombre: nombreNuevo.trim(), nomenclatura_filtro: nomenclaturaNueva.trim(), tipo: tipoNuevo }),
+        body: JSON.stringify({ cliente_id: clienteId, nombre: nombreNuevo.trim(), nomenclaturas_filtro: nomenclaturasNuevas, tipo: tipoNuevo }),
       });
       const nuevo = await res.json();
       if (!res.ok) {
@@ -132,7 +209,7 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
       }
 
       setNombreNuevo("");
-      setNomenclaturaNueva("");
+      setNomenclaturasNuevas([]);
       setTipoNuevo("lanzamiento");
       setPaginasTesteo(1);
       setTieneOrganico(false);
@@ -178,6 +255,7 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
   function abrirRenombrar(dashboard: V3Dashboard) {
     setRenombrandoId(dashboard.id);
     setNombreEdit(dashboard.nombre);
+    setEditandoNomId(null);
     setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "" }));
   }
 
@@ -206,6 +284,36 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
       }
       setDashboards((actuales) => actuales.map((d) => (d.id === dashboard.id ? { ...d, nombre: nombreNuevo } : d)));
       setRenombrandoId(null);
+    } catch {
+      setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "No se pudo conectar al servidor" }));
+    } finally {
+      setAccionEnCurso(null);
+    }
+  }
+
+  function abrirEditarNomenclaturas(dashboard: V3Dashboard) {
+    setEditandoNomId(dashboard.id);
+    setNomenclaturasEdit(dashboard.nomenclaturas_filtro ?? []);
+    setRenombrandoId(null);
+    setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "" }));
+  }
+
+  async function guardarNomenclaturas(dashboard: V3Dashboard) {
+    setAccionEnCurso(dashboard.id);
+    setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "" }));
+    try {
+      const res = await fetch("/api/v3/dashboards", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cliente_id: clienteId, dashboard_id: dashboard.id, nomenclaturas_filtro: nomenclaturasEdit }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: data.error || "No se pudo guardar" }));
+        return;
+      }
+      setDashboards((actuales) => actuales.map((d) => (d.id === dashboard.id ? { ...d, nomenclaturas_filtro: nomenclaturasEdit } : d)));
+      setEditandoNomId(null);
     } catch {
       setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "No se pudo conectar al servidor" }));
     } finally {
@@ -330,18 +438,25 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
                       </button>
                     </form>
                   ) : (
-                    <div className="min-w-0 flex items-center gap-2">
-                      <span className={`text-[13px] font-medium truncate ${d.archivado ? "text-on-surface-faint" : "text-on-surface"}`}>
-                        {d.tipo === "webinar" ? "Webinar" : "Lanzamiento"} · {d.nombre}
-                      </span>
-                      {d.archivado && (
-                        <span className="text-[10px] uppercase tracking-[0.08em] px-1.5 py-0.5 rounded border border-outline text-on-surface-faint shrink-0">
-                          Archivado
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[13px] font-medium truncate ${d.archivado ? "text-on-surface-faint" : "text-on-surface"}`}>
+                          {d.tipo === "webinar" ? "Webinar" : "Lanzamiento"} · {d.nombre}
                         </span>
+                        {d.archivado && (
+                          <span className="text-[10px] uppercase tracking-[0.08em] px-1.5 py-0.5 rounded border border-outline text-on-surface-faint shrink-0">
+                            Archivado
+                          </span>
+                        )}
+                      </div>
+                      {d.nomenclaturas_filtro.length > 0 && editandoNomId !== d.id && (
+                        <p className="text-[11px] font-mono text-on-surface-faint truncate mt-0.5">
+                          {d.nomenclaturas_filtro.join(" · ")}
+                        </p>
                       )}
                     </div>
                   )}
-                  {renombrandoId !== d.id && (
+                  {renombrandoId !== d.id && editandoNomId !== d.id && (
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         type="button"
@@ -351,6 +466,15 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
                         className="press flex items-center gap-1 text-[12px] px-2 py-1 rounded-md border border-outline hover:border-primary text-on-surface-variant hover:text-on-surface transition-colors duration-150 disabled:opacity-50"
                       >
                         <Pencil size={12} /> Renombrar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => abrirEditarNomenclaturas(d)}
+                        disabled={accionEnCurso === d.id}
+                        title="Patrones de nomenclatura de campaña"
+                        className="press flex items-center gap-1 text-[12px] px-2 py-1 rounded-md border border-outline hover:border-primary text-on-surface-variant hover:text-on-surface transition-colors duration-150 disabled:opacity-50"
+                      >
+                        <Tags size={12} /> Nomenclaturas
                       </button>
                       <button
                         type="button"
@@ -374,6 +498,32 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
                     </div>
                   )}
                 </div>
+                {editandoNomId === d.id && (
+                  <div className="rounded-md border border-outline bg-surface-high px-3 py-2.5 flex flex-col gap-2">
+                    <p className="text-[11px] text-on-surface-faint">
+                      Una campaña cuenta para este dashboard si su nombre contiene cualquiera de estos patrones.
+                    </p>
+                    <ChipsNomenclatura valores={nomenclaturasEdit} onChange={setNomenclaturasEdit} autoFocus />
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => guardarNomenclaturas(d)}
+                        disabled={accionEnCurso === d.id}
+                        className="press text-[12px] px-3 py-1.5 rounded-md bg-primary text-on-primary font-medium disabled:opacity-50 transition-transform duration-150"
+                      >
+                        Guardar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditandoNomId(null)}
+                        disabled={accionEnCurso === d.id}
+                        className="press text-[12px] text-on-surface-variant hover:text-on-surface transition-colors duration-150"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {erroresGestion[d.id] && <p className="text-[12px] text-error px-1">{erroresGestion[d.id]}</p>}
               </div>
             ))
@@ -463,13 +613,7 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
           </div>
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
             <label className="text-xs uppercase tracking-[0.1em] text-on-surface-faint">Nomenclatura de campaña (opcional)</label>
-            <input
-              type="text"
-              value={nomenclaturaNueva}
-              onChange={(e) => setNomenclaturaNueva(e.target.value)}
-              placeholder="Ej. LAN0826"
-              className="bg-background border border-outline rounded-md px-3 py-2 text-[14px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150"
-            />
+            <ChipsNomenclatura valores={nomenclaturasNuevas} onChange={setNomenclaturasNuevas} />
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <button

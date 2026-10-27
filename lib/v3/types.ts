@@ -7,7 +7,11 @@ export type V3Dashboard = {
   id: number;
   nombre: string;
   tipo: V3DashboardTipo;
-  nomenclatura_filtro: string | null;
+  // Una campaña cuenta para este dashboard si su nombre contiene CUALQUIERA
+  // de estos patrones (match OR, via el operador CONTAINS_ANY de Meta) — se
+  // puede ir agregando patrones nuevos sin perder los que ya tiene. Vacío =
+  // sin filtro, trae todas las campañas de la cuenta conectada.
+  nomenclaturas_filtro: string[];
   // Un dashboard archivado sigue existiendo con todos sus datos — solo se
   // oculta del selector normal. Reversible (ver V3Topbar). Distinto de un
   // borrado real, que solo se permite cuando el dashboard no tiene leads.

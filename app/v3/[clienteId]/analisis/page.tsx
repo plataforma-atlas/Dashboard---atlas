@@ -97,7 +97,7 @@ export default function V3AnalisisPage() {
     setLoading(true);
     setError(null);
     const qs = new URLSearchParams({ cliente_id: clienteId });
-    if (dashboardActual?.nomenclatura_filtro) qs.set("nomenclatura", dashboardActual.nomenclatura_filtro);
+    if (dashboardActualId !== null) qs.set("dashboard_id", String(dashboardActualId));
     fetch(`/api/anuncios/meta?${qs.toString()}`, { cache: "no-store" })
       .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
       .then(({ ok, body }) => {
@@ -117,11 +117,11 @@ export default function V3AnalisisPage() {
     return () => {
       cancelled = true;
     };
-  }, [clienteId, dashboardActual?.nomenclatura_filtro]);
+  }, [clienteId, dashboardActualId]);
 
   useEffect(() => {
     setPage(1);
-  }, [clienteId, dashboardActual?.nomenclatura_filtro, pageSize]);
+  }, [clienteId, dashboardActualId, pageSize]);
 
   function cambiarPageSize(size: number) {
     setPageSize(size);

@@ -206,8 +206,7 @@ export default function V3ClientePage() {
     if (!esLanzamiento || !dashboardActual) return;
     let cancelled = false;
     setMetaLoading(true);
-    const qs = new URLSearchParams({ cliente_id: clienteId });
-    if (dashboardActual.nomenclatura_filtro) qs.set("nomenclatura", dashboardActual.nomenclatura_filtro);
+    const qs = new URLSearchParams({ cliente_id: clienteId, dashboard_id: String(dashboardActual.id) });
     fetch(`/api/anuncios/meta?${qs.toString()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((body: MetaAdsResponse) => {

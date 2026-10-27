@@ -43,7 +43,9 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const clienteId = (body?.cliente_id ?? "").toString().trim();
   const nombre = (body?.nombre ?? "").toString().trim();
-  const nomenclaturaFiltro = (body?.nomenclatura_filtro ?? "").toString().trim();
+  const nomenclaturasFiltro = Array.isArray(body?.nomenclaturas_filtro)
+    ? body.nomenclaturas_filtro.map((v: unknown) => (v ?? "").toString().trim()).filter(Boolean)
+    : [];
   const tipo = (body?.tipo ?? "lanzamiento").toString().trim();
 
   if (!clienteId) return NextResponse.json({ error: "Falta cliente_id" }, { status: 400 });
@@ -61,7 +63,7 @@ export async function POST(req: Request) {
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cliente_id: clienteId, nombre, nomenclatura_filtro: nomenclaturaFiltro || null, tipo }),
+      body: JSON.stringify({ cliente_id: clienteId, nombre, nomenclaturas_filtro: nomenclaturasFiltro, tipo }),
       cache: "no-store",
     });
     const data = await res.json().catch(() => ({}));
@@ -73,15 +75,17 @@ export async function POST(req: Request) {
   }
 }
 
-// Seis usos, mutuamente excluyentes según lo que traiga el body: guardar la
+// Siete usos, mutuamente excluyentes según lo que traiga el body: guardar la
 // URL real de destino de un enlace corto (tipo "clase"/"replay") con `tipo`
 // + `url`, archivar/desarchivar con `archivado` (boolean), reemplazar las
 // preguntas de la encuesta con `preguntas_encuesta` (array completo — se
 // reemplaza entero, no se mergea de a una), desvincular una encuesta de GHL
 // con `ghl_survey_id: null` (volver a modo manual — para vincular una encuesta
 // se usa /api/v3/ghl-encuestas, no este endpoint), renombrar con `nombre`
-// (string no vacío), o guardar la configuración de VTurb con
-// `vturb_player_ids` (array completo) + `vturb_utm_param`.
+// (string no vacío), reemplazar los patrones de nomenclatura con
+// `nomenclaturas_filtro` (array completo, mismo criterio que preguntas_encuesta
+// — la UI arma la lista final y la manda entera), o guardar la configuración
+// de VTurb con `vturb_player_ids` (array completo) + `vturb_utm_param`.
 // La encuesta de ClasEspecial NO pasa por acá — su sincronización guarda
 // `clasespecial_clave_firma`/`clasespecial_encuesta_id` directo desde
 // `Integraciones — ClasEspecial (Cliente)`, porque antes necesita registrar
@@ -103,11 +107,14 @@ export async function PATCH(req: Request) {
   const vturbPlayerIds = Array.isArray(body?.vturb_player_ids) ? body.vturb_player_ids : [];
   const vturbUtmParam = typeof body?.vturb_utm_param === "string" && body.vturb_utm_param.trim() ? body.vturb_utm_param.trim() : null;
   const nombreNuevo = typeof body?.nombre === "string" && body.nombre.trim() ? body.nombre.trim() : null;
+  const nomenclaturasFiltro = Array.isArray(body?.nomenclaturas_filtro)
+    ? body.nomenclaturas_filtro.map((v: unknown) => (v ?? "").toString().trim()).filter(Boolean)
+    : null;
 
   if (!clienteId || !dashboardId) return NextResponse.json({ error: "Falta cliente_id o dashboard_id" }, { status: 400 });
   const guardia = await exigirAcceso(session, clienteId, { escribir: true, dashboardId: dashboardId });
   if ("error" in guardia) return guardia.error;
-  if (archivado === null && preguntasEncuesta === null && !desvincularGhl && !esVTurb && !nombreNuevo && (!tipo || !url)) {
+  if (archivado === null && preguntasEncuesta === null && !desvincularGhl && !esVTurb && !nombreNuevo && nomenclaturasFiltro === null && (!tipo || !url)) {
     return NextResponse.json({ error: "Falta tipo o url" }, { status: 400 });
   }
 
@@ -123,9 +130,11 @@ export async function PATCH(req: Request) {
           ? { dashboard_id: dashboardId, cliente_id: clienteId, preguntas_encuesta: preguntasEncuesta }
           : nombreNuevo
             ? { dashboard_id: dashboardId, cliente_id: clienteId, nombre: nombreNuevo }
-            : archivado !== null
-              ? { dashboard_id: dashboardId, cliente_id: clienteId, archivado }
-              : { dashboard_id: dashboardId, cliente_id: clienteId, tipo, url };
+            : nomenclaturasFiltro !== null
+              ? { dashboard_id: dashboardId, cliente_id: clienteId, nomenclaturas_filtro: nomenclaturasFiltro }
+              : archivado !== null
+                ? { dashboard_id: dashboardId, cliente_id: clienteId, archivado }
+                : { dashboard_id: dashboardId, cliente_id: clienteId, tipo, url };
     const res = await fetch(urlBase, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
