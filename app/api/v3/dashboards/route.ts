@@ -46,6 +46,9 @@ export async function POST(req: Request) {
   const nomenclaturasFiltro = Array.isArray(body?.nomenclaturas_filtro)
     ? body.nomenclaturas_filtro.map((v: unknown) => (v ?? "").toString().trim()).filter(Boolean)
     : [];
+  const nomenclaturasRequeridas = Array.isArray(body?.nomenclaturas_requeridas)
+    ? body.nomenclaturas_requeridas.map((v: unknown) => (v ?? "").toString().trim()).filter(Boolean)
+    : [];
   const tipo = (body?.tipo ?? "lanzamiento").toString().trim();
 
   if (!clienteId) return NextResponse.json({ error: "Falta cliente_id" }, { status: 400 });
@@ -63,7 +66,7 @@ export async function POST(req: Request) {
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cliente_id: clienteId, nombre, nomenclaturas_filtro: nomenclaturasFiltro, tipo }),
+      body: JSON.stringify({ cliente_id: clienteId, nombre, nomenclaturas_filtro: nomenclaturasFiltro, nomenclaturas_requeridas: nomenclaturasRequeridas, tipo }),
       cache: "no-store",
     });
     const data = await res.json().catch(() => ({}));
@@ -83,9 +86,11 @@ export async function POST(req: Request) {
 // con `ghl_survey_id: null` (volver a modo manual — para vincular una encuesta
 // se usa /api/v3/ghl-encuestas, no este endpoint), renombrar con `nombre`
 // (string no vacío), reemplazar los patrones de nomenclatura con
-// `nomenclaturas_filtro` (array completo, mismo criterio que preguntas_encuesta
-// — la UI arma la lista final y la manda entera), o guardar la configuración
-// de VTurb con `vturb_player_ids` (array completo) + `vturb_utm_param`.
+// `nomenclaturas_filtro` (match OR) y/o `nomenclaturas_requeridas` (match AND
+// — ambos arrays completos, mismo criterio que preguntas_encuesta; se puede
+// mandar uno solo de los dos sin tocar el otro, ver V3Dash - Actualizar
+// Nomenclaturas en n8n), o guardar la configuración de VTurb con
+// `vturb_player_ids` (array completo) + `vturb_utm_param`.
 // La encuesta de ClasEspecial NO pasa por acá — su sincronización guarda
 // `clasespecial_clave_firma`/`clasespecial_encuesta_id` directo desde
 // `Integraciones — ClasEspecial (Cliente)`, porque antes necesita registrar
@@ -110,11 +115,15 @@ export async function PATCH(req: Request) {
   const nomenclaturasFiltro = Array.isArray(body?.nomenclaturas_filtro)
     ? body.nomenclaturas_filtro.map((v: unknown) => (v ?? "").toString().trim()).filter(Boolean)
     : null;
+  const nomenclaturasRequeridas = Array.isArray(body?.nomenclaturas_requeridas)
+    ? body.nomenclaturas_requeridas.map((v: unknown) => (v ?? "").toString().trim()).filter(Boolean)
+    : null;
+  const esNomenclaturas = nomenclaturasFiltro !== null || nomenclaturasRequeridas !== null;
 
   if (!clienteId || !dashboardId) return NextResponse.json({ error: "Falta cliente_id o dashboard_id" }, { status: 400 });
   const guardia = await exigirAcceso(session, clienteId, { escribir: true, dashboardId: dashboardId });
   if ("error" in guardia) return guardia.error;
-  if (archivado === null && preguntasEncuesta === null && !desvincularGhl && !esVTurb && !nombreNuevo && nomenclaturasFiltro === null && (!tipo || !url)) {
+  if (archivado === null && preguntasEncuesta === null && !desvincularGhl && !esVTurb && !nombreNuevo && !esNomenclaturas && (!tipo || !url)) {
     return NextResponse.json({ error: "Falta tipo o url" }, { status: 400 });
   }
 
@@ -130,8 +139,13 @@ export async function PATCH(req: Request) {
           ? { dashboard_id: dashboardId, cliente_id: clienteId, preguntas_encuesta: preguntasEncuesta }
           : nombreNuevo
             ? { dashboard_id: dashboardId, cliente_id: clienteId, nombre: nombreNuevo }
-            : nomenclaturasFiltro !== null
-              ? { dashboard_id: dashboardId, cliente_id: clienteId, nomenclaturas_filtro: nomenclaturasFiltro }
+            : esNomenclaturas
+              ? {
+                  dashboard_id: dashboardId,
+                  cliente_id: clienteId,
+                  ...(nomenclaturasFiltro !== null ? { nomenclaturas_filtro: nomenclaturasFiltro } : {}),
+                  ...(nomenclaturasRequeridas !== null ? { nomenclaturas_requeridas: nomenclaturasRequeridas } : {}),
+                }
               : archivado !== null
                 ? { dashboard_id: dashboardId, cliente_id: clienteId, archivado }
                 : { dashboard_id: dashboardId, cliente_id: clienteId, tipo, url };

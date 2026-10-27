@@ -23,6 +23,7 @@ export async function GET(req: Request) {
   // tiene guardada (ni aunque sepa el id de un dashboard ajeno: el chequeo de
   // acceso de abajo lo bloquea antes de llegar a usarlos).
   let nomenclaturas: string[] = [];
+  let nomenclaturasRequeridas: string[] = [];
   if (dashboardId || guardia.acceso.dashboards !== null) {
     const urlDash = process.env.N8N_V3_DASHBOARDS_URL;
     if (!dashboardId || !urlDash) return NextResponse.json({ error: "Elegí un dashboard para ver sus anuncios" }, { status: 400 });
@@ -31,12 +32,14 @@ export async function GET(req: Request) {
     const listaDash = (await fetch(dashTarget.toString(), { cache: "no-store" }).then((r) => r.json()).catch(() => [])) as {
       id: number;
       nomenclaturas_filtro: string[];
+      nomenclaturas_requeridas: string[];
     }[];
     const dash = (Array.isArray(listaDash) ? listaDash : []).find((d) => Number(d.id) === dashboardId);
     if (!dash || (guardia.acceso.dashboards !== null && !guardia.acceso.dashboards.includes(dashboardId))) {
       return NextResponse.json({ error: "No tienes acceso a este dashboard" }, { status: 403 });
     }
     nomenclaturas = Array.isArray(dash.nomenclaturas_filtro) ? dash.nomenclaturas_filtro : [];
+    nomenclaturasRequeridas = Array.isArray(dash.nomenclaturas_requeridas) ? dash.nomenclaturas_requeridas : [];
   }
 
   const url = process.env.N8N_META_ADS_PULL_URL;
@@ -46,6 +49,7 @@ export async function GET(req: Request) {
     const target = new URL(url);
     target.searchParams.set("cliente_id", cliente_id);
     if (nomenclaturas.length > 0) target.searchParams.set("nomenclaturas", JSON.stringify(nomenclaturas));
+    if (nomenclaturasRequeridas.length > 0) target.searchParams.set("nomenclaturas_requeridas", JSON.stringify(nomenclaturasRequeridas));
     target.searchParams.set("time_range", JSON.stringify(rango));
     const res = await fetch(target.toString(), { method: "GET", cache: "no-store" });
     if (!res.ok) {

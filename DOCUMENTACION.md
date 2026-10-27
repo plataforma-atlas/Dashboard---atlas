@@ -1945,3 +1945,25 @@ Antes de construir nada, se probó en vivo (contra la cuenta real de Meta de Val
 ### Verificado en vivo
 
 Contra `cliente-prueba-draft` (cliente_id `321737bed089b0cb5ddb350b`, dashboard 4 "Prueba Lanzamiento Plan"): `PATCH` agregando un segundo patrón (`LAN0826`→`LAN0826,USA`) confirmado en el listado real; revertido a un solo patrón por la misma vía; regresión de `archivado`/`nombre` en el mismo endpoint sigue funcionando. Creación de un dashboard nuevo con 2 patrones de una vez, confirmado en el listado, borrado después. En el navegador: edición de chips end-to-end (agregar, guardar, reabrir, sacar, guardar, el Home/`<select>` refleja el cambio sin recargar toda la lista), y `/anuncios?dashboard=4` consultando con `dashboard_id` real sin errores (devuelve vacío porque el patrón de prueba no matchea ninguna campaña real, es el resultado esperado). Contra la cuenta real de Valentina Ortiz (cliente_id `2048d9307395d35129facf48`): pull real con `nomenclaturas: ["LZT111126","mav-lzt111126"]` devolvió 8 campañas reales únicas (sin duplicados), y con `nomenclaturas: []` (sin filtro) devolvió 14 — confirma que el filtro multi-patrón reduce correctamente el universo real de campañas.
+
+## 36. Segundo tipo de match: patrones que deben estar TODOS presentes (AND) (2026-10-27)
+
+Apenas se subió la sección 35, el usuario probó el dashboard "Misión 11:11 - USA" (cliente_id `2048d9307395d35129facf48`, dashboard 21) y vio que la tabla de Administrador de Anuncios traía las 8 campañas de todo el lanzamiento (USA, ESP, LATAM, CO-MX), no solo las de USA. No era un bug del filtro — ese dashboard tenía guardado un solo patrón, `LZT111126`, que efectivamente matchea las 8 (todas comparten ese código). Lo que hacía falta no era un patrón alternativo más (OR, lo de la sección 35) sino **narrow**: que la campaña tenga `LZT111126` **y además** `USA` — lógica AND, no OR.
+
+**Verificado en vivo antes de construir nada**: el parámetro `filtering` de Meta por defecto combina varias condiciones con **AND** (confirmado con una llamada real: `[{CONTAIN, "LZT111126"}, {CONTAIN, "USA"}]` devolvió exactamente las 2 campañas que tienen ambos textos, de las 8 totales) — nativo, sin operador especial, nada que inventar.
+
+### Backend
+
+- **`v3_dashboards`**: nueva columna `nomenclaturas_requeridas text[] NOT NULL DEFAULT '{}'` (además de `nomenclaturas_filtro`, que ya existía desde la sección 35).
+- **`Núcleo — V3 Dashboards`**: `V3Dash - Preparar Crear`/`Insertar`/`Listar` incluyen la columna nueva. El modo de `PATCH` de nomenclaturas (`V3Dash - Actualizar Nomenclaturas`) ahora recibe banderas `esFiltro`/`esRequeridas` independientes — solo pisa la columna cuya lista vino en el body (`CASE WHEN ... THEN ... ELSE columna_actual END`), así se puede mandar una sola de las dos sin perder la otra.
+- **`Integraciones — Pull Meta Ads (Cliente)`**: los mismos 7 nodos de la sección 35 arman ahora `filtering` combinando **ambas** listas: una condición `CONTAIN` por cada patrón de `nomenclaturas_requeridas` (AND nativo entre ellas) +, si `nomenclaturas_filtro` no está vacío, una condición más `CONTAINS_ANY` con esa lista (OR). Las dos conviven: "deben estar todos estos Y además alguno de estos otros".
+
+### Frontend
+
+- `lib/v3/types.ts`: `V3Dashboard.nomenclaturas_requeridas: string[]`.
+- `app/api/v3/dashboards/route.ts`: `PATCH` acepta `nomenclaturas_filtro`/`nomenclaturas_requeridas` por separado o juntos (mismo modo, ya no son dos modos distintos). `app/api/anuncios/meta/route.ts` deriva y reenvía ambas listas server-side (mismo criterio de seguridad que la sección 35 — el cliente nunca manda los patrones, solo el `dashboard_id`).
+- `components/v3/V3Topbar.tsx`: el editor inline "Nomenclaturas" del panel de Gestionar ahora tiene **dos** `ChipsNomenclatura` con su propia etiqueta — "Deben estar **todos** estos textos" (AND) y "Alcanza con **cualquiera** de estos otros" (OR) — y el subtítulo de cada fila bajo el nombre combina ambas: `LZT111126 + USA · (ESP o LATAM)`.
+
+### Verificado en vivo
+
+Llamada directa a Graph API con 2 condiciones `CONTAIN` (antes de tocar código): confirma AND nativo. Pull real contra la cuenta de Valentina con `nomenclaturas_requeridas: ["LZT111126","USA"]` → exactamente las 2 campañas de USA. Combinado (`requeridas: ["LZT111126"]` + `filtro: ["USA","ESP"]`) → las 4 campañas de USA+ESP, ninguna de LATAM/CO-MX. Sin filtro → las 14 de siempre. En el navegador (`cliente-prueba-draft`, dashboard 4): agregar un patrón requerido, guardar, confirmar el subtítulo combinado, sacar el patrón, guardar, confirmar que vuelve al estado anterior. **Se corrigió el dashboard real "Misión 11:11 - USA"** (`nomenclaturas_requeridas: ["LZT111126","USA"]`, `nomenclaturas_filtro: []`) — confirmado que el pull real ahora trae solo las 2 campañas de USA.

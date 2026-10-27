@@ -19,10 +19,12 @@ function ChipsNomenclatura({
   valores,
   onChange,
   autoFocus,
+  placeholder = "Ej. LAN0826 — Enter para agregar",
 }: {
   valores: string[];
   onChange: (v: string[]) => void;
   autoFocus?: boolean;
+  placeholder?: string;
 }) {
   const [input, setInput] = useState("");
 
@@ -68,7 +70,7 @@ function ChipsNomenclatura({
               agregar();
             }
           }}
-          placeholder="Ej. LAN0826 — Enter para agregar"
+          placeholder={placeholder}
           className="bg-background border border-outline rounded-md px-3 py-1.5 text-[13px] text-on-surface font-mono focus:border-primary outline-none transition-colors duration-150 flex-1 min-w-0"
         />
         <button
@@ -125,6 +127,10 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
   // renombrado: un botón por fila abre un editor de chips con Guardar/Cancelar.
   const [editandoNomId, setEditandoNomId] = useState<number | null>(null);
   const [nomenclaturasEdit, setNomenclaturasEdit] = useState<string[]>([]);
+  // Patrones que TODOS deben estar presentes (AND) — se combinan con
+  // nomenclaturasEdit (OR) para narrar dentro de una misma familia de
+  // campañas (ej. LZT111126 requerido + USA/ESP alternativos).
+  const [nomenclaturasRequeridasEdit, setNomenclaturasRequeridasEdit] = useState<string[]>([]);
 
   async function cargarDashboards() {
     if (!clienteId) return;
@@ -294,6 +300,7 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
   function abrirEditarNomenclaturas(dashboard: V3Dashboard) {
     setEditandoNomId(dashboard.id);
     setNomenclaturasEdit(dashboard.nomenclaturas_filtro ?? []);
+    setNomenclaturasRequeridasEdit(dashboard.nomenclaturas_requeridas ?? []);
     setRenombrandoId(null);
     setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "" }));
   }
@@ -305,14 +312,25 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
       const res = await fetch("/api/v3/dashboards", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cliente_id: clienteId, dashboard_id: dashboard.id, nomenclaturas_filtro: nomenclaturasEdit }),
+        body: JSON.stringify({
+          cliente_id: clienteId,
+          dashboard_id: dashboard.id,
+          nomenclaturas_filtro: nomenclaturasEdit,
+          nomenclaturas_requeridas: nomenclaturasRequeridasEdit,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: data.error || "No se pudo guardar" }));
         return;
       }
-      setDashboards((actuales) => actuales.map((d) => (d.id === dashboard.id ? { ...d, nomenclaturas_filtro: nomenclaturasEdit } : d)));
+      setDashboards((actuales) =>
+        actuales.map((d) =>
+          d.id === dashboard.id
+            ? { ...d, nomenclaturas_filtro: nomenclaturasEdit, nomenclaturas_requeridas: nomenclaturasRequeridasEdit }
+            : d
+        )
+      );
       setEditandoNomId(null);
     } catch {
       setErroresGestion((actuales) => ({ ...actuales, [dashboard.id]: "No se pudo conectar al servidor" }));
@@ -449,9 +467,11 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
                           </span>
                         )}
                       </div>
-                      {d.nomenclaturas_filtro.length > 0 && editandoNomId !== d.id && (
+                      {(d.nomenclaturas_requeridas.length > 0 || d.nomenclaturas_filtro.length > 0) && editandoNomId !== d.id && (
                         <p className="text-[11px] font-mono text-on-surface-faint truncate mt-0.5">
-                          {d.nomenclaturas_filtro.join(" · ")}
+                          {d.nomenclaturas_requeridas.join(" + ")}
+                          {d.nomenclaturas_requeridas.length > 0 && d.nomenclaturas_filtro.length > 0 ? " · " : ""}
+                          {d.nomenclaturas_filtro.length > 0 ? `(${d.nomenclaturas_filtro.join(" o ")})` : ""}
                         </p>
                       )}
                     </div>
@@ -499,11 +519,24 @@ export default function V3Topbar({ onOpenMobileMenu }: { onOpenMobileMenu?: () =
                   )}
                 </div>
                 {editandoNomId === d.id && (
-                  <div className="rounded-md border border-outline bg-surface-high px-3 py-2.5 flex flex-col gap-2">
-                    <p className="text-[11px] text-on-surface-faint">
-                      Una campaña cuenta para este dashboard si su nombre contiene cualquiera de estos patrones.
-                    </p>
-                    <ChipsNomenclatura valores={nomenclaturasEdit} onChange={setNomenclaturasEdit} autoFocus />
+                  <div className="rounded-md border border-outline bg-surface-high px-3 py-2.5 flex flex-col gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] text-on-surface-faint">
+                        Deben estar <span className="text-on-surface font-medium">todos</span> estos textos en el nombre (opcional)
+                      </label>
+                      <ChipsNomenclatura
+                        valores={nomenclaturasRequeridasEdit}
+                        onChange={setNomenclaturasRequeridasEdit}
+                        placeholder="Ej. LZT111126 — Enter para agregar"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] text-on-surface-faint">
+                        Alcanza con <span className="text-on-surface font-medium">cualquiera</span> de estos otros (opcional)
+                      </label>
+                      <ChipsNomenclatura valores={nomenclaturasEdit} onChange={setNomenclaturasEdit} placeholder="Ej. USA — Enter para agregar" />
+                    </div>
                     <div className="flex items-center gap-3">
                       <button
                         type="button"

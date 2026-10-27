@@ -10,8 +10,17 @@ export type V3Dashboard = {
   // Una campaña cuenta para este dashboard si su nombre contiene CUALQUIERA
   // de estos patrones (match OR, via el operador CONTAINS_ANY de Meta) — se
   // puede ir agregando patrones nuevos sin perder los que ya tiene. Vacío =
-  // sin filtro, trae todas las campañas de la cuenta conectada.
+  // sin filtro OR (si además `nomenclaturas_requeridas` está vacío, trae
+  // todas las campañas de la cuenta conectada).
   nomenclaturas_filtro: string[];
+  // Para narrar dentro de una misma familia de campañas (ej. separar
+  // "USA" de "ESP"/"LATAM" dentro de un mismo código de lanzamiento): una
+  // campaña cuenta para este dashboard solo si su nombre contiene TODOS estos
+  // patrones (match AND nativo de Meta — condiciones CONTAIN separadas, sin
+  // operador especial). Se combina con `nomenclaturas_filtro` por AND: si
+  // ambas listas tienen contenido, debe cumplir los requeridos Y además
+  // alguno de los alternativos.
+  nomenclaturas_requeridas: string[];
   // Un dashboard archivado sigue existiendo con todos sus datos — solo se
   // oculta del selector normal. Reversible (ver V3Topbar). Distinto de un
   // borrado real, que solo se permite cuando el dashboard no tiene leads.
