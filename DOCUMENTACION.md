@@ -1899,3 +1899,22 @@ El usuario pidió poder cambiar el nombre de un dashboard después de creado (ha
 ### Verificado en vivo
 
 Contra `cliente-prueba-draft` (cliente_id `321737bed089b0cb5ddb350b`): renombrar un dashboard real desde el panel, confirmado en el `<select>` de la barra; revertido al nombre original por la misma vía. Regresión: `archivado: true`/`false` en el mismo endpoint siguen funcionando igual después del cambio.
+
+## 34. Fix: Captación no guardaba nombre/correo/teléfono cuando el formulario es de GHL (2026-10-27)
+
+Durante pruebas en vivo con la cuenta de Valentina Ortiz (cliente_id `2048d9307395d35129facf48`), los leads no mostraban nombre en "Base de datos". Al revisar las ejecuciones reales del webhook de Captación (`Integraciones — Captación Lead (Cliente)`, id `p8DlcZTE8AxfU5Ri`) se encontró que **no era solo el nombre** — correo y teléfono también llegaban vacíos, en el 100% de sus 19 leads de prueba de ese día.
+
+**Causa real**: el formulario de ella no es una landing propia posteando `{nombre, correo, telefono}` (el contrato que espera `Captacion - Normalizar Lead`) — es un formulario de GHL cuyo workflow dispara una acción "Webhook" nativa de GHL, que manda el objeto de contacto tal cual lo guarda GHL: `full_name`/`first_name`+`last_name` (en inglés), `email`, `phone`, más un montón de custom fields propios del cliente. Como esos nombres de campo no son `nombre`/`correo`/`telefono`, los tres quedaban como string vacío — y al quedar vacíos, esos leads además **quedan huérfanos para siempre**: cualquier evento posterior (Encuesta/Gracias/Grupos/Mensaje 1a1) que intente matchear por correo o teléfono nunca va a encontrarlos.
+
+**Fix** (un solo nodo, `Captacion - Normalizar Lead`): se agregaron fallbacks a los nombres de campo nativos de GHL, mismo criterio ya usado en el webhook de Grupos (SendFlow) que acepta variantes de nombre de campo porque no controlamos el sistema externo:
+- `nombre`: `body.nombre || body.full_name || [first_name, last_name] unidos || body.name`
+- `correo`: `body.correo || body.email`
+- `telefono`: `body.telefono || body.phone || body.phone_number`
+
+La landing propia de un cliente que ya manda `nombre`/`correo`/`telefono` sigue funcionando exactamente igual (esos campos tienen prioridad, los de GHL son solo el fallback).
+
+**Verificado en vivo**: se volvió a mandar el payload real de una ejecución fallida (capturado de la ejecución de n8n) contra el webhook ya corregido → el lead se guardó con nombre/correo/teléfono reales ("Melissa Muñoz Echavarria", correo y teléfono reales) — se borró ese registro de prueba después de confirmar. Los leads que la propia Valentina generó después del fix en su sesión de pruebas (sin que nosotros los generáramos) también se guardaron completos, confirmando el fix contra tráfico real.
+
+**No se tocó**: los 19 leads de prueba vacíos que ya estaban insertados antes del fix se dejaron tal cual (son de hoy, de las pruebas de la sesión en curso, sin dato real que backfillear — no hay forma de recuperar su nombre/correo/teléfono sin volver a pedírselos).
+
+**Pendiente / a tener en cuenta a futuro**: este mismo problema puede repetirse con cualquier cliente que use un formulario de GHL en vez de su propia landing — si aparece un cliente nuevo con el mismo síntoma (leads sin nombre/correo/teléfono), revisar primero si el body real tiene `full_name`/`email`/`phone` en vez de `nombre`/`correo`/`telefono` antes de asumir que es un bug nuevo.
