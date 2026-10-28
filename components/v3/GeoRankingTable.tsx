@@ -25,21 +25,25 @@ export default function GeoRankingTable({ columnaLabel, rows }: { columnaLabel: 
 
   return (
     <div className="flex flex-col gap-2">
-      <table className="w-full text-sm">
+      {/* table-fixed + ancho fijo en "Leads" — si no, una columna con un valor
+          largo y sin espacios (ej. un nombre de campaña de Meta) hace que el
+          navegador ensanche toda la tabla más allá de la tarjeta en vez de
+          cortar o bajar de línea. */}
+      <table className="w-full text-sm table-fixed">
         <thead>
           <tr className="text-left text-on-surface-faint text-[11px] uppercase tracking-wide">
             <th className="py-2 pr-4 font-medium">{columnaLabel}</th>
-            <th className="py-2 pr-4 font-medium text-right">Leads</th>
+            <th className="py-2 pr-4 font-medium text-right w-16 shrink-0">Leads</th>
           </tr>
         </thead>
         <tbody>
           {visibles.map((r) => (
             <tr key={`${r.label}__${r.sublabel ?? ""}`} className="border-t border-outline">
-              <td className="py-2 pr-4">
+              <td className="py-2 pr-4 break-words" title={r.label}>
                 <div className="text-on-surface">{r.label}</div>
                 {r.sublabel && <div className="text-[11px] text-on-surface-faint">{r.sublabel}</div>}
               </td>
-              <td className="py-2 pr-4 text-on-surface tabular text-right">{formatNumber(r.count)}</td>
+              <td className="py-2 pr-4 text-on-surface tabular text-right w-16 shrink-0">{formatNumber(r.count)}</td>
             </tr>
           ))}
         </tbody>
